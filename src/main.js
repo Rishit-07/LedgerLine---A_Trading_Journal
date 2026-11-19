@@ -61,7 +61,7 @@ if (requiresSignIn && !isSignedIn()) {
       signIn();
       location.replace(next);
     });
-    document.title = 'Sign in | Ledgerline';
+    document.title = 'Sign in — Ledgerline';
     landing.replaceWith(fragment);
   }
 } else if (path === '/') {
@@ -102,6 +102,6 @@ if (requiresSignIn && !isSignedIn()) {
       location.replace('/');
     });
   }
-  document.title = title + ' | Ledgerline';
+  document.title = title + ' — Ledgerline';
   landing.replaceWith(fragment);
 }
