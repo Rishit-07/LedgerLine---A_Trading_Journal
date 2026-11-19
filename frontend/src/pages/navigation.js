@@ -7,6 +7,13 @@ export function animatePageEntry(page) {
   page.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 230, easing: 'ease-out' });
 }
 
+export function animatePageExit(page) {
+  if (reduceMotion.matches || typeof page.animate !== 'function') return;
+  return page.animate([{ opacity: getComputedStyle(page).opacity }, { opacity: 0 }], {
+    duration: 150, easing: 'ease-in', fill: 'forwards',
+  });
+}
+
 export function bindPageNavigation() {
   let exit;
   addEventListener('pageshow', (event) => {
@@ -42,7 +49,7 @@ export function bindPageNavigation() {
     if (!page || typeof page.animate !== 'function') return;
     event.preventDefault();
     if (exit) return;
-    exit = page.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: 'ease-in', fill: 'forwards' });
+    exit = animatePageExit(page);
     exit.finished.then(
       () => location.assign(destination.href),
       () => {},

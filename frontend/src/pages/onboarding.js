@@ -1,5 +1,6 @@
 import pageMarkup from './onboarding.html?raw';
 import { bindPageTheme, mountPage } from './shared.js';
+import { animatePageExit } from './navigation.js';
 import '@fontsource/instrument-serif/latin-400.css';
 import './onboarding.css';
 
@@ -142,6 +143,10 @@ export function renderOnboarding(landing, { initial, email, save, signOut }) {
       status.textContent = 'Saving your answers…';
       const profile = await save({ ...data, step });
       if (profile.completedAt) {
+        status.textContent = 'Setup complete. Opening Dashboard…';
+        page.inert = true;
+        const exit = animatePageExit(page);
+        await exit?.finished.catch(() => {});
         location.replace('/dashboard');
         return;
       }
