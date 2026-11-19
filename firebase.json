@@ -1,0 +1,23 @@
+{
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "supportEmail": "sairishitsunku@gmail.com",
+        "oAuthBrandDisplayName": "Ledgerline",
+        "authorizedRedirectUris": [
+          "https://ledger-line-d2e8c.firebaseapp.com/__/auth/handler"
+        ]
+      },
+      "emailPassword": true
+    }
+  },
+  "emulators": {
+    "auth": {
+      "host": "127.0.0.1",
+      "port": 9099
+    },
+    "ui": {
+      "enabled": false
+    }
+  }
+}

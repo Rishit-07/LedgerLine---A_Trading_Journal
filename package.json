@@ -2,10 +2,12 @@
   "name": "ledgerline",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["frontend"],
+  "workspaces": ["frontend", "backend"],
   "scripts": {
     "dev": "npm run dev --workspace @ledgerline/frontend --",
     "build": "npm run build --workspace @ledgerline/frontend --",
-    "preview": "npm run preview --workspace @ledgerline/frontend --"
+    "preview": "npm run preview --workspace @ledgerline/frontend --",
+    "dev:backend": "npm run dev --workspace @ledgerline/backend --",
+    "db:migrate": "npm run migrate --workspace @ledgerline/backend --"
   }
 }

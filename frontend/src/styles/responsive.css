@@ -88,18 +88,6 @@ button:focus-visible {
 .pending-page a {
   color: var(--acc);
 }
-.demo-auth-button {
-  padding: 10px 16px;
-  border-radius: 14px;
-  font-weight: 700;
-}
-.pending-page form {
-  margin-bottom: 20px;
-}
-.pending-page [data-sign-out] {
-  display: block;
-  margin-top: 20px;
-}
 
 @media (max-width: 1150px) {
   .lp-top {

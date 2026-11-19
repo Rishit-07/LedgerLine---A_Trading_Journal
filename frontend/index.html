@@ -2956,7 +2956,7 @@
                     color: var(--sub);
                     max-width: 640px;
                   "
-                  >Yes. You sign in with Google and your journal is private unless you choose to share closed
+                  >Yes. You sign in with Google or email, and your journal is private unless you choose to share closed
                   trades with a club, shown as percent or R only.</div
                 ></div
               >
@@ -3072,13 +3072,20 @@
     </div>
     <template id="sign-in-page">
       <main class="n-root pending-page">
-        <div class="n-out">
+        <div class="n-out auth-card">
           <a href="/">Ledgerline</a>
           <h1>Sign in</h1>
-          <p id="sign-in-message">Start a demo session in this browser.</p>
-          <form aria-describedby="sign-in-message">
-            <button type="submit" class="n-btn n-acc demo-auth-button">Sign in to demo</button>
+          <p id="sign-in-message">Sign in to your Ledgerline account.</p>
+          <button type="button" class="n-btn n-out auth-button" data-google>Continue with Google</button>
+          <form class="auth-form" aria-describedby="sign-in-message">
+            <label for="auth-email">Email address</label>
+            <input class="n-in" id="auth-email" name="email" type="email" autocomplete="username" required />
+            <label for="auth-password">Password</label>
+            <input class="n-in" id="auth-password" name="password" type="password" autocomplete="current-password" required />
+            <button type="submit" class="n-btn n-acc auth-button">Sign in</button>
           </form>
+          <p class="auth-message" role="alert" hidden></p>
+          <button type="button" class="n-btn n-out auth-button" data-auth-mode>Create an account</button>
           <a href="/">Back to the landing page</a>
         </div>
       </main>
@@ -3089,8 +3096,10 @@
           <a href="/">Ledgerline</a>
           <h1></h1>
           <p>This page is coming in a later build.</p>
+          <p data-account-status role="status" hidden></p>
+          <p class="auth-message" role="alert" hidden></p>
           <a href="/">Back to the landing page</a>
-          <button type="button" class="n-btn n-out demo-auth-button" data-sign-out hidden>Sign out</button>
+          <button type="button" class="n-btn n-out auth-button" data-sign-out hidden>Sign out</button>
         </div>
       </main>
     </template>

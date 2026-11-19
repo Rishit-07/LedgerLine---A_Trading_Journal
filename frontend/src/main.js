@@ -9,7 +9,7 @@ import { initMotion } from './motion.js';
 import { initSectionRail } from './section-rail.js';
 import { initToolWheel } from './tool-wheel.js';
 import { transitionTheme } from './theme-transition.js';
-import { isSignedIn, signIn, signOut } from './auth.js';
+import './styles/auth.css';
 
 const landing = document.querySelector('#landing');
 const root = document.documentElement;
@@ -24,7 +24,6 @@ function setTheme(dark) {
 setTheme(localStorage.getItem('ledgerline-theme') === 'dark');
 
 const pages = {
-  '/dashboard': 'Dashboard',
   '/about': 'About',
   '/legal': 'Privacy and terms',
   '/support': 'Help center',
@@ -36,34 +35,13 @@ const pages = {
   '/coach': 'AI coach',
   '/plan': 'Plan',
   '/mistake': 'Mistake lab',
-  '/replay': 'Replay',
   '/reports': 'Weekly reports',
   '/badges': 'Badges',
   '/portfolio': 'Portfolio',
 };
 const path = location.pathname.replace(/\/$/, '') || '/';
-const requiresSignIn = path === '/replay';
 
-if (requiresSignIn && !isSignedIn()) {
-  location.replace('/auth?next=%2Freplay');
-} else if (path === '/auth') {
-  const next = new URLSearchParams(location.search).get('next') === '/replay' ? '/replay' : '/dashboard';
-  if (isSignedIn()) {
-    location.replace(next);
-  } else {
-    const fragment = document.querySelector('#sign-in-page').content.cloneNode(true);
-    if (next === '/replay') {
-      fragment.querySelector('#sign-in-message').textContent = 'Start a demo session to continue to Replay.';
-    }
-    fragment.querySelector('form').addEventListener('submit', (event) => {
-      event.preventDefault();
-      signIn();
-      location.replace(next);
-    });
-    document.title = 'Sign in — Ledgerline';
-    landing.replaceWith(fragment);
-  }
-} else if (path === '/') {
+if (path === '/') {
   themeToggle.addEventListener('click', (event) =>
     transitionTheme(event, () => {
       const dark = !root.classList.contains('dark');
@@ -87,19 +65,22 @@ if (requiresSignIn && !isSignedIn()) {
   initMotion();
   initSectionRail();
   initToolWheel();
+} else if (path === '/auth' || path === '/replay' || path === '/dashboard') {
+  landing.hidden = true;
+  import('./auth.js')
+    .then(({ renderAccountPage }) => renderAccountPage(path, landing))
+    .catch(() => {
+      const fragment = document.querySelector('#pending-page').content.cloneNode(true);
+      fragment.querySelector('h1').textContent = 'Sign-in unavailable';
+      fragment.querySelector('p').textContent = 'Reload the page to try again.';
+      document.title = 'Sign-in unavailable — Ledgerline';
+      landing.replaceWith(fragment);
+    });
 } else {
   const fragment = document.querySelector('#pending-page').content.cloneNode(true);
   const title = pages[path] ?? 'Page unavailable';
   fragment.querySelector('h1').textContent = title;
   if (!pages[path]) fragment.querySelector('p').hidden = true;
-  if ((requiresSignIn || path === '/dashboard') && isSignedIn()) {
-    const button = fragment.querySelector('[data-sign-out]');
-    button.hidden = false;
-    button.addEventListener('click', () => {
-      signOut();
-      location.replace('/');
-    });
-  }
   document.title = title + ' — Ledgerline';
   landing.replaceWith(fragment);
 }
