@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-page-loading>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,9 +9,28 @@
     />
     <title>Ledgerline — Trading Journal &amp; Process Score</title>
     <link rel="icon" type="image/svg+xml" href="/ledgerline-icon.svg" />
+    <style>
+      html[data-page-loading] { background: #f3f2ec; color: #1f1f1c; }
+      html.dark[data-page-loading] { background: #23252b; color: #eceef4; }
+      html[data-page-loading] body > .n-root,
+      html:not([data-page-loading]) #startup-status { display: none; }
+      .startup-message { margin: 2rem; font: 1rem/1.5 system-ui, sans-serif; }
+    </style>
+    <script>
+      try {
+        document.documentElement.classList.toggle('dark', localStorage.getItem('ledgerline-theme') === 'dark');
+      } catch {}
+      setTimeout(() => {
+        if (document.documentElement.hasAttribute('data-page-loading')) {
+          document.getElementById('startup-status').hidden = false;
+        }
+      }, 8000);
+    </script>
     <script type="module" src="/src/main.js"></script>
   </head>
   <body>
+    <p class="startup-message" id="startup-status" role="status" hidden>Ledgerline is taking longer to load. You can reload the page to try again.</p>
+    <noscript><p class="startup-message">Enable JavaScript to open Ledgerline.</p></noscript>
     <div class="n-root" id="landing"
       ><nav class="si" aria-label="Sections"
         ><div class="si-rail"
@@ -3059,8 +3078,8 @@
                 ><div class="lp-lab" style="margin-bottom: 20px">Company</div
                 ><div style="display: flex; flex-direction: column; gap: 13px"
                   ><a href="/about" data-hover="">About</a><a href="/about" data-hover="">How scoring works</a
-                  ><a href="/support" data-hover="">Help center</a><a href="/legal" data-hover="">Privacy</a
-                  ><a href="/legal" data-hover="">Terms</a></div
+                  ><a href="/support" data-hover="">Help center</a><a href="/privacy" data-hover="">Privacy</a
+                  ><a href="/terms" data-hover="">Terms</a></div
                 ></div
               ></div
             ><div style="margin-top: 60px; font: 600 12px var(--font-sans); color: var(--mut)"
@@ -3070,26 +3089,6 @@
         </footer>
       </main>
     </div>
-    <template id="sign-in-page">
-      <main class="n-root pending-page">
-        <div class="n-out auth-card">
-          <a href="/">Ledgerline</a>
-          <h1>Sign in</h1>
-          <p id="sign-in-message">Sign in to your Ledgerline account.</p>
-          <button type="button" class="n-btn n-out auth-button" data-google>Continue with Google</button>
-          <form class="auth-form" aria-describedby="sign-in-message">
-            <label for="auth-email">Email address</label>
-            <input class="n-in" id="auth-email" name="email" type="email" autocomplete="username" required />
-            <label for="auth-password">Password</label>
-            <input class="n-in" id="auth-password" name="password" type="password" autocomplete="current-password" required />
-            <button type="submit" class="n-btn n-acc auth-button">Sign in</button>
-          </form>
-          <p class="auth-message" role="alert" hidden></p>
-          <button type="button" class="n-btn n-out auth-button" data-auth-mode>Create an account</button>
-          <a href="/">Back to the landing page</a>
-        </div>
-      </main>
-    </template>
     <template id="pending-page">
       <main class="n-root pending-page">
         <div class="n-out">

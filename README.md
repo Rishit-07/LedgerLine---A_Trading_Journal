@@ -1,6 +1,6 @@
 # Ledgerline
 
-Ledgerline is a trading journal that scores how consistently you follow your process. The current build includes the landing page, Firebase sign-in, and an account API backed by Neon Postgres.
+Ledgerline is a trading journal that scores how consistently you follow your process. The current build includes the landing page, About, Firebase sign-in, Terms and Conditions, Privacy Policy, and an account API backed by Neon Postgres.
 
 ## Run locally
 
@@ -31,6 +31,8 @@ Vite proxies `/api` requests from the dev and preview servers to the local API o
 ## Authentication
 
 The web app uses Firebase project `ledger-line-d2e8c` for email/password registration and sign-in, Google sign-in, and session restoration. Signed-out visitors to Replay and Dashboard go to `/auth` and return to their requested page after sign-in. Replay and Dashboard are still placeholders for their product features.
+
+The design export's Terms and Conditions and Privacy Policy are available at `/terms` and `/privacy`. Both contain draft copy and bracketed details for review. The old `/legal` route opens the Privacy Policy.
 
 For isolated auth testing, start the Auth emulator with `npx -y firebase-tools@latest emulators:start --only auth --project ledger-line-d2e8c` and set `VITE_FIREBASE_USE_EMULATOR=true` in `frontend/.env.local` before starting Vite. The emulator is only supported by the frontend during development.
 

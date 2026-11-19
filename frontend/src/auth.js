@@ -7,8 +7,19 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  updateProfile,
 } from 'firebase/auth';
 import firebaseConfig from './firebase-config.js';
+import { mountPage, bindPageTheme } from './pages/shared.js';
+import { animatePageEntry } from './pages/navigation.js';
+import { bindTicketMotion } from './pages/ticket-motion.js';
+import { animateSignInChart } from './pages/sign-in-chart.js';
+import signInMarkup from './pages/sign-in.html?raw';
+import welcomeMarkup from './pages/welcome.html?raw';
+import '@fontsource/instrument-serif/latin-400.css';
+import '@fontsource/instrument-serif/latin-400-italic.css';
+import './pages/sign-in-design.css';
+import './pages/sign-in-layout.css';
 
 const auth = getAuth(initializeApp(firebaseConfig));
 if (import.meta.env.DEV && import.meta.env.VITE_FIREBASE_USE_EMULATOR === 'true') {
@@ -16,8 +27,11 @@ if (import.meta.env.DEV && import.meta.env.VITE_FIREBASE_USE_EMULATOR === 'true'
 }
 
 const errors = {
+  'auth/invalid-email': 'Enter a valid email address.',
   'auth/email-already-in-use': 'This email already has an account. Sign in instead.',
   'auth/invalid-credential': 'Check your email and password and try again.',
+  'auth/wrong-password': 'Check your password and try again.',
+  'auth/user-not-found': 'Check your email and password and try again.',
   'auth/weak-password': 'Choose a stronger password.',
   'auth/password-does-not-meet-requirements': 'Choose a password that meets the account requirements.',
   'auth/popup-blocked': 'Allow pop-ups for Ledgerline and try again.',
@@ -28,63 +42,236 @@ const errors = {
   'auth/too-many-requests': 'Too many attempts. Wait a moment and try again.',
 };
 
+const errorFields = {
+  'auth/invalid-email': ['email'],
+  'auth/email-already-in-use': ['email'],
+  'auth/wrong-password': ['password'],
+  'auth/weak-password': ['password'],
+  'auth/password-does-not-meet-requirements': ['password'],
+  'auth/invalid-credential': ['email', 'password'],
+  'auth/user-not-found': ['email', 'password'],
+};
+
 function renderSignIn(landing, next) {
-  const fragment = document.querySelector('#sign-in-page').content.cloneNode(true);
-  const heading = fragment.querySelector('h1');
-  const description = fragment.querySelector('#sign-in-message');
-  const form = fragment.querySelector('form');
+  const page = mountPage(landing, signInMarkup);
+  bindPageTheme(page);
+  const form = page.querySelector('form');
   const password = form.elements.password;
-  const submit = form.querySelector('button');
-  const google = fragment.querySelector('[data-google]');
-  const mode = fragment.querySelector('[data-auth-mode]');
-  const message = fragment.querySelector('.auth-message');
-  const controls = [...form.elements, google, mode];
+  const consent = form.elements.consent;
+  const displayName = form.elements.displayName;
+  const google = page.querySelector('[data-google]');
+  const modes = [...page.querySelectorAll('[data-auth-mode]')];
+  const message = page.querySelector('.auth-message');
+  const ticket = page.querySelector('.au-ticket');
+  const ticketBody = ticket.querySelector('.au-ticket-body');
+  const fields = [form.elements.email, password, displayName];
+  const actions = [form.querySelector('button[type="submit"]'), google, ...modes];
+  const flipTicket = bindTicketMotion(ticket);
+  const addCandle = animateSignInChart(page.querySelector('#hero-svg'));
+  const meter = form.querySelector('[data-meter]');
+  const segments = [...form.querySelectorAll('.au-seg2')];
   let creating = false;
+  let submitting = false;
+  let accepted = false;
+  let editVersion = 0;
+
+  message.id = 'auth-error';
+
+  function clearField(field) {
+    field.removeAttribute('aria-invalid');
+    field.removeAttribute('aria-describedby');
+    field.closest('.n-field')?.classList.remove('au-field-error');
+  }
+
+  function showError(text, fields = []) {
+    const inputs = fields.map((name) => form.elements.namedItem(name));
+    message.textContent = text;
+    message.hidden = false;
+    inputs.forEach((field) => {
+      const wrapper = field.closest('.n-field');
+      clearField(field);
+      void wrapper.offsetWidth;
+      wrapper.classList.add('au-field-error');
+      field.setAttribute('aria-invalid', 'true');
+      field.setAttribute('aria-describedby', message.id);
+    });
+    inputs[0]?.focus();
+  }
+
+  function updateMeter() {
+    const value = password.value;
+    const strength = value.length
+      ? Math.max(
+          1,
+          Number(value.length >= 8) +
+            Number(/[a-z]/.test(value) && /[A-Z]/.test(value)) +
+            Number(/\d/.test(value)) +
+            Number(/[^a-z\d]/i.test(value)),
+        )
+      : 0;
+    segments.forEach((segment, index) => segment.classList.toggle('on' + index, index < strength));
+    meter.textContent = ['STRENGTH', 'WEAK', 'FAIR', 'GOOD', 'STRONG'][strength];
+  }
 
   function updateMode() {
-    heading.textContent = creating ? 'Create an account' : 'Sign in';
-    document.title = heading.textContent + ' — Ledgerline';
-    description.textContent = next === '/replay'
-      ? (creating ? 'Create an account to continue to Replay.' : 'Sign in to continue to Replay.')
-      : (creating ? 'Create your Ledgerline account.' : 'Sign in to your Ledgerline account.');
-    submit.textContent = creating ? 'Create account' : 'Sign in';
-    mode.textContent = creating ? 'Back to sign in' : 'Create an account';
+    document.title = (creating ? 'Create an account' : 'Sign in') + ' — Ledgerline';
+    page.querySelectorAll('[data-signup-only], [data-signup-copy]').forEach((el) => {
+      el.hidden = !creating;
+    });
+    page.querySelectorAll('[data-signin-copy]').forEach((el) => {
+      el.hidden = creating;
+    });
+    modes.forEach((button, index) => {
+      const selected = index === Number(creating);
+      button.classList.toggle('on', selected);
+      button.classList.toggle('n-out', selected);
+      button.setAttribute('aria-pressed', String(selected));
+    });
     password.autocomplete = creating ? 'new-password' : 'current-password';
+    ticket.classList.toggle('is-signup', creating);
+    consent.required = creating;
+    displayName.required = creating;
     if (creating) password.minLength = 6;
     else password.removeAttribute('minlength');
     message.hidden = true;
+    fields.forEach(clearField);
+    updateMeter();
   }
 
   async function authenticate(action) {
+    if (submitting || accepted) return;
+    submitting = true;
+    const submittedVersion = editVersion;
     message.hidden = true;
-    controls.forEach((control) => { control.disabled = true; });
+    fields.forEach(clearField);
+    actions.forEach((control) => {
+      control.disabled = true;
+    });
+    form.setAttribute('aria-busy', 'true');
     try {
-      await action();
-      location.replace(next);
+      const { user } = await action();
+      accepted = true;
+      showWelcome(page, user, next);
     } catch (error) {
-      message.textContent = errors[error.code] ?? 'Unable to sign in right now. Please try again.';
-      message.hidden = false;
-      controls.forEach((control) => { control.disabled = false; });
+      if (submittedVersion === editVersion) {
+        showError(errors[error.code] ?? 'Unable to sign in right now. Please try again.', errorFields[error.code]);
+      }
+    } finally {
+      submitting = false;
+      form.removeAttribute('aria-busy');
+      if (!accepted)
+        actions.forEach((control) => {
+          control.disabled = false;
+        });
     }
   }
 
-  mode.addEventListener('click', () => {
-    creating = !creating;
-    password.value = '';
-    updateMode();
+  modes.forEach((button, index) => {
+    button.addEventListener('click', () => {
+      if (creating === Boolean(index)) return;
+      creating = Boolean(index);
+      password.value = '';
+      updateMode();
+      ticketBody.scrollTop = 0;
+      flipTicket(creating);
+    });
   });
+  form.addEventListener('input', (event) => {
+    if (!fields.includes(event.target)) return;
+    editVersion += 1;
+    addCandle();
+    if (event.target === password) updateMeter();
+    if (event.target.matches('[aria-invalid]')) {
+      fields.forEach(clearField);
+      message.hidden = true;
+    }
+  });
+  form.addEventListener(
+    'invalid',
+    (event) => {
+      const field = event.target;
+      if (!field.matches('.n-input')) return;
+      event.preventDefault();
+      const first = [...form.elements].find((element) => element.willValidate && !element.validity.valid);
+      if (first !== field) return;
+      const text =
+        field.name === 'email'
+          ? 'Enter a valid email address.'
+          : field.name === 'password'
+            ? field.validity.tooShort
+              ? 'Choose a password with at least 6 characters.'
+              : 'Enter your password.'
+            : 'Enter your name to create an account.';
+      showError(text, [field.name]);
+    },
+    true,
+  );
   form.addEventListener('submit', (event) => {
     event.preventDefault();
     const email = form.elements.email.value.trim();
     const secret = password.value;
-    const method = creating ? createUserWithEmailAndPassword : signInWithEmailAndPassword;
-    void authenticate(() => method(auth, email, secret));
+    if (!creating) {
+      void authenticate(() => signInWithEmailAndPassword(auth, email, secret));
+      return;
+    }
+    const name = displayName.value.trim();
+    if (!name) {
+      showError('Enter your name to create an account.', ['displayName']);
+      return;
+    }
+    void authenticate(async () => {
+      const result = await createUserWithEmailAndPassword(auth, email, secret);
+      await updateProfile(result.user, { displayName: name }).catch(() => {
+        // The account already exists and can enter even if this optional profile update fails.
+      });
+      return result;
+    });
   });
   google.addEventListener('click', () => {
+    if (creating && !consent.checked) {
+      consent.reportValidity();
+      return;
+    }
     void authenticate(() => signInWithPopup(auth, new GoogleAuthProvider()));
   });
   updateMode();
-  landing.replaceWith(fragment);
+}
+
+function showWelcome(page, user, next) {
+  const go = () => location.replace(next);
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    go();
+    return;
+  }
+  const stamp = page.querySelector('#auth-stamp');
+  stamp.replaceWith(stamp.content.cloneNode(true));
+  setTimeout(() => {
+    const template = document.createElement('template');
+    template.innerHTML = welcomeMarkup;
+    const overlay = template.content.firstElementChild;
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'welcome-title');
+    overlay.querySelector('[data-welcome-name]').textContent =
+      user.displayName?.trim().split(/\s+/)[0] || 'trader';
+    const skip = overlay.querySelector('.in-skip');
+    skip.href = next;
+    skip.addEventListener('click', (event) => {
+      event.preventDefault();
+      go();
+    });
+    overlay.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') go();
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        skip.focus();
+      }
+    });
+    page.querySelector('.au-root').inert = true;
+    page.append(overlay);
+    skip.focus({ preventScroll: true });
+    setTimeout(go, 7100);
+  }, 650);
 }
 
 async function loadAccount(user, status) {
@@ -139,6 +326,8 @@ export async function renderAccountPage(path, landing) {
       button.disabled = false;
     }
   });
+  const accountPage = fragment.firstElementChild;
   landing.replaceWith(fragment);
+  animatePageEntry(accountPage);
   void loadAccount(user, status);
 }

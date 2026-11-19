@@ -1,0 +1,120 @@
+.about-page .about-content {
+  overflow-x: clip;
+}
+.about-page .ab-hero .lp-herotxt {
+  width: min(55%, 760px);
+}
+.about-page .ab-hero .lp-float[data-par='0.2'] {
+  right: 56px !important;
+  max-width: 46%;
+}
+.about-page .ab-hero .lp-float .lp-dev {
+  max-width: 100%;
+}
+.about-page #lp-cur,
+.about-page #lp-cur2 {
+  display: none;
+}
+.about-page .about-answer {
+  margin: 0;
+  padding: 0 30px 28px 0;
+  color: var(--sub);
+  font: 600 16px/1.75 var(--font-sans);
+}
+.about-page .lp-logo,
+.about-page a.lp-btn {
+  text-decoration: none;
+}
+.about-page .lp-logo {
+  color: inherit;
+}
+.about-page #ab-ch,
+.about-page #ab-iris {
+  scroll-margin-top: 0;
+}
+.about-page .ab-card {
+  zoom: 1;
+}
+@media (min-width: 1350px) {
+  .about-page .ab-card {
+    zoom: 1.2;
+  }
+}
+@media (max-width: 900px), (prefers-reduced-motion: reduce) {
+  .about-page #ab-iris,
+  .about-page #ab-ch {
+    height: auto !important;
+  }
+  .about-page #ab-iris > div,
+  .about-page #ab-ch > div {
+    position: relative !important;
+    height: auto !important;
+  }
+  .about-page #ab-iris > div {
+    min-height: 65svh;
+  }
+  .about-page #ab-ch > div {
+    padding: 120px 0 20px;
+  }
+  .about-page #ab-ch > div > .lp-lab {
+    top: 55px !important;
+  }
+  .about-page .ab-chp {
+    position: relative;
+    padding: 38px 56px;
+    gap: 32px;
+  }
+  .about-page .ab-rail {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
+  .about-page .ab-hero {
+    padding-bottom: 50px;
+    min-height: 610px;
+  }
+  .about-page .ab-hero .lp-herotxt {
+    width: 100%;
+  }
+  .about-page .ab-hero .lp-float {
+    display: none;
+  }
+  .about-page .ab-chp {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-inline: 24px;
+  }
+  .about-page .ab-card {
+    margin-inline: 0;
+    max-width: 100%;
+    zoom: 1;
+  }
+  .about-page #ab-iris > div > div:nth-child(2) {
+    padding-inline: 24px !important;
+  }
+  .about-page #ab-ch > div > .lp-lab {
+    left: 24px !important;
+  }
+  .about-page #score > div,
+  .about-page #team > div,
+  .about-page .lp-ft > div > div:first-child {
+    flex-wrap: wrap;
+  }
+  .about-page #score > div > * {
+    min-width: 0;
+  }
+  .about-page .lp-ft > div > div {
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .about-page *,
+  .about-page *::before,
+  .about-page *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}

@@ -1,0 +1,218 @@
+@keyframes spinS {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes spinR {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes driftW {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-400px);
+  }
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.06);
+  }
+}
+.sc-spin {
+  transform-origin: 50% 50%;
+  transform-box: fill-box;
+  animation: spinS 140s linear infinite;
+}
+.sc-spinr {
+  transform-origin: 50% 50%;
+  transform-box: fill-box;
+  animation: spinR 90s linear infinite;
+}
+.sc-drift {
+  animation: driftW 40s linear infinite;
+}
+.sc-breathe {
+  animation: breathe 9s ease-in-out infinite;
+  transform-origin: 50% 50%;
+}
+
+.ab-ln {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+.ab-ln > span {
+  display: block;
+}
+.ab-hero .ab-ln > span {
+  transform: translateY(112%);
+  animation: abUp 1.3s cubic-bezier(0.16, 1, 0.3, 1) var(--d) forwards;
+}
+@keyframes abUp {
+  to {
+    transform: none;
+  }
+}
+.ab-rd {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: abDraw 3s cubic-bezier(0.3, 0.6, 0.2, 1) var(--d) forwards;
+}
+@keyframes abDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.ab-iw {
+  display: inline-block;
+  margin-right: 0.26em;
+  color: var(--bg);
+  will-change: opacity, transform;
+}
+.ab-iw.g {
+  color: #aeb8ff;
+}
+.ab-chp {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 70px;
+  padding: 0 170px 0 56px;
+  will-change: opacity;
+}
+.ab-big {
+  position: absolute;
+  right: 11vw;
+  top: 50%;
+  margin-top: -17vw;
+  z-index: 0;
+  font: 700 30vw/1 var(--font-sans);
+  letter-spacing: -0.022em;
+  -webkit-text-stroke: 2px color-mix(in srgb, var(--acc) 35%, transparent);
+  color: transparent;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--acc) 22%, transparent) var(--f, 0%),
+    transparent var(--f, 0%)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  pointer-events: none;
+  user-select: none;
+}
+.ab-card {
+  flex: none;
+  margin-left: auto;
+  position: relative;
+  z-index: 1;
+  zoom: 1.3;
+  will-change: clip-path, transform;
+}
+.ab-rail {
+  position: absolute;
+  right: 56px;
+  top: 50%;
+  height: 260px;
+  margin-top: -130px;
+  width: 3px;
+  background: var(--track);
+  border-radius: 3px;
+}
+#ab-railfill {
+  position: absolute;
+  inset: 0;
+  background: var(--acc);
+  border-radius: 3px;
+  transform-origin: top;
+  transform: scaleY(0);
+}
+.ab-tick {
+  position: absolute;
+  left: 14px;
+  font: 700 11px var(--font-sans);
+  color: var(--mut);
+  letter-spacing: 0.1em;
+  transition:
+    color 0.4s,
+    transform 0.5s cubic-bezier(0.2, 1.4, 0.3, 1);
+}
+.ab-tick.on {
+  color: var(--acc);
+  transform: translateX(6px);
+}
+#ab-tlfill {
+  position: absolute;
+  left: 15px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--acc);
+  transform-origin: top;
+  transform: scaleY(0);
+  box-shadow: 0 0 10px var(--glow);
+}
+.ab-tli {
+  opacity: 0;
+  transform: translateX(34px);
+  transition:
+    opacity 0.9s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ab-tli.in {
+  opacity: 1;
+  transform: none;
+}
+.ab-tli .lp-tn {
+  transform: scale(0);
+  transition: transform 0.8s cubic-bezier(0.2, 1.7, 0.3, 1) 0.2s;
+}
+.ab-tli.in .lp-tn {
+  transform: scale(1);
+}
+
+.lp-tl {
+  position: relative;
+  padding-left: 46px;
+}
+.lp-tl::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 3px;
+  background: linear-gradient(var(--acc2), var(--track));
+}
+.lp-tn {
+  position: absolute;
+  left: -46px;
+  top: 26px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lp-news input {
+  flex: 1;
+  background: none;
+  border: 0;
+  outline: 0;
+  font: 600 14px var(--font-sans);
+  color: var(--ink);
+  padding: 0 18px;
+}

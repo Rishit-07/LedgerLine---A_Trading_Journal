@@ -10,6 +10,7 @@ import { initSectionRail } from './section-rail.js';
 import { initToolWheel } from './tool-wheel.js';
 import { transitionTheme } from './theme-transition.js';
 import './styles/auth.css';
+import { animatePageEntry, bindPageNavigation } from './pages/navigation.js';
 
 const landing = document.querySelector('#landing');
 const root = document.documentElement;
@@ -21,11 +22,9 @@ function setTheme(dark) {
   themeToggle.setAttribute('aria-pressed', String(dark));
 }
 
-setTheme(localStorage.getItem('ledgerline-theme') === 'dark');
+setTheme(root.classList.contains('dark'));
 
 const pages = {
-  '/about': 'About',
-  '/legal': 'Privacy and terms',
   '/support': 'Help center',
   '/journal': 'Trade journal',
   '/forecast': 'Forecast ledger',
@@ -40,8 +39,24 @@ const pages = {
   '/portfolio': 'Portfolio',
 };
 const path = location.pathname.replace(/\/$/, '') || '/';
+bindPageNavigation();
+
+function renderPending(title, message) {
+  const fragment = document.querySelector('#pending-page').content.cloneNode(true);
+  const page = fragment.firstElementChild;
+  page.querySelector('h1').textContent = title;
+  const description = page.querySelector('p');
+  if (message) description.textContent = message;
+  else if (title === 'Page unavailable') description.hidden = true;
+  document.title = title + ' — Ledgerline';
+  (landing.isConnected ? landing : document.querySelector('body > .n-root')).replaceWith(fragment);
+  animatePageEntry(page);
+}
+
+const renderLoadError = () => renderPending('Page unavailable', 'Reload the page to try again.');
 
 if (path === '/') {
+  animatePageEntry(landing);
   themeToggle.addEventListener('click', (event) =>
     transitionTheme(event, () => {
       const dark = !root.classList.contains('dark');
@@ -65,22 +80,18 @@ if (path === '/') {
   initMotion();
   initSectionRail();
   initToolWheel();
+} else if (path === '/about') {
+  landing.hidden = true;
+  import('./pages/about.js').then(({ renderAbout }) => renderAbout(landing)).catch(renderLoadError);
+} else if (path === '/terms' || path === '/privacy' || path === '/legal') {
+  landing.hidden = true;
+  if (path === '/legal') history.replaceState(null, '', '/privacy' + location.hash);
+  import('./pages/legal.js').then(({ renderLegal }) => renderLegal(landing)).catch(renderLoadError);
 } else if (path === '/auth' || path === '/replay' || path === '/dashboard') {
   landing.hidden = true;
   import('./auth.js')
     .then(({ renderAccountPage }) => renderAccountPage(path, landing))
-    .catch(() => {
-      const fragment = document.querySelector('#pending-page').content.cloneNode(true);
-      fragment.querySelector('h1').textContent = 'Sign-in unavailable';
-      fragment.querySelector('p').textContent = 'Reload the page to try again.';
-      document.title = 'Sign-in unavailable — Ledgerline';
-      landing.replaceWith(fragment);
-    });
+    .catch(() => renderPending('Sign-in unavailable', 'Reload the page to try again.'));
 } else {
-  const fragment = document.querySelector('#pending-page').content.cloneNode(true);
-  const title = pages[path] ?? 'Page unavailable';
-  fragment.querySelector('h1').textContent = title;
-  if (!pages[path]) fragment.querySelector('p').hidden = true;
-  document.title = title + ' — Ledgerline';
-  landing.replaceWith(fragment);
+  renderPending(pages[path] ?? 'Page unavailable');
 }
