@@ -12,8 +12,10 @@ export function readMailConfig(env) {
   const usesGmail = Boolean(gmailAddress || gmailPassword);
   if (!usesGmail && !apiKey) return null;
   const url = URL.parse(appUrl ?? '');
-  if (url?.protocol !== 'https:' || url.username || url.password) {
-    console.warn('Welcome email needs a public HTTPS APP_URL.');
+  const localPreview = env.NODE_ENV !== 'production' && url?.protocol === 'http:' &&
+    ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+  if (!url || (url.protocol !== 'https:' && !localPreview) || url.username || url.password) {
+    console.warn('Welcome email needs an HTTPS APP_URL or a loopback HTTP URL for local development.');
     return null;
   }
   if (usesGmail) {

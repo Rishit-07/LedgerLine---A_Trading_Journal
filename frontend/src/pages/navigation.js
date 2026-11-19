@@ -1,4 +1,4 @@
-const pages = new Set(['/', '/auth', '/about', '/privacy', '/terms', '/legal', '/support']);
+const pages = new Set(['/', '/auth', '/about', '/privacy', '/terms', '/legal', '/support', '/onboarding']);
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
 export function animatePageEntry(page) {

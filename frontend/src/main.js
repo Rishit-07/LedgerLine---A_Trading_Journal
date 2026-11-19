@@ -42,13 +42,23 @@ const appPages = {
 const path = location.pathname.replace(/\/$/, '') || '/';
 bindPageNavigation();
 
-function renderPending(title, message) {
+function renderPending(title, message, retry = false) {
   const fragment = document.querySelector('#pending-page').content.cloneNode(true);
   const page = fragment.firstElementChild;
   page.querySelector('h1').textContent = title;
   const description = page.querySelector('p');
   if (message) description.textContent = message;
   else if (title === 'Page unavailable') description.hidden = true;
+  if (retry) {
+    const button = document.createElement('button');
+    button.className = 'n-btn n-out auth-button';
+    button.type = 'button';
+    button.textContent = 'Try again';
+    button.addEventListener('click', () => location.reload());
+    const row = document.createElement('p');
+    row.append(button);
+    description.after(row);
+  }
   document.title = title + ' — Ledgerline';
   (landing.isConnected ? landing : document.querySelector('body > .n-root')).replaceWith(fragment);
   animatePageEntry(page);
@@ -91,11 +101,12 @@ if (path === '/') {
   landing.hidden = true;
   if (path === '/legal') history.replaceState(null, '', '/privacy' + location.hash);
   import('./pages/legal.js').then(({ renderLegal }) => renderLegal(landing)).catch(renderLoadError);
-} else if (path === '/auth' || Object.hasOwn(appPages, path)) {
+} else if (path === '/auth' || path === '/onboarding' || Object.hasOwn(appPages, path)) {
   landing.hidden = true;
   import('./auth.js')
     .then(({ renderAccountPage }) => renderAccountPage(path, landing, appPages))
-    .catch(() => renderPending('Sign-in unavailable', 'Reload the page to try again.'));
+    .catch(() => renderPending(path === '/auth' ? 'Sign-in unavailable' : 'Account could not load',
+      'Try again in a moment.', true));
 } else {
   renderPending('Page unavailable');
 }

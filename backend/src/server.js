@@ -2,6 +2,9 @@ import { createServer } from 'node:http';
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import pg from 'pg';
+import { isEmail, readJson, send } from './http.js';
+import { createOnboardingHandler } from './onboarding.js';
+import { createSupportHandler } from './support.js';
 import { prepareWelcome, readMailConfig, startWelcomeDelivery } from './welcome-email.js';
 
 const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -16,43 +19,14 @@ pool.on('error', () => console.error('An idle database connection failed.'));
 const mailConfig = readMailConfig(process.env);
 const deliverWelcome = startWelcomeDelivery(pool, mailConfig);
 
-function send(response, status, body) {
-  response.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': 'no-store',
-  });
-  response.end(JSON.stringify(body));
-}
-
 async function subscribe(request, response) {
-  if (request.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') {
-    request.resume();
-    send(response, 415, { error: 'Send the email address as JSON.' });
+  const { data, error } = await readJson(request, 1024);
+  if (error) {
+    send(response, error, { error: 'Enter a valid email address.' });
     return;
   }
-
-  let email;
-  try {
-    const chunks = [];
-    let size = 0;
-    for await (const chunk of request.iterator({ destroyOnReturn: false })) {
-      size += chunk.length;
-      if (size > 1024) {
-        request.resume();
-        send(response, 413, { error: 'Subscription request is too large.' });
-        return;
-      }
-      chunks.push(chunk);
-    }
-    const input = JSON.parse(Buffer.concat(chunks).toString('utf8'))?.email;
-    email = typeof input === 'string' ? input.trim().toLowerCase() : '';
-  } catch {
-    send(response, 400, { error: 'Enter a valid email address.' });
-    return;
-  }
-
-  const emailPattern = /^[a-z0-9.!#$%&'*+/=?^_\x60{|}~-]{1,64}@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/;
-  if (email.length > 254 || !emailPattern.test(email)) {
+  const email = typeof data?.email === 'string' ? data.email.trim().toLowerCase() : '';
+  if (!isEmail(email)) {
     send(response, 400, { error: 'Enter a valid email address.' });
     return;
   }
@@ -65,7 +39,7 @@ async function subscribe(request, response) {
   }
 }
 
-async function loadAccount(request, response) {
+async function authenticateRequest(request, response) {
   const token = request.headers.authorization?.match(/^Bearer (\S+)$/i)?.[1];
   if (!token) {
     send(response, 401, { error: 'Sign in to continue.' });
@@ -82,13 +56,20 @@ async function loadAccount(request, response) {
     send(response, 403, { error: 'Verify your email address to continue.' });
     return;
   }
+  return claims;
+}
 
+async function loadAccount(request, response) {
+  const claims = await authenticateRequest(request, response);
+  if (!claims) return;
   const { uid } = claims;
+  const find = `SELECT a.created_at AS "createdAt", p.display_name AS "displayName",
+    p.onboarded_at IS NOT NULL AS "onboardingCompleted" FROM ledgerline_accounts a
+    LEFT JOIN user_profile p ON p.user_id = a.firebase_uid WHERE a.firebase_uid = $1`;
   try {
-    const find = 'SELECT created_at FROM ledgerline_accounts WHERE firebase_uid = $1';
     const existing = await pool.query(find, [uid]);
     if (existing.rowCount) {
-      send(response, 200, { createdAt: existing.rows[0].created_at });
+      send(response, 200, existing.rows[0]);
       return;
     }
     const welcome = prepareWelcome(mailConfig, claims);
@@ -102,8 +83,10 @@ async function loadAccount(request, response) {
       )
       SELECT created_at FROM account
     `, [uid, welcome]);
-    const result = created.rowCount ? created : await pool.query(find, [uid]);
-    send(response, 200, { createdAt: result.rows[0].created_at });
+    const result = created.rowCount
+      ? { createdAt: created.rows[0].created_at, displayName: null, onboardingCompleted: false }
+      : (await pool.query(find, [uid])).rows[0];
+    send(response, 200, result);
     if (created.rowCount && welcome) deliverWelcome();
   } catch (error) {
     console.error('Could not prepare the Ledgerline account in Postgres (' + (error.code ?? 'unknown error') + ').');
@@ -112,8 +95,10 @@ async function loadAccount(request, response) {
 }
 
 const routes = new Map([
-  ['/api/account', { method: 'PUT', handler: loadAccount }],
-  ['/api/newsletter', { method: 'POST', handler: subscribe }],
+  ['/api/account', { methods: ['PUT'], handler: loadAccount }],
+  ['/api/newsletter', { methods: ['POST'], handler: subscribe }],
+  ['/api/support', { methods: ['POST'], handler: createSupportHandler(mailConfig) }],
+  ['/api/onboarding', { methods: ['GET', 'PUT'], handler: createOnboardingHandler(pool, authenticateRequest) }],
 ]);
 
 const server = createServer((request, response) => {
@@ -122,9 +107,9 @@ const server = createServer((request, response) => {
     send(response, 404, { error: 'Route not found.' });
     return;
   }
-  if (request.method !== route.method) {
-    response.setHeader('Allow', route.method);
-    send(response, 405, { error: `Use ${route.method} for this route.` });
+  if (!route.methods.includes(request.method)) {
+    response.setHeader('Allow', route.methods.join(', '));
+    send(response, 405, { error: 'Method not available for this route.' });
     return;
   }
   void route.handler(request, response);

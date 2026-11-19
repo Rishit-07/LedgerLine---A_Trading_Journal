@@ -38,10 +38,16 @@
     <section class="n-out support-hero support-rise" aria-labelledby="support-hero-title">
       <h2 id="support-hero-title">How can we help?</h2>
       <p>Search the help center or message the team.</p>
-      <label class="n-in support-search">
+      <form class="n-in support-search" role="search">
         <svg aria-hidden="true"><use href="#support-search-icon"/></svg>
-        <input type="search" id="support-search" placeholder="Search articles, for example sizing a trade" aria-label="Search help articles" aria-controls="support-faq-list" />
-      </label>
+        <input type="search" id="support-search" placeholder="Search help articles" aria-label="Search help articles" aria-controls="support-search-results" />
+        <button class="n-btn n-acc" type="submit">Search</button>
+      </form>
+      <div class="support-search-results" id="support-search-results">
+        <p role="status" data-search-status></p>
+        <div data-search-matches></div>
+        <p data-search-empty hidden>Try another search or <a href="#contact">contact support</a>.</p>
+      </div>
     </section>
     <div class="support-topics" role="group" aria-label="Help topics">
       <button type="button" class="n-btn n-out support-topic support-rise" data-support-topic="getting-started" aria-pressed="false"><span class="n-in"><svg aria-hidden="true"><use href="#support-help"/></svg></span>Getting started</button>
@@ -62,8 +68,9 @@
       </section>
       <section id="contact" class="n-out support-panel support-rise" aria-labelledby="support-contact-title">
         <h2 id="support-contact-title">Contact support</h2>
-        <p>Prepare a message to send from your email app.</p>
+        <p>Leave your email address so the team can reply.</p>
         <form class="support-form">
+          <label class="n-in support-field"><input name="email" type="email" autocomplete="email" placeholder="Your email address" aria-label="Your email address" required maxlength="254" /></label>
           <label class="n-in support-field"><input name="subject" placeholder="Subject" aria-label="Subject" required maxlength="100" /></label>
           <fieldset><legend>Topic</legend>
             <label><input type="radio" name="topic" value="Bug" checked /><span class="n-out">Bug</span></label>
@@ -78,7 +85,8 @@
           </fieldset>
           <label class="n-in support-field"><textarea name="message" rows="5" placeholder="Describe what happened" aria-label="Describe what happened" required maxlength="1200"></textarea></label>
           <p>Attach screenshots in your email app if they help explain the issue.</p>
-          <button type="submit" class="n-btn n-acc">Open email draft</button>
+          <button type="submit" class="n-btn n-acc">Send message</button>
+          <button type="button" class="n-btn n-out" data-support-draft>Open email draft</button>
           <p role="status" data-contact-status></p>
         </form>
         <a data-support-email></a>

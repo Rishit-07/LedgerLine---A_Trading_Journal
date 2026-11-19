@@ -60,10 +60,7 @@ function verifyEmail(page, user, next, sendAutomatically) {
   renderEmailVerification(page, auth, user, {
     authPath: signInPath(next),
     sendAutomatically,
-    onVerified: (verificationPage) => {
-      void requestAccount(user).catch(() => {});
-      showWelcome(verificationPage, user, next);
-    },
+    onVerified: (verificationPage) => void enterVerified(verificationPage, user, next),
   });
 }
 
@@ -190,11 +187,7 @@ function renderSignIn(landing, next) {
         verifyEmail(page, user, next, isNewUser);
         return;
       }
-      if (isNewUser) {
-        // The destination also checks the profile, so welcome email delivery never delays sign-in.
-        void requestAccount(user).catch(() => {});
-      }
-      showWelcome(page, user, next);
+      await enterVerified(page, user, next);
     } catch (error) {
       if (submittedVersion === editVersion) {
         showError(errors[error.code] ?? 'Unable to sign in right now. Please try again.', errorFields[error.code]);
@@ -319,27 +312,32 @@ function showWelcome(page, user, next) {
   }, 650);
 }
 
-async function requestAccount(user) {
+async function authenticatedRequest(user, path, method, body) {
   const token = await user.getIdToken();
-  const response = await fetch('/api/account', {
-    method: 'PUT',
-    headers: { Authorization: 'Bearer ' + token },
+  const headers = { Authorization: 'Bearer ' + token };
+  if (body) headers['Content-Type'] = 'application/json';
+  const response = await fetch(path, {
+    method, headers,
+    body: body ? JSON.stringify(body) : undefined,
     signal: AbortSignal.timeout(10000),
-    keepalive: true,
   });
-  if (!response.ok) throw new Error('Account unavailable');
-  return response.json();
+  const data = await response.json();
+  if (!response.ok) throw Object.assign(new Error(data.error ?? 'Account unavailable'), { status: response.status });
+  return data;
 }
 
-async function loadAccount(user, status) {
-  try {
-    const { createdAt } = await requestAccount(user);
-    const since = new Intl.DateTimeFormat(undefined, { dateStyle: 'long' }).format(new Date(createdAt));
-    status.textContent = 'Ledgerline member since ' + since + '.';
-  } catch {
-    status.textContent = 'Your Ledgerline profile is temporarily unavailable.';
-  }
-  status.hidden = false;
+function requestAccount(user) {
+  const load = () => authenticatedRequest(user, '/api/account', 'PUT');
+  return load().catch((error) => {
+    if (error.status && error.status < 500) throw error;
+    return load();
+  });
+}
+
+async function enterVerified(page, user, next) {
+  const account = await requestAccount(user).catch(() => null);
+  const destination = account?.onboardingCompleted === false ? '/onboarding' : next;
+  showWelcome(page, { displayName: account?.displayName || user.displayName }, destination);
 }
 
 export async function renderAccountPage(path, landing, appPages) {
@@ -359,6 +357,27 @@ export async function renderAccountPage(path, landing, appPages) {
     return;
   }
 
+  const account = await requestAccount(user);
+  if (path === '/onboarding') {
+    if (account.onboardingCompleted) {
+      location.replace('/dashboard');
+      return;
+    }
+    const { renderOnboarding } = await import('./pages/onboarding.js');
+    const initial = await authenticatedRequest(user, '/api/onboarding', 'GET');
+    if (initial.completedAt) location.replace('/dashboard');
+    else renderOnboarding(landing, {
+      initial, email: user.email,
+      save: (data) => authenticatedRequest(user, '/api/onboarding', 'PUT', data),
+      signOut: () => signOut(auth),
+    });
+    return;
+  }
+  if (!account.onboardingCompleted) {
+    location.replace('/onboarding');
+    return;
+  }
+
   const title = appPages[path];
   const fragment = document.querySelector('#pending-page').content.cloneNode(true);
   fragment.querySelector('h1').textContent = title;
@@ -366,6 +385,9 @@ export async function renderAccountPage(path, landing, appPages) {
   const button = fragment.querySelector('[data-sign-out]');
   const message = fragment.querySelector('.auth-message');
   const status = fragment.querySelector('[data-account-status]');
+  const since = new Intl.DateTimeFormat(undefined, { dateStyle: 'long' }).format(new Date(account.createdAt));
+  status.textContent = 'Ledgerline member since ' + since + '.';
+  status.hidden = false;
   button.hidden = false;
   button.addEventListener('click', async () => {
     button.disabled = true;
@@ -384,5 +406,4 @@ export async function renderAccountPage(path, landing, appPages) {
   addEventListener('pageshow', (event) => {
     if (event.persisted) location.reload();
   });
-  void loadAccount(user, status);
 }
