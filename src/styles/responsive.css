@@ -56,14 +56,6 @@ button:focus-visible {
 .lp-faq button[aria-expanded='true'] .pl {
   transform: rotate(180deg);
 }
-#lp-exptitle {
-  top: max(88px, 9vh);
-  padding: 0 16px;
-}
-#lp-panel {
-  width: min(560px, 84vw);
-  height: 50vh;
-}
 .lp-hzp {
   width: 100vw;
 }
@@ -154,27 +146,28 @@ button:focus-visible {
     width: min(100%, 620px);
     order: 1;
   }
-  .lp-herotxt::before {
-    inset: -44px -28px;
+  .lp-hero::after {
+    inset: 0 0 auto;
+    height: 560px;
     background: radial-gradient(ellipse, var(--bg) 34%, transparent 74%);
   }
   .lp-hero > .lp-float {
     display: none;
   }
-  .lp-hero > .lp-float[data-par='0.18'] {
+  .lp-hero > .lp-hero-dashboard {
     display: block;
     position: relative;
     inset: auto !important;
     order: 2;
     align-self: center;
-    max-width: 100%;
+    width: min(100%, 620px);
     margin-top: 38px;
   }
   .lp-cue {
     left: 24px;
   }
-  #lp-exptitle {
-    top: 116px;
+  .lp-exp > div {
+    --score-title-inset: 116px;
   }
   #lp-expcap {
     left: 24px;
@@ -345,8 +338,8 @@ button:focus-visible {
     height: auto;
     padding: 64px 0;
   }
-  #lp-exptitle {
-    position: static;
+  .lp-score-heading h2.lp-eh {
+    margin-bottom: 0;
   }
   #lp-panel {
     height: min(480px, 75vh);

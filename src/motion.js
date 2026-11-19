@@ -39,8 +39,8 @@ export function initMotion() {
       });
     all('[data-rv]').forEach((element) => reveal(element, 'top 90%'));
 
+    const scoreStage = one('#lp-exp > div');
     const scorePanel = one('#lp-panel');
-    const scoreBacking = one('#lp-panel-in');
     const scoreTitle = one('#lp-exptitle');
     const caption = one('#lp-expcap');
     const score = one('#lp-score');
@@ -52,9 +52,10 @@ export function initMotion() {
       scorePanel.style.width = gsap.utils.interpolate(startWidth, width, expanded) + 'px';
       scorePanel.style.height = gsap.utils.interpolate(0.5, 1, expanded) * innerHeight + 'px';
       scorePanel.style.borderRadius = 34 * (1 - expanded) + 'px';
-      scoreBacking.style.transform = 'scale(' + gsap.utils.interpolate(1.45, 1, expanded) + ')';
-      scoreTitle.style.opacity = clamp(1 - expanded * 2.2);
-      scoreTitle.style.transform = 'translateY(' + -expanded * 50 + 'px)';
+      scoreTitle.style.opacity = 1 - clamp(expanded / 0.2);
+      const titleSpace = 1 - ease(clamp((expanded - 0.2) / 0.3));
+      scoreStage.style.setProperty('--score-title-space', titleSpace);
+      scoreTitle.style.gridTemplateRows = titleSpace + 'fr';
       const captionProgress = ease(clamp((progress - 0.66) / 0.22));
       caption.style.opacity = captionProgress;
       caption.style.transform = 'translateY(' + (1 - captionProgress) * 40 + 'px)';
@@ -89,7 +90,8 @@ export function initMotion() {
 
     return () => {
       progressBar.style.removeProperty('width');
-      scoreBacking.style.removeProperty('transform');
+      scoreStage.style.removeProperty('--score-title-space');
+      scoreTitle.style.removeProperty('grid-template-rows');
       [scoreTitle, caption, ...words].forEach((element) => {
         element.style.removeProperty('opacity');
         element.style.removeProperty('transform');
