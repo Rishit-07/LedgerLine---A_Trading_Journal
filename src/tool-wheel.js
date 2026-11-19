@@ -51,7 +51,7 @@ export function initToolWheel() {
     numEl.textContent = String(i + 1).padStart(2, '0');
     nameEl.textContent = NAMES[i];
     descEl.textContent = DESCS[i];
-    opens.forEach((a, k) => a.classList.toggle('on', k === i));
+    opens.forEach((a) => a.classList.toggle('on', Number(a.dataset.i) === i));
     dots.forEach((d, k) => d.classList.toggle('on', k === i));
   };
   const go = (i) => {
