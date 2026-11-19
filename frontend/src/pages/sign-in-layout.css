@@ -258,9 +258,11 @@
     width: calc(100% - 64px);
   }
 }
-@media (max-width: 780px) {
+@media (max-width: 900px) {
   .auth-page .au-root {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
   }
   .auth-page .au-left {
     width: 100%;
@@ -278,7 +280,8 @@
   .au-title {
     position: relative;
     inset: auto;
-    margin: 109px 24px 26px;
+    width: min(510px, calc(100% - 48px));
+    margin: 109px auto 26px;
   }
   .au-h {
     font-size: clamp(29px, 7vw, 44px);
@@ -286,14 +289,14 @@
   .auth-page .au-chart {
     position: relative;
     inset: auto;
-    margin: 0 24px;
+    margin: 0 auto;
     width: min(510px, calc(100% - 48px));
   }
   .auth-page .au-chart svg {
     height: 110px !important;
   }
   .auth-page .au-right {
-    padding: 76px 24px 126px;
+    padding: 40px 24px 116px;
   }
   .auth-page .in2-row {
     gap: 8px;
