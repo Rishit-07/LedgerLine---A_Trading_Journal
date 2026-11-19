@@ -115,9 +115,6 @@ button:focus-visible {
     flex: 1 1 0 !important;
     min-width: 0;
   }
-  #try .playground-grid {
-    grid-template-columns: 1fr !important;
-  }
 }
 
 @media (max-width: 900px) {
@@ -285,31 +282,8 @@ button:focus-visible {
   .lp-grid {
     grid-template-columns: 1fr !important;
   }
-  #try .playground-grid > .n-out,
   #score .landing-split > .n-out > div {
     padding: 20px 16px !important;
-  }
-  #try .n-out > div:first-child:has(svg) {
-    gap: 12px !important;
-  }
-  #try .n-out > div:first-child:has(svg) > div:first-child {
-    width: 90px !important;
-    height: 90px !important;
-  }
-  .score-row {
-    gap: 7px !important;
-  }
-  .score-row > div:first-child {
-    flex-basis: 105px !important;
-  }
-  .score-row > div:last-child {
-    width: 25px !important;
-  }
-  .score-row button {
-    flex: 0 0 30px;
-  }
-  #try .n-out > div:has([data-action='scBest']) {
-    flex-wrap: wrap;
   }
   #score .landing-split .lp-rv > div:first-child {
     flex-basis: 126px !important;

@@ -9,7 +9,6 @@ import { initMotion } from './motion.js';
 import { initSectionRail } from './section-rail.js';
 import { initToolWheel } from './tool-wheel.js';
 import { transitionTheme } from './theme-transition.js';
-import { initPlayground } from './playground.js';
 import { isSignedIn, signIn, signOut } from './auth.js';
 
 const landing = document.querySelector('#landing');
@@ -85,7 +84,6 @@ if (requiresSignIn && !isSignedIn()) {
     }),
   );
 
-  initPlayground();
   initMotion();
   initSectionRail();
   initToolWheel();
