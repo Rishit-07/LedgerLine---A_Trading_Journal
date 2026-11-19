@@ -35,6 +35,72 @@
 .about-page .ab-card {
   zoom: 1;
 }
+.about-footer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px clamp(24px, 4vw, 48px);
+  margin-bottom: 48px;
+}
+.about-page .lp-ft .lp-wm {
+  font: 700 clamp(34px, 7vw, 104px)/1 var(--font-sans);
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+  overflow: hidden;
+  padding-bottom: 0.1em;
+}
+.about-newsletter {
+  flex: 1 1 280px;
+  min-width: 0;
+  max-width: 380px;
+  color: var(--sub);
+  font: 600 14px/1.6 var(--font-sans);
+}
+.about-newsletter label {
+  display: block;
+  margin-bottom: 10px;
+}
+.about-newsletter .lp-news {
+  display: flex;
+  align-items: center;
+  border-radius: 18px;
+  padding: 6px;
+}
+.about-newsletter .lp-news:focus-within {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+}
+.about-newsletter input {
+  min-width: 0;
+  min-height: 40px;
+}
+.about-newsletter button {
+  flex: none;
+  padding: 12px clamp(12px, 2vw, 20px);
+  border-radius: 13px;
+  border: 0;
+  font: 700 12px var(--font-sans);
+  cursor: pointer;
+}
+.about-newsletter button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+#newsletter-privacy,
+#newsletter-status {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+#newsletter-privacy a {
+  text-decoration: underline;
+}
+#newsletter-status {
+  color: var(--ink);
+}
+#newsletter-status:empty {
+  margin: 0;
+}
 @media (min-width: 1350px) {
   .about-page .ab-card {
     zoom: 1.2;
@@ -96,15 +162,11 @@
     left: 24px !important;
   }
   .about-page #score > div,
-  .about-page #team > div,
-  .about-page .lp-ft > div > div:first-child {
+  .about-page #team > div {
     flex-wrap: wrap;
   }
   .about-page #score > div > * {
     min-width: 0;
-  }
-  .about-page .lp-ft > div > div {
-    flex-wrap: wrap;
   }
 }
 @media (prefers-reduced-motion: reduce) {

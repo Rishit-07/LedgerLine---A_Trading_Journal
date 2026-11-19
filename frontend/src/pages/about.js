@@ -7,10 +7,42 @@ import './about-layout.css';
 const clamp = (value) => Math.max(0, Math.min(1, value));
 const ease = (value) => 1 - (1 - clamp(value)) ** 3;
 
+function bindNewsletter(form) {
+  const button = form.querySelector('button');
+  const status = form.querySelector('[role="status"]');
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (button.disabled) return;
+    button.disabled = true;
+    status.textContent = 'Saving your subscription…';
+    const email = form.elements.email.value;
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (response.status === 400) {
+        status.textContent = 'Enter a valid email address.';
+        return;
+      }
+      if (!response.ok) throw new Error('Subscription unavailable');
+      if (form.elements.email.value === email) form.reset();
+      status.textContent = 'You’re on the list for the weekly process note.';
+    } catch {
+      status.textContent = 'We couldn’t save your subscription. Please try again.';
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
 export function renderAbout(landing) {
   document.title = 'About Ledgerline';
   const page = mountPage(landing, pageMarkup);
   bindPageTheme(page);
+  bindNewsletter(page.querySelector('.about-newsletter'));
   initSectionRail();
   const all = (selector) => [...page.querySelectorAll(selector)];
   const one = (selector) => page.querySelector(selector);

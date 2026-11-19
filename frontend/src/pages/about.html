@@ -1812,23 +1812,10 @@
       ></section
     ><footer class="lp-ft" style="padding: 60px 56px 40px"
       ><div class="n-in" style="padding: 56px 56px 40px; border-radius: 46px"
-        ><div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            gap: 40px;
-            margin-bottom: 60px;
-          "
+        ><div class="about-footer-top"
           ><div
             class="lp-wm"
             data-rv
-            style="
-              font: 700 clamp(60px, 10vw, 150px)/0.95 var(--font-sans);
-              letter-spacing: -0.022em;
-              overflow: hidden;
-              padding-bottom: 0.08em;
-            "
             ><span class="lp-ch" style="transition-delay: 0s">L</span
             ><span class="lp-ch" style="transition-delay: 0.06s">e</span
             ><span class="lp-ch" style="transition-delay: 0.12s">d</span
@@ -1839,19 +1826,17 @@
             ><span class="lp-ch" style="transition-delay: 0.42s; color: var(--acc)">i</span
             ><span class="lp-ch" style="transition-delay: 0.48s; color: var(--acc)">n</span
             ><span class="lp-ch" style="transition-delay: 0.54s; color: var(--acc)">e</span></div
-          ><div style="max-width: 380px"
-            ><div style="font: 600 14px/1.6 var(--font-sans); color: var(--sub); margin-bottom: 14px"
-              >Get the weekly process note.</div
-            ><div
-              class="n-out lp-news"
-              style="display: flex; align-items: center; border-radius: 18px; padding: 6px"
-              ><input placeholder="Email address" /><button
-                class="n-acc"
-                data-hover
-                style="padding: 12px 20px; border-radius: 13px; border: 0; font: 700 12px var(--font-sans)"
-                >Subscribe</button
-              ></div
-            ></div
+          ><form class="about-newsletter" action="/api/newsletter" method="post">
+            <label for="newsletter-email">Get the weekly process note.</label>
+            <div class="n-out lp-news">
+              <input id="newsletter-email" type="email" name="email" autocomplete="email" placeholder="Email address"
+                aria-label="Email address for the weekly process note" aria-describedby="newsletter-privacy newsletter-status"
+                maxlength="254" required />
+              <button class="n-acc" type="submit" data-hover>Subscribe</button>
+            </div>
+            <p id="newsletter-privacy">By subscribing, you agree to receive the weekly email. <a href="/privacy">Privacy Policy</a></p>
+            <p id="newsletter-status" role="status"></p>
+          </form
           ></div
         ><div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px"
           ><div

@@ -24,8 +24,9 @@ function setTheme(dark) {
 
 setTheme(root.classList.contains('dark'));
 
-const pages = {
-  '/support': 'Help center',
+const appPages = {
+  '/dashboard': 'Dashboard',
+  '/replay': 'Replay',
   '/journal': 'Trade journal',
   '/forecast': 'Forecast ledger',
   '/calendar': 'Trading calendar',
@@ -87,11 +88,11 @@ if (path === '/') {
   landing.hidden = true;
   if (path === '/legal') history.replaceState(null, '', '/privacy' + location.hash);
   import('./pages/legal.js').then(({ renderLegal }) => renderLegal(landing)).catch(renderLoadError);
-} else if (path === '/auth' || path === '/replay' || path === '/dashboard') {
+} else if (path === '/auth' || Object.hasOwn(appPages, path)) {
   landing.hidden = true;
   import('./auth.js')
-    .then(({ renderAccountPage }) => renderAccountPage(path, landing))
+    .then(({ renderAccountPage }) => renderAccountPage(path, landing, appPages))
     .catch(() => renderPending('Sign-in unavailable', 'Reload the page to try again.'));
 } else {
-  renderPending(pages[path] ?? 'Page unavailable');
+  renderPending(path === '/support' ? 'Help center' : 'Page unavailable');
 }

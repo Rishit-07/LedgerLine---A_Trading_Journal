@@ -501,11 +501,6 @@
   inherits: false;
   initial-value: -100px;
 }
-@property --num {
-  syntax: '<integer>';
-  inherits: false;
-  initial-value: 0;
-}
 .in2 {
   position: absolute;
   inset: 0;
@@ -635,110 +630,9 @@
     filter: blur(0);
   }
 }
-.in2-sub {
-  margin: 10px 0 0;
-  font: 500 16px var(--font-sans);
-  color: var(--sub, #5b5f70);
-  opacity: 0;
-  animation: in2Fade 0.8s ease 2s forwards;
-}
 @keyframes in2Fade {
   to {
     opacity: 1;
-  }
-}
-.in2-row {
-  display: flex;
-  gap: 22px;
-  margin-top: 34px;
-}
-.in2-c {
-  width: 210px;
-  padding: 18px 20px;
-  border-radius: 24px;
-  background: var(--bg, #f1efe8);
-  box-shadow:
-    10px 10px 22px var(--sd, #d8d6cc),
-    -10px -10px 22px var(--sl, #fff);
-  text-align: center;
-  opacity: 0;
-  animation: in2Card 0.9s cubic-bezier(0.34, 1.45, 0.5, 1) calc(2.35s + var(--i) * 0.16s) forwards;
-}
-@keyframes in2Card {
-  from {
-    opacity: 0;
-    transform: translateY(48px) scale(0.88);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-.in2-v {
-  font: 800 38px/1.1 var(--font-mono);
-  color: var(--ink, #1d2030);
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.in2-l {
-  margin-top: 6px;
-  font: 700 12px var(--font-sans);
-  letter-spacing: 0.06em;
-  color: var(--mut, #8b8fa3);
-}
-.in2-n {
-  counter-reset: num var(--num);
-}
-.in2-n::after {
-  content: counter(num);
-}
-.in2-n12 {
-  animation: in2C12 1.3s cubic-bezier(0.2, 0.7, 0.3, 1) 2.6s both;
-}
-.in2-n88 {
-  animation: in2C88 1.6s cubic-bezier(0.2, 0.7, 0.3, 1) 2.9s both;
-}
-@keyframes in2C12 {
-  from {
-    --num: 0;
-  }
-  to {
-    --num: 12;
-  }
-}
-@keyframes in2C88 {
-  from {
-    --num: 0;
-  }
-  to {
-    --num: 88;
-  }
-}
-.in2-ck {
-  position: relative;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--up, #35c28a);
-  transform: scale(0);
-  animation: in2Pop 0.5s cubic-bezier(0.34, 1.7, 0.5, 1) 2.75s forwards;
-}
-.in2-ck::after {
-  content: '';
-  position: absolute;
-  left: 13px;
-  top: 7px;
-  width: 9px;
-  height: 17px;
-  border: solid #fff;
-  border-width: 0 3px 3px 0;
-  transform: rotate(40deg);
-}
-@keyframes in2Pop {
-  to {
-    transform: scale(1);
   }
 }
 .in2-prog {

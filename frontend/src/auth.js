@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import {
   connectAuthEmulator,
   createUserWithEmailAndPassword,
+  getAdditionalUserInfo,
   getAuth,
   GoogleAuthProvider,
   signInWithEmailAndPassword,
@@ -14,6 +15,7 @@ import { mountPage, bindPageTheme } from './pages/shared.js';
 import { animatePageEntry } from './pages/navigation.js';
 import { bindTicketMotion } from './pages/ticket-motion.js';
 import { animateSignInChart } from './pages/sign-in-chart.js';
+import { renderEmailVerification } from './pages/email-verification.js';
 import signInMarkup from './pages/sign-in.html?raw';
 import welcomeMarkup from './pages/welcome.html?raw';
 import '@fontsource/instrument-serif/latin-400.css';
@@ -52,11 +54,25 @@ const errorFields = {
   'auth/user-not-found': ['email', 'password'],
 };
 
+const signInPath = (next) => '/auth?' + new URLSearchParams({ next });
+
+function verifyEmail(page, user, next, sendAutomatically) {
+  renderEmailVerification(page, auth, user, {
+    authPath: signInPath(next),
+    sendAutomatically,
+    onVerified: (verificationPage) => {
+      void requestAccount(user).catch(() => {});
+      showWelcome(verificationPage, user, next);
+    },
+  });
+}
+
 function renderSignIn(landing, next) {
   const page = mountPage(landing, signInMarkup);
   bindPageTheme(page);
   const form = page.querySelector('form');
   const password = form.elements.password;
+  const passwordToggle = form.querySelector('.au-password-toggle');
   const consent = form.elements.consent;
   const displayName = form.elements.displayName;
   const google = page.querySelector('[data-google]');
@@ -76,6 +92,23 @@ function renderSignIn(landing, next) {
   let editVersion = 0;
 
   message.id = 'auth-error';
+
+  function setPasswordVisibility(visible) {
+    const start = password.selectionStart;
+    const end = password.selectionEnd;
+    password.type = visible ? 'text' : 'password';
+    if (document.activeElement === password && start !== null && end !== null) {
+      password.setSelectionRange(start, end);
+    }
+    const label = visible ? 'Hide password' : 'Show password';
+    passwordToggle.setAttribute('aria-label', label);
+    passwordToggle.title = label;
+  }
+
+  passwordToggle.addEventListener('pointerdown', (event) => {
+    if (document.activeElement === password) event.preventDefault();
+  });
+  passwordToggle.addEventListener('click', () => setPasswordVisibility(password.type === 'password'));
 
   function clearField(field) {
     field.removeAttribute('aria-invalid');
@@ -149,8 +182,18 @@ function renderSignIn(landing, next) {
     });
     form.setAttribute('aria-busy', 'true');
     try {
-      const { user } = await action();
+      const credential = await action();
+      const { user } = credential;
+      const isNewUser = getAdditionalUserInfo(credential)?.isNewUser === true;
       accepted = true;
+      if (user.emailVerified !== true) {
+        verifyEmail(page, user, next, isNewUser);
+        return;
+      }
+      if (isNewUser) {
+        // The destination also checks the profile, so welcome email delivery never delays sign-in.
+        void requestAccount(user).catch(() => {});
+      }
       showWelcome(page, user, next);
     } catch (error) {
       if (submittedVersion === editVersion) {
@@ -171,6 +214,7 @@ function renderSignIn(landing, next) {
       if (creating === Boolean(index)) return;
       creating = Boolean(index);
       password.value = '';
+      setPasswordVisibility(false);
       updateMode();
       ticketBody.scrollTop = 0;
       flipTicket(creating);
@@ -222,7 +266,7 @@ function renderSignIn(landing, next) {
     void authenticate(async () => {
       const result = await createUserWithEmailAndPassword(auth, email, secret);
       await updateProfile(result.user, { displayName: name }).catch(() => {
-        // The account already exists and can enter even if this optional profile update fails.
+        // Profile naming is optional after account creation.
       });
       return result;
     });
@@ -244,7 +288,8 @@ function showWelcome(page, user, next) {
     return;
   }
   const stamp = page.querySelector('#auth-stamp');
-  stamp.replaceWith(stamp.content.cloneNode(true));
+  if (stamp) stamp.replaceWith(stamp.content.cloneNode(true));
+  const content = page.querySelector('.au-root') ?? page.firstElementChild;
   setTimeout(() => {
     const template = document.createElement('template');
     template.innerHTML = welcomeMarkup;
@@ -267,23 +312,28 @@ function showWelcome(page, user, next) {
         skip.focus();
       }
     });
-    page.querySelector('.au-root').inert = true;
+    content.inert = true;
     page.append(overlay);
     skip.focus({ preventScroll: true });
     setTimeout(go, 7100);
   }, 650);
 }
 
+async function requestAccount(user) {
+  const token = await user.getIdToken();
+  const response = await fetch('/api/account', {
+    method: 'PUT',
+    headers: { Authorization: 'Bearer ' + token },
+    signal: AbortSignal.timeout(10000),
+    keepalive: true,
+  });
+  if (!response.ok) throw new Error('Account unavailable');
+  return response.json();
+}
+
 async function loadAccount(user, status) {
   try {
-    const token = await user.getIdToken();
-    const response = await fetch('/api/account', {
-      method: 'PUT',
-      headers: { Authorization: 'Bearer ' + token },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!response.ok) throw new Error('Account unavailable');
-    const { createdAt } = await response.json();
+    const { createdAt } = await requestAccount(user);
     const since = new Intl.DateTimeFormat(undefined, { dateStyle: 'long' }).format(new Date(createdAt));
     status.textContent = 'Ledgerline member since ' + since + '.';
   } catch {
@@ -292,22 +342,24 @@ async function loadAccount(user, status) {
   status.hidden = false;
 }
 
-export async function renderAccountPage(path, landing) {
+export async function renderAccountPage(path, landing, appPages) {
   await auth.authStateReady();
+  const user = auth.currentUser;
   if (path === '/auth') {
-    const next = new URLSearchParams(location.search).get('next') === '/replay' ? '/replay' : '/dashboard';
-    if (auth.currentUser) location.replace(next);
+    const destination = new URLSearchParams(location.search).get('next');
+    const next = Object.hasOwn(appPages, destination) ? destination : '/dashboard';
+    if (user?.emailVerified === true) location.replace(next);
+    else if (user) verifyEmail(landing, user, next, false);
     else renderSignIn(landing, next);
     return;
   }
 
-  const user = auth.currentUser;
-  if (!user) {
-    location.replace('/auth?' + new URLSearchParams({ next: path }));
+  if (user?.emailVerified !== true) {
+    location.replace(signInPath(path));
     return;
   }
 
-  const title = path === '/replay' ? 'Replay' : 'Dashboard';
+  const title = appPages[path];
   const fragment = document.querySelector('#pending-page').content.cloneNode(true);
   fragment.querySelector('h1').textContent = title;
   document.title = title + ' — Ledgerline';
@@ -329,5 +381,8 @@ export async function renderAccountPage(path, landing) {
   const accountPage = fragment.firstElementChild;
   landing.replaceWith(fragment);
   animatePageEntry(accountPage);
+  addEventListener('pageshow', (event) => {
+    if (event.persisted) location.reload();
+  });
   void loadAccount(user, status);
 }

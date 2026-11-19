@@ -470,12 +470,20 @@
                     <path d="M6 11h12v9H6z M8 11V8a4 4 0 0 1 8 0v3"></path></svg
                   ><input
                     class="n-input"
+                    id="auth-password"
                     name="password"
                     type="password"
                     autocomplete="current-password"
                     placeholder="Password"
                     aria-label="Password"
-                    required /></div
+                    required />
+                  <button type="button" class="au-password-toggle" aria-controls="auth-password" aria-label="Show password" title="Show password">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z" />
+                      <circle cx="12" cy="12" r="2.5" />
+                      <path data-password-slash d="m4 4 16 16" />
+                    </svg>
+                  </button></div
                 ><div style="display: flex; align-items: center; gap: 6px; margin: -2px 0 18px"
                   ><div class="au-seg2" aria-hidden="true" style="flex: 1"></div
                   ><div class="au-seg2" aria-hidden="true" style="flex: 1"></div

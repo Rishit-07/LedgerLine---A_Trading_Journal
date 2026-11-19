@@ -144,6 +144,34 @@
 .auth-page .n-field {
   transition: box-shadow 180ms ease;
 }
+#auth-password {
+  min-width: 0;
+  padding-inline-end: 4px;
+}
+#auth-password::-ms-reveal {
+  display: none;
+}
+.au-password-toggle {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--sub);
+  cursor: pointer;
+}
+.au-password-toggle:is(:hover, :focus-visible) {
+  color: var(--acc);
+}
+.au-password-toggle [data-password-slash] {
+  display: none;
+}
+#auth-password[type='text'] + .au-password-toggle [data-password-slash] {
+  display: initial;
+}
 .auth-page .n-field:focus-within {
   outline: 2px solid var(--acc);
   outline-offset: 3px;
@@ -192,9 +220,6 @@
   position: fixed;
   z-index: 120;
 }
-.auth-page .in2-c {
-  max-width: 27vw;
-}
 .auth-page .in2-t {
   width: clamp(150px, 27vw, 270px);
   height: auto;
@@ -203,10 +228,6 @@
   font-size: clamp(42px, 7vw, 76px);
   overflow-wrap: anywhere;
   padding-inline: 12px;
-}
-.auth-page .in2-sub {
-  text-align: center;
-  padding-inline: 16px;
 }
 .auth-page .in2-ov {
   padding-block: 74px;
@@ -297,20 +318,6 @@
   }
   .auth-page .au-right {
     padding: 40px 24px 116px;
-  }
-  .auth-page .in2-row {
-    gap: 8px;
-    margin-top: 22px;
-  }
-  .auth-page .in2-c {
-    padding: 12px 5px;
-    border-radius: 14px;
-  }
-  .auth-page .in2-v {
-    font-size: 24px;
-  }
-  .auth-page .in2-l {
-    font-size: 10px;
   }
   .auth-page .in-top {
     inset-inline: 20px;

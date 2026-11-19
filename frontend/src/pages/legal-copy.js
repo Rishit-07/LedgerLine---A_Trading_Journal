@@ -4,11 +4,11 @@ export const legalDocuments = {
     sections: [
       [
         'What we collect',
-        'When you create an account, we receive your email address and the name you give us. Google sign-in can also provide your Google profile name and photo. We also store what you enter: trades, notes, forecasts, screenshots and settings. We collect basic usage data, such as pages visited and errors, to keep the product working.',
+        'When you create an account, we receive your email address and the name you give us. Google sign-in can also provide your Google profile name and photo. If you subscribe to the weekly process note, we store your email address and the date you subscribed. We also store what you enter: trades, notes, forecasts, screenshots and settings. We collect basic usage data, such as pages visited and errors, to keep the product working.',
       ],
       [
         'How we use it',
-        'We use your data to run your journal, calculate your Trader Score, generate reports and AI answers, and to send the notifications you turn on. We do not use your journal to give investment advice to anyone else.',
+        'We use your data to run your journal, calculate your Trader Score, generate reports and AI answers, and to send account emails such as a welcome message. We use your newsletter address to send the weekly process note if you subscribe. Our email delivery provider processes the recipient address and message to deliver email. We do not use your journal to give investment advice to anyone else.',
       ],
       [
         'Where it is stored',
