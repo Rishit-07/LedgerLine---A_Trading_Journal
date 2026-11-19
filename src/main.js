@@ -10,6 +10,7 @@ import { initSectionRail } from './section-rail.js';
 import { initToolWheel } from './tool-wheel.js';
 import { transitionTheme } from './theme-transition.js';
 import { initPlayground } from './playground.js';
+import { isSignedIn, signIn, signOut } from './auth.js';
 
 const landing = document.querySelector('#landing');
 const root = document.documentElement;
@@ -24,7 +25,6 @@ function setTheme(dark) {
 setTheme(localStorage.getItem('ledgerline-theme') === 'dark');
 
 const pages = {
-  '/auth': 'Sign in',
   '/dashboard': 'Dashboard',
   '/about': 'About',
   '/legal': 'Privacy and terms',
@@ -43,8 +43,28 @@ const pages = {
   '/portfolio': 'Portfolio',
 };
 const path = location.pathname.replace(/\/$/, '') || '/';
+const requiresSignIn = path === '/replay';
 
-if (path === '/') {
+if (requiresSignIn && !isSignedIn()) {
+  location.replace('/auth?next=%2Freplay');
+} else if (path === '/auth') {
+  const next = new URLSearchParams(location.search).get('next') === '/replay' ? '/replay' : '/dashboard';
+  if (isSignedIn()) {
+    location.replace(next);
+  } else {
+    const fragment = document.querySelector('#sign-in-page').content.cloneNode(true);
+    if (next === '/replay') {
+      fragment.querySelector('#sign-in-message').textContent = 'Start a demo session to continue to Replay.';
+    }
+    fragment.querySelector('form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      signIn();
+      location.replace(next);
+    });
+    document.title = 'Sign in | Ledgerline';
+    landing.replaceWith(fragment);
+  }
+} else if (path === '/') {
   themeToggle.addEventListener('click', (event) =>
     transitionTheme(event, () => {
       const dark = !root.classList.contains('dark');
@@ -74,6 +94,14 @@ if (path === '/') {
   const title = pages[path] ?? 'Page unavailable';
   fragment.querySelector('h1').textContent = title;
   if (!pages[path]) fragment.querySelector('p').hidden = true;
+  if ((requiresSignIn || path === '/dashboard') && isSignedIn()) {
+    const button = fragment.querySelector('[data-sign-out]');
+    button.hidden = false;
+    button.addEventListener('click', () => {
+      signOut();
+      location.replace('/');
+    });
+  }
   document.title = title + ' | Ledgerline';
   landing.replaceWith(fragment);
 }
