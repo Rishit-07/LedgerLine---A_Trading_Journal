@@ -4,20 +4,21 @@ Ledgerline is a trading journal that scores how consistently you follow your pro
 
 ## Run locally
 
-Use Node.js 22.12 or later.
+Use Node.js 22.12 or later and run these commands from the repository root.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. Run `npm run build` to create a production build and `npm run preview` to serve it locally.
+Open the local URL printed by Vite. Run `npm run build` to write the production build to `frontend/dist/`, then `npm run preview` to serve it locally.
 
 ## Project layout
 
-- `index.html` contains the landing page and a shared notice for routes planned for later builds.
-- `src/styles/tokens.css` contains the shared light and dark themes.
-- `src/motion.js` drives scroll animations with GSAP ScrollTrigger.
-- `src/playground.js` handles the sample Trader Score and Kelly sizing demos.
+- [`frontend/`](frontend/) contains the Vite app, page markup, styles, and public assets. Start with [`frontend/index.html`](frontend/index.html) for markup and [`frontend/src/`](frontend/src/) for browser logic.
+- [`backend/`](backend/) is reserved for server-side APIs and account authentication.
+- [`database/`](database/) is reserved for the schema, migrations, and development seed data.
+
+The browser app is the only component needed to run the current demo.
 
 The Replay button sends signed-out visitors to `/auth` and continues to `/replay` after demo sign-in. The demo session is stored in the browser and can be ended from Replay or Dashboard. Replay and Dashboard currently show placeholder screens. Account authentication, account creation, and the welcome flow are still pending.
