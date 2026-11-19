@@ -113,6 +113,16 @@
 ::view-transition-new(root) {
   z-index: 2;
 }
+.theme-ink-definitions {
+  position: absolute;
+  pointer-events: none;
+}
+:root.theme-ink-active::view-transition-new(root) {
+  mask-image: url('#ledgerline-ink-mask');
+}
+:root.theme-ink-active :is(.n-root, .n-in, .n-out, .lp-pane) {
+  transition-property: none;
+}
 .n-root {
   height: 100vh;
 }
