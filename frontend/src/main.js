@@ -84,6 +84,9 @@ if (path === '/') {
 } else if (path === '/about') {
   landing.hidden = true;
   import('./pages/about.js').then(({ renderAbout }) => renderAbout(landing)).catch(renderLoadError);
+} else if (path === '/support') {
+  landing.hidden = true;
+  import('./pages/support.js').then(({ renderSupport }) => renderSupport(landing)).catch(renderLoadError);
 } else if (path === '/terms' || path === '/privacy' || path === '/legal') {
   landing.hidden = true;
   if (path === '/legal') history.replaceState(null, '', '/privacy' + location.hash);
@@ -94,5 +97,5 @@ if (path === '/') {
     .then(({ renderAccountPage }) => renderAccountPage(path, landing, appPages))
     .catch(() => renderPending('Sign-in unavailable', 'Reload the page to try again.'));
 } else {
-  renderPending(path === '/support' ? 'Help center' : 'Page unavailable');
+  renderPending('Page unavailable');
 }
