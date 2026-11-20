@@ -1,4 +1,6 @@
 import { readJson, send } from './http.js';
+import { normalizeTradeTime } from './streak-logic.js';
+import { StreakError } from './streak-store.js';
 
 const dayMs = 86_400_000;
 const earlier = (day, days) => new Date(Date.parse(day) - days * dayMs).toISOString().slice(0, 10);
@@ -123,7 +125,7 @@ export function createDashboardHandler(pool, authenticate) {
   };
 }
 
-export function createTradeHandler(pool, authenticate) {
+export function createTradeHandler(streaks, authenticate) {
   return async (request, response) => {
     const claims = await authenticate(request, response);
     if (!claims) return;
@@ -142,31 +144,37 @@ export function createTradeHandler(pool, authenticate) {
       return send(response, error ?? 400, { error: 'Check the trade details and try again.' });
     }
     try {
-      const { rows: [row] } = await pool.query(`
-        WITH saved AS (
-          INSERT INTO trades (user_id, symbol, market, side, r_multiple, stop, target, setup, closed_at, client_request_id)
-          SELECT $1, $2, $3, $4, $5::numeric, $6, $7, $8, CASE WHEN $5::numeric IS NOT NULL THEN now() END, $9
-          FROM user_profile WHERE user_id = $1 AND onboarded_at IS NOT NULL
-          ON CONFLICT (user_id, client_request_id) DO NOTHING RETURNING id, opened_at
-        ), checks AS (
-          INSERT INTO trade_checks (user_id, trade_id, rule_id, kept)
-          SELECT $1, saved.id, rules.id, rules.id::text = ANY($10::text[])
-          FROM saved CROSS JOIN rules WHERE rules.user_id = $1 AND rules.active
-        ), feeling AS (
-          INSERT INTO journal_entries (user_id, trade_id, date, note, mood)
-          SELECT $1, id, (opened_at AT TIME ZONE 'Asia/Kolkata')::date, '', $11::text
-          FROM saved WHERE $11::text IS NOT NULL
-        )
-        SELECT opened_at AS "openedAt" FROM saved
-      `, [claims.uid, symbol, data.market, data.side, data.result, data.stop, data.target, setup || null, data.requestId, data.kept, mood]);
-      let openedAt = row?.openedAt;
-      if (!openedAt) {
-        const duplicate = await pool.query('SELECT opened_at AS "openedAt" FROM trades WHERE user_id = $1 AND client_request_id = $2', [claims.uid, data.requestId]);
-        openedAt = duplicate.rows[0]?.openedAt;
-        if (!openedAt) return send(response, 409, { error: 'Finish onboarding before logging a trade.' });
-      }
-      send(response, 200, { saved: true, openedAt });
+      const { result: openedAt, streak } = await streaks.recomputeStreak(claims.uid, async (db, profile, now) => {
+        const { rows: [existing] } = await db.query(
+          'SELECT opened_at AS "openedAt" FROM trades WHERE user_id=$1 AND client_request_id=$2',
+          [claims.uid, data.requestId],
+        );
+        if (existing) return existing.openedAt;
+        let occurredAt;
+        try { occurredAt = normalizeTradeTime(data.occurredAt, now); }
+        catch (error) { throw new StreakError(400, error.message); }
+        const { rows: [row] } = await db.query(`
+          WITH saved AS (
+            INSERT INTO trades (user_id, symbol, market, side, r_multiple, stop, target, setup, opened_at, closed_at, client_request_id)
+            VALUES ($1,$2,$3,$4,$5::numeric,$6,$7,$8,$12::timestamptz,
+              CASE WHEN $5::numeric IS NOT NULL THEN $12::timestamptz END,$9)
+            RETURNING id, opened_at
+          ), checks AS (
+            INSERT INTO trade_checks (user_id, trade_id, rule_id, kept)
+            SELECT $1, saved.id, rules.id, rules.id::text = ANY($10::text[])
+            FROM saved CROSS JOIN rules WHERE rules.user_id = $1 AND rules.active
+          ), feeling AS (
+            INSERT INTO journal_entries (user_id, trade_id, date, note, mood)
+            SELECT $1, id, (opened_at AT TIME ZONE 'Asia/Kolkata')::date, '', $11::text
+            FROM saved WHERE $11::text IS NOT NULL
+          )
+          SELECT opened_at AS "openedAt" FROM saved
+        `, [claims.uid, symbol, data.market, data.side, data.result, data.stop, data.target, setup || null, data.requestId, data.kept, mood, occurredAt]);
+        return row.openedAt;
+      });
+      send(response, 200, { saved: true, openedAt, streak });
     } catch (error) {
+      if (error instanceof StreakError) return send(response, error.status, { error: error.message });
       console.error('Could not save the trade (' + (error.code ?? 'unknown error') + ').');
       send(response, 503, { error: 'Your trade could not be saved. Try again.' });
     }

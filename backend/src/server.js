@@ -7,6 +7,9 @@ import { createDashboardHandler, createTradeHandler } from './dashboard.js';
 import { createCalendarHandlers } from './calendar.js';
 import { createOnboardingHandler } from './onboarding.js';
 import { createSupportHandler } from './support.js';
+import { createStreakStore } from './streak-store.js';
+import { createStreakApi } from './streak-api.js';
+import { runStreakMaintenance } from './streak-maintenance.js';
 import { prepareWelcome, readMailConfig, startWelcomeDelivery } from './welcome-email.js';
 
 const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -97,6 +100,9 @@ async function loadAccount(request, response) {
 }
 
 const calendar = createCalendarHandlers(pool, authenticateRequest);
+const streaks = createStreakStore(pool);
+const streak = createStreakApi(pool, authenticateRequest, streaks, { remindersAvailable: Boolean(mailConfig) });
+const saveTrade = createTradeHandler(streaks, authenticateRequest);
 const routes = new Map([
   ['/api/account', { methods: ['PUT'], handler: loadAccount }],
   ['/api/newsletter', { methods: ['POST'], handler: subscribe }],
@@ -106,7 +112,19 @@ const routes = new Map([
   ['/api/calendar', { methods: ['GET'], handler: calendar.calendar }],
   ['/api/calendar/month', { methods: ['GET'], handler: calendar.month }],
   ['/api/calendar/day', { methods: ['GET'], handler: calendar.day }],
-  ['/api/trades', { methods: ['POST'], handler: createTradeHandler(pool, authenticateRequest) }],
+  ['/api/trades', { methods: ['POST', 'DELETE'], handler: (request, response) =>
+    (request.method === 'DELETE' ? streak.remove : saveTrade)(request, response) }],
+  ['/api/streak', { methods: ['GET'], handler: streak.status }],
+  ['/api/streak/rest-day', { methods: ['POST'], handler: streak.rest }],
+  ['/api/streak/review', { methods: ['POST'], handler: streak.review }],
+  ['/api/streak/journal', { methods: ['GET'], handler: streak.journal }],
+  ...['invite', 'accept', 'end'].map((action) => ['/api/streak/friends/' + action, { methods: ['POST'], handler: streak[action] }]),
+  ['/api/streak/friends', { methods: ['GET'], handler: streak.friends }],
+  ['/api/streak/battles', { methods: ['GET', 'POST'], handler: (request, response) =>
+    (request.method === 'GET' ? streak.battles : streak.challenge)(request, response) }],
+  ['/api/streak/badges/seen', { methods: ['POST'], handler: streak.badgesSeen }],
+  ['/api/streak/preferences', { methods: ['GET', 'PUT'], handler: (request, response) =>
+    (request.method === 'GET' ? streak.preferences : streak.savePreferences)(request, response) }],
 ]);
 
 const server = createServer((request, response) => {
@@ -127,3 +145,14 @@ const port = Number(process.env.PORT ?? 8787);
 server.listen(port, process.env.HOST ?? '127.0.0.1', () => {
   console.log('Ledgerline account API listening on port ' + port);
 });
+
+if (process.env.STREAK_NEON_SCHEDULE !== 'true') {
+  let running = false;
+  setInterval(async () => {
+    if (running) return;
+    running = true;
+    try { await runStreakMaintenance(pool, mailConfig); }
+    catch (error) { console.error('Streak maintenance failed (' + (error.code ?? 'unknown') + ').'); }
+    finally { running = false; }
+  }, 5 * 60_000).unref();
+}
