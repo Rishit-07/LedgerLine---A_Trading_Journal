@@ -33,24 +33,32 @@ function tradeList(container, trades, empty, showDate = false) {
   container.replaceChildren(list);
 }
 
-function equityChart(container, curve) {
-  if (!curve.length) return container.replaceChildren(text('p', 'Closed trades will appear on this chart.'));
-  const values = [0, ...curve.map(({ equity }) => equity)];
-  const low = values.reduce((min, value) => Math.min(min, value), 0);
-  const high = values.reduce((max, value) => Math.max(max, value), 0);
-  const y = (value) => 192 - (value - low) / (high - low || 1) * 168;
-  const points = values.map((value, index) => `${12 + index / (values.length - 1) * 576},${y(value)}`).join(' ');
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 600 216');
-  svg.setAttribute('preserveAspectRatio', 'none');
-  svg.setAttribute('role', 'img');
-  svg.setAttribute('focusable', 'false');
-  svg.setAttribute('aria-label', `Cumulative realized result ends at ${r(values.at(-1))}.`);
-  const line = document.createElementNS(svg.namespaceURI, 'polyline');
-  line.setAttribute('points', points);
-  line.setAttribute('vector-effect', 'non-scaling-stroke');
-  svg.append(line);
-  container.replaceChildren(svg);
+function fillCalendar(calendar, days, today) {
+  const firstDay = days.length ? new Date(days[0].date) : null;
+  const cells = firstDay ? Array((firstDay.getUTCDay() + 6) % 7).fill(null).concat(days) : [];
+  const weeks = [];
+  for (let start = 0; start < cells.length; start += 7) {
+    const row = document.createElement('tr');
+    for (let offset = 0; offset < 7; offset++) {
+      const entry = cells[start + offset];
+      const cell = document.createElement('td');
+      row.append(cell);
+      if (!entry) continue;
+      const value = entry.result;
+      const result = value === null ? 'No closed trades' : r(value);
+      const state = value === null ? '' : value > 0 ? 'is-win' : value < 0 ? 'is-loss' : 'is-flat';
+      const day = new Date(entry.date);
+      const tile = text('div', '', 'dash-calendar-day ' + state);
+      cell.title = date.format(day) + ' · ' + result;
+      cell.setAttribute('aria-label', cell.title);
+      if (entry.date === today) cell.setAttribute('aria-current', 'date');
+      tile.append(text('span', day.getUTCDate()));
+      if (value !== null) tile.append(text('small', result));
+      cell.append(tile);
+    }
+    weeks.push(row);
+  }
+  calendar.replaceChildren(...weeks);
 }
 
 function fillDashboard(page, data, name) {
@@ -98,16 +106,9 @@ function fillDashboard(page, data, name) {
     if (rule.hard) item.append(text('small', 'Hard rule'));
     return item;
   }));
-  one('[data-dash-calendar]').replaceChildren(...data.days.map(({ date: day, result }) => {
-    const cell = text('span', '', result < 0 ? 'is-loss' : result > 0 ? 'is-win' : result === 0 ? 'is-flat' : '');
-    cell.title = `${date.format(new Date(day))} · ${result === null ? 'No closed trades' : r(result)}`;
-    cell.setAttribute('aria-label', cell.title);
-    return cell;
-  }));
-  equityChart(one('[data-equity-chart]'), data.curve);
-  const totals = one('[data-equity-totals]');
-  totals.hidden = !data.curve.length;
-  totals.textContent = 'Peak equity ' + r(data.peak);
+  fillCalendar(one('[data-dash-calendar]'), data.days, data.day);
+  const range = data.days.length ? date.formatRange(new Date(data.days[0].date), new Date(data.days.at(-1).date)) : '';
+  set('[data-calendar-range]', range ? ' · ' + range : '');
   set('[data-open-count]', data.open.length + (data.open.length === 1 ? ' open position' : ' open positions'));
   tradeList(one('[data-open-list]'), data.open.slice(0, 5), 'No open positions logged.');
   const extraPositions = one('[data-more-positions]');
@@ -138,12 +139,12 @@ export function renderDashboard(landing, { initial, load, name, save, signOut })
     breakdownTabs.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.breakdown === selectedBreakdown)));
     const groups = data.breakdown[selectedBreakdown];
     if (!groups.length) return breakdown.replaceChildren(text('p', 'Close a trade to see its contribution here.', 'n-in dash-empty'));
-    const list = text('ul', '', 'dash-trades');
+    const list = text('ul', '', 'dash-breakdown-list');
     for (const group of groups) {
-      const row = text('li', '', 'n-in');
+      const row = text('li', '');
       const description = text('div', '');
       description.append(text('strong', group.label), text('small', `${group.count} ${group.count === 1 ? 'trade' : 'trades'}`));
-      row.append(description, text('strong', r(group.average), group.average < 0 ? 'is-loss' : 'is-win'));
+      row.append(description, text('strong', r(group.average), group.average < 0 ? 'is-loss' : group.average > 0 ? 'is-win' : ''));
       list.append(row);
     }
     breakdown.replaceChildren(list);

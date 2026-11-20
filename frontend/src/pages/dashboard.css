@@ -65,10 +65,11 @@
 .dash-kpi span { color: var(--sub); font-size: 13px; font-weight: 700; }
 .dash-kpi strong { font: 600 clamp(19px, 2.2vw, 27px) var(--font-mono); overflow-wrap: anywhere; }
 .dash-kpi small { color: var(--sub); font-size: 11px; }
-.dash-board { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 18px; margin-top: 20px; }
+.dash-board { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); gap: 22px; margin-top: 20px; }
+.dash-activity-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
 .dash-card { min-width: 0; padding: clamp(16px, 2.2vw, 23px); scroll-margin-top: 16px; }
-.dash-card h2, .dash-details h2 { margin: 0; font-size: 19px; }
-.dash-card p, .dash-details p { margin: 5px 0 11px; }
+.dash-card h2 { margin: 0; font-size: 19px; }
+.dash-card p { margin: 5px 0 11px; }
 .dash-card .dash-empty { margin-bottom: 0; }
 .dash-card-link { color: var(--acc); font-size: 13px; font-weight: 750; }
 .dash-plan { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 12px; border-top: 1px solid var(--track); }
@@ -77,12 +78,19 @@
 .dash-details { margin-top: 18px; padding: 16px 20px; border-radius: 18px; }
 .dash-details summary, .dash-more-positions summary { cursor: pointer; color: var(--sub); font-size: 14px; font-weight: 750; }
 .dash-more-positions { margin-top: 10px; }
-.dash-details-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 16px; }
-.dash-breakdown-tabs { gap: 8px; flex-wrap: wrap; }
-.dash-breakdown-tabs [aria-pressed='true'] { color: var(--acc); box-shadow: var(--surface-inset); }
-.dash-chart { display: grid; place-items: center; overflow: hidden; min-height: 152px; padding: 8px; color: var(--sub); text-align: center; }
-.dash-chart svg { width: 100%; height: 135px; fill: none; stroke: var(--acc); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.dash-equity-totals { color: var(--sub); margin-top: 10px; font: 600 12px var(--font-mono); }
+.dash-calendar-card, .dash-performance-card { padding: clamp(16px, 2.5vw, 28px); }
+.dash-calendar-card h2, .dash-performance-card h2 { font-size: 22px; }
+.dash-breakdown-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 18px 0; padding: 5px; border-radius: 16px; }
+.dash-breakdown-tabs button { min-height: 40px; padding: 8px 5px; border-radius: 12px; background: transparent; color: var(--sub); font-size: 14px; font-weight: 750; }
+.dash-breakdown-tabs [aria-pressed='true'] { background: var(--bg); color: var(--acc); box-shadow: var(--surface-raised); }
+.dash-breakdown-body { min-width: 0; }
+.dash-breakdown-body > .dash-empty { margin: 0; padding: 18px 16px; }
+.dash-breakdown-list { margin: 0; padding: 0; list-style: none; }
+.dash-breakdown-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 4px; font-size: 14px; }
+.dash-breakdown-list li + li { border-top: 1px solid var(--track); }
+.dash-breakdown-list li > div { min-width: 0; overflow-wrap: anywhere; }
+.dash-breakdown-list small { display: block; margin-top: 4px; color: var(--sub); font-size: 12px; }
+.dash-breakdown-list li > strong { flex: none; font-family: var(--font-mono); }
 .dashboard-page [hidden] { display: none; }
 .dash-empty { padding: 13px; color: var(--sub); font-size: 14px; line-height: 1.5; }
 .dash-loss-limit-hit :is([data-risk-note], .dash-side-limit strong) { color: var(--down); font-weight: 750; }
@@ -94,12 +102,23 @@
 .dash-rules small, .dash-trades small { display: block; margin-top: 3px; color: var(--sub); font-size: 11px; }
 .dash-trades li { display: flex; justify-content: space-between; align-items: center; gap: 8px; overflow-wrap: anywhere; }
 .dash-trades li > strong { white-space: nowrap; }
-.dash-calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.dash-calendar span { background: var(--track); border-radius: 5px; aspect-ratio: 1; }
-.dash-calendar .is-win { background: var(--up); }.dash-calendar .is-loss { background: var(--down); }.dash-calendar .is-flat { background: var(--acc); }
-.dash-kpi .is-win, .dash-trades .is-win, .dash-legend span:last-child { color: var(--up); }
-.dash-kpi .is-loss, .dash-trades .is-loss, .dash-legend span:first-child { color: var(--down); }
-.dash-legend { display: flex; gap: 12px; }
+.dash-calendar { table-layout: fixed; width: 100%; margin: 10px 0 0; border-collapse: separate; border-spacing: 4px; }
+.dash-calendar th { height: 24px; color: var(--sub); font-size: 12px; font-weight: 700; text-align: center; }
+.dash-calendar td { padding: 0; }
+.dash-calendar-day { min-height: 38px; display: grid; align-content: center; justify-items: center; gap: 2px; padding: 3px 1px; border-radius: 8px; background: color-mix(in srgb, var(--track) 62%, var(--bg)); color: var(--sub); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dash-calendar-day small { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: 10px; white-space: nowrap; }
+.dash-calendar-day.is-win { background: color-mix(in srgb, var(--up) 24%, var(--bg)); color: var(--ink); }
+.dash-calendar-day.is-loss { background: color-mix(in srgb, var(--down) 24%, var(--bg)); color: var(--ink); }
+.dash-calendar-day.is-flat { background: color-mix(in srgb, var(--acc) 22%, var(--bg)); color: var(--ink); }
+.dash-calendar [aria-current='date'] .dash-calendar-day { outline: 2px solid var(--acc); outline-offset: -2px; }
+.dash-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 14px 4px 0; padding: 0; list-style: none; font-size: 12px; color: var(--sub); }
+.dash-legend li { display: flex; align-items: center; gap: 5px; }
+.dash-legend li::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--track); }
+.dash-legend .is-win::before { background: var(--up); }
+.dash-legend .is-loss::before { background: var(--down); }
+.dash-legend .is-flat::before { background: var(--acc); }
+:is(.dash-kpi, .dash-trades, .dash-breakdown-list) .is-win { color: var(--up); }
+:is(.dash-kpi, .dash-trades, .dash-breakdown-list) .is-loss { color: var(--down); }
 .dash-dialog { width: min(calc(100% - 28px), 565px); max-height: calc(100svh - 32px); padding: clamp(16px, 4vw, 26px); border: 0; color: var(--ink); }
 .dash-dialog::backdrop { background: color-mix(in srgb, var(--ink) 25%, transparent); backdrop-filter: blur(7px); }
 .dash-dialog-header h2 { margin: 0; font-size: 23px; }
@@ -115,7 +134,8 @@
 .dash-search-links { display: grid; gap: 8px; }
 .dash-search-links a { color: var(--ink); text-decoration: none; padding: 10px 12px; border-radius: 12px; font-size: 14px; }
 @keyframes dash-enter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-@media (max-width: 1050px) { .dashboard-page { grid-template-columns: 215px minmax(0, 1fr); }.dash-sidebar { padding-inline: 15px; }.dash-details-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1050px) { .dashboard-page { grid-template-columns: 215px minmax(0, 1fr); }.dash-sidebar { padding-inline: 15px; } .dash-activity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 940px) { .dash-board:not(.dash-activity-grid) { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 760px) {
   .dashboard-page { grid-template-columns: minmax(0, 1fr); }
   .dash-sidebar { position: static; height: auto; padding: 16px 18px 8px; gap: 12px; }
@@ -128,10 +148,10 @@
   .dash-toolbar, .dash-toolbar .dash-actions { flex-wrap: wrap; }
   .dash-jump { width: auto; flex: 1 1 126px; }.dash-jump kbd { display: none; }
   .dash-hero { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-  .dash-board, .dash-details-grid { grid-template-columns: minmax(0, 1fr); }
+  .dash-board { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .dash-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-@media (max-width: 420px) { .dash-content { padding-inline: 14px; }.dash-hero { padding: 22px; } }
+@media (max-width: 420px) { .dash-content { padding-inline: 14px; }.dash-hero { padding: 22px; }.dash-calendar { border-spacing: 3px; } }
 @media (max-width: 520px) {
   .dash-hero-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .dash-score-tile { grid-column: auto; padding: 10px 4px; border-radius: 19px; text-align: center; }

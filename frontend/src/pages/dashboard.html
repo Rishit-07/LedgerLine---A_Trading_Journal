@@ -57,10 +57,29 @@
     </section>
     <section class="dash-kpis" aria-label="Trading metrics" data-dash-kpis></section>
     <div class="dash-board">
-      <section class="n-out dash-card" id="performance" aria-labelledby="dash-performance">
-        <h2 id="dash-performance">Equity curve</h2><p class="dash-muted">Cumulative realized result in R · Last 42 days</p>
-        <div class="n-in dash-chart" data-equity-chart></div><div class="dash-equity-totals" data-equity-totals hidden></div>
+      <section class="n-out dash-card dash-calendar-card" aria-labelledby="dash-calendar-title">
+        <h2 id="dash-calendar-title">Trading calendar</h2>
+        <p class="dash-muted" id="dash-calendar-period">Daily realized result<span data-calendar-range></span></p>
+        <table class="dash-calendar" aria-labelledby="dash-calendar-title" aria-describedby="dash-calendar-period">
+          <thead><tr><th scope="col">Mon</th><th scope="col">Tue</th><th scope="col">Wed</th><th scope="col">Thu</th><th scope="col">Fri</th><th scope="col">Sat</th><th scope="col">Sun</th></tr></thead>
+          <tbody data-dash-calendar></tbody>
+        </table>
+        <ul class="dash-legend" aria-label="Calendar legend">
+          <li class="is-win">Gain</li><li class="is-loss">Loss</li><li class="is-flat">Flat</li><li>No closes</li>
+        </ul>
       </section>
+      <section class="n-out dash-card dash-performance-card" id="performance" aria-labelledby="dash-breakdown">
+        <h2 id="dash-breakdown">Performance breakdown</h2>
+        <p class="dash-muted">Average R per closed trade · Last 42 days</p>
+        <div class="n-in dash-breakdown-tabs" role="group" aria-label="Group performance">
+          <button type="button" class="n-btn" data-breakdown="setup" aria-pressed="true">Setup</button>
+          <button type="button" class="n-btn" data-breakdown="weekday" aria-pressed="false">Weekday</button>
+          <button type="button" class="n-btn" data-breakdown="hour" aria-pressed="false">Hour</button>
+        </div>
+        <div class="dash-breakdown-body" data-breakdown-list aria-live="polite"></div>
+      </section>
+    </div>
+    <div class="dash-board dash-activity-grid">
       <section class="n-out dash-card" id="dash-risk" aria-labelledby="dash-risk-title">
         <h2 id="dash-risk-title">Risk &amp; limits</h2><p class="dash-muted" data-risk-note></p>
         <dl class="dash-risk-list" data-risk-list></dl>
@@ -79,12 +98,8 @@
       </section>
     </div>
     <details class="n-out dash-details">
-      <summary>Performance breakdown, calendar and rules</summary>
-      <div class="dash-details-grid">
-        <section aria-labelledby="dash-breakdown"><h2 id="dash-breakdown">Performance by</h2><p class="dash-muted">Average R per closed trade · Last 42 days</p><div class="dash-actions dash-breakdown-tabs" role="group" aria-label="Group performance"><button type="button" class="n-btn n-out dash-button" data-breakdown="setup" aria-pressed="true">Setup</button><button type="button" class="n-btn n-out dash-button" data-breakdown="weekday" aria-pressed="false">Weekday</button><button type="button" class="n-btn n-out dash-button" data-breakdown="hour" aria-pressed="false">Hour</button></div><div data-breakdown-list></div></section>
-        <section aria-labelledby="dash-calendar-title"><h2 id="dash-calendar-title">Trading calendar</h2><p class="dash-muted">Daily result in R · Last 35 days</p><div class="dash-calendar" data-dash-calendar></div><p class="dash-muted dash-legend"><span>● Loss</span><span>● Win</span></p></section>
-        <section aria-labelledby="dash-rules-title"><h2 id="dash-rules-title">Pre-trade checklist</h2><p class="dash-muted">Your active rules</p><ul class="dash-rules" data-rule-list></ul></section>
-      </div>
+      <summary>Pre-trade checklist</summary>
+      <ul class="dash-rules" data-rule-list></ul>
     </details>
   </main>
   <dialog class="n-out dash-dialog" data-trade-dialog aria-labelledby="dash-log-title">
