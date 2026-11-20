@@ -241,7 +241,7 @@ async function loadJournal(pool, uid, day) {
       ORDER BY coalesce(t.closed_at, t.opened_at) DESC, t.id DESC
     `, [uid, day]),
     pool.query(`
-      SELECT j.note, j.tags, t.symbol FROM journal_entries j
+      SELECT j.note, j.mood, j.tags, t.symbol FROM journal_entries j
       LEFT JOIN trades t ON t.user_id = j.user_id AND t.id = j.trade_id
       WHERE j.user_id = $1 AND j.date = $2::date ORDER BY j.id
     `, [uid, day]),

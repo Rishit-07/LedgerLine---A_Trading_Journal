@@ -110,16 +110,74 @@
       <ul class="dash-rules" data-rule-list></ul>
     </details>
   </main>
-  <dialog class="n-out dash-dialog" data-trade-dialog aria-labelledby="dash-log-title">
+  <dialog class="n-out ql-drawer" data-trade-dialog aria-labelledby="dash-log-title">
     <form data-trade-form autocomplete="off">
-      <div class="dash-dialog-header"><h2 id="dash-log-title">Log a trade</h2><button class="n-btn n-out dash-button" type="button" aria-label="Close trade form" data-close-trade>×</button></div>
-      <p class="dash-muted" data-broker-note></p>
-      <div class="dash-fields"><label>Instrument<input class="n-in" name="symbol" required maxlength="48" placeholder="Symbol" /></label><label>Market<select class="n-in" name="market" required></select></label><label>Side<select class="n-in" name="side"><option value="long">Long</option><option value="short">Short</option></select></label><label>Setup <span>(optional)</span><input class="n-in" name="setup" maxlength="100" /></label><label>Stop <span>(optional)</span><input class="n-in" type="number" name="stop" min="0.00000001" step="any" /></label><label>Target <span>(optional)</span><input class="n-in" type="number" name="target" min="0.00000001" step="any" /></label></div>
-      <label class="dash-check"><input type="checkbox" name="closed" /> Trade is closed</label>
-      <label class="dash-closed-field" data-result-field hidden>Realized result (R)<input class="n-in" name="result" type="number" step="0.0001" min="-10000" max="10000" disabled /></label>
-      <fieldset class="dash-trade-rules"><legend>Rules followed</legend><div data-trade-rules></div></fieldset>
-      <p class="dash-status" role="status" data-trade-status></p>
-      <button class="n-btn n-acc dash-button" type="submit">Save trade</button>
+      <header class="ql-header"><h2 id="dash-log-title">Log a trade</h2><button class="n-btn n-out ql-close" type="button" aria-label="Close trade form" data-close-trade>×</button></header>
+      <label class="ql-label" for="ql-symbol">Instrument</label>
+      <input id="ql-symbol" class="n-in ql-input" name="symbol" required maxlength="48" placeholder="e.g. NIFTY 24500 CE" autofocus />
+      <fieldset class="ql-group">
+        <legend class="ql-label">Side</legend>
+        <div class="n-in ql-segments">
+          <label><input type="radio" name="side" value="long" checked /><span>Long</span></label>
+          <label><input type="radio" name="side" value="short" /><span>Short</span></label>
+        </div>
+      </fieldset>
+      <fieldset class="ql-group">
+        <legend class="ql-label">Before you enter</legend>
+        <div class="ql-progress" data-rule-progress aria-hidden="true"></div>
+        <div data-trade-rules></div>
+        <p class="ql-score" data-rule-score aria-live="polite"></p>
+      </fieldset>
+      <fieldset class="ql-group">
+        <legend class="ql-label">How do you feel</legend>
+        <div class="ql-feelings">
+          <label><input type="radio" name="mood" value="Calm" /><span>Calm</span></label>
+          <label><input type="radio" name="mood" value="Rushed" /><span>Rushed</span></label>
+          <label><input type="radio" name="mood" value="Fearful" /><span>Fearful</span></label>
+          <label><input type="radio" name="mood" value="Confident" /><span>Confident</span></label>
+        </div>
+      </fieldset>
+      <details class="ql-details" data-trade-details>
+        <summary>Trade details <span data-trade-market></span></summary>
+        <div class="ql-fields">
+          <label>Market<select class="n-in ql-input" name="market" required></select></label>
+          <label>Setup<input class="n-in ql-input" name="setup" maxlength="100" /></label>
+          <label>Stop<input class="n-in ql-input" type="number" name="stop" min="0.00000001" step="any" /></label>
+          <label>Target<input class="n-in ql-input" type="number" name="target" min="0.00000001" step="any" /></label>
+        </div>
+        <label class="ql-closed"><input type="checkbox" name="closed" /> Trade is closed</label>
+        <label class="ql-result" data-result-field hidden>Realized result (R)<input class="n-in ql-input" name="result" type="number" step="0.0001" min="-10000" max="10000" disabled /></label>
+      </details>
+      <p class="ql-status" role="status" data-trade-status></p>
+      <div class="ql-lamp" aria-hidden="true"></div>
+      <button class="n-btn n-acc ql-save" type="submit" aria-describedby="ql-save-help"><span data-trade-save-label>Save trade</span></button>
+      <p class="ql-help" id="ql-save-help">Hold to save, or press Enter. Press L to open from the dashboard.</p>
+    </form>
+  </dialog>
+  <dialog class="ql-receipt" data-trade-receipt aria-labelledby="ql-receipt-title">
+    <div class="ql-printer" aria-hidden="true"></div>
+    <div class="ql-paper-window">
+      <div class="ql-perforation" aria-hidden="true">Tear here</div>
+      <article class="ql-paper">
+        <header><strong>Ledgerline</strong><h2 id="ql-receipt-title">Trade receipt</h2></header>
+        <dl data-receipt-details></dl>
+        <section class="ql-receipt-rules" aria-label="Rules followed">
+          <div class="ql-receipt-score">
+            <svg viewBox="0 0 80 80" aria-hidden="true">
+              <circle cx="40" cy="40" r="34" fill="none" stroke="#e8e2d2" stroke-width="9" />
+              <circle class="ql-receipt-ring" cx="40" cy="40" r="34" pathLength="100" fill="none" stroke="#27865f" stroke-width="9" stroke-linecap="round" data-receipt-ring />
+            </svg>
+            <span data-receipt-score></span>
+          </div>
+          <ul data-receipt-rules></ul>
+          <strong class="ql-stamp" data-receipt-stamp></strong>
+        </section>
+        <div class="ql-barcode" aria-hidden="true"></div>
+      </article>
+    </div>
+    <form method="dialog" class="ql-receipt-actions">
+      <button class="n-btn n-out ql-tear" type="submit" data-tear-receipt><span aria-hidden="true">↓</span> Pull down to tear off</button>
+      <button class="n-btn ql-skip" type="submit">Not now</button>
     </form>
   </dialog>
   <dialog class="n-out dash-dialog dash-calendar-dialog" data-calendar-dialog aria-labelledby="dash-calendar-dialog-title">

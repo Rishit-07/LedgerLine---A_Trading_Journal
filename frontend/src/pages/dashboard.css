@@ -160,13 +160,8 @@
 .dash-dialog::backdrop { background: color-mix(in srgb, var(--ink) 25%, transparent); backdrop-filter: blur(7px); }
 .dash-dialog-header h2 { margin: 0; font-size: 23px; }
 .dash-dialog-header button { min-width: 40px; padding: 5px; font-size: 19px; }
-.dash-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.dash-fields label, .dash-closed-field { display: grid; gap: 5px; font-size: 14px; font-weight: 700; }
-.dash-fields label > span { color: var(--mut); }
-.dash-fields :is(input,select), .dash-closed-field input { width: 100%; min-width: 0; padding: 11px; border: 0; color: var(--ink); border-radius: 13px; font: 600 16px var(--font-sans); }
-.dash-check { display: flex; align-items: center; gap: 8px; margin: 10px 0; font-size: 14px; }
-.dash-check input { accent-color: var(--acc); }
-.dash-trade-rules { margin: 13px 0; padding: 0; border: 0; }.dash-trade-rules legend { font-weight: 750; }
+.dash-closed-field { display: grid; gap: 5px; font-size: 14px; font-weight: 700; }
+.dash-closed-field input { width: 100%; min-width: 0; padding: 11px; border: 0; color: var(--ink); border-radius: 13px; font: 600 16px var(--font-sans); }
 .dash-search-dialog .dash-closed-field { margin: 14px 0; }
 .dash-search-links { display: grid; gap: 8px; }
 .dash-search-links a { color: var(--ink); text-decoration: none; padding: 10px 12px; border-radius: 12px; font-size: 14px; }

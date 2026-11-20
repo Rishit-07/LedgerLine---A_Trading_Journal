@@ -1,3 +1,4 @@
+import { bindQuickTrade } from './quick-trade.js';
 import { bindTradingCalendar } from './trading-calendar.js';
 import pageMarkup from './dashboard.html?raw';
 import { bindPageTheme, mountPage } from './shared.js';
@@ -5,7 +6,6 @@ import '@fontsource/instrument-serif/latin-400.css';
 import './dashboard.css';
 
 const marketNames = { stocks: 'Stocks', options: 'Options', futures: 'Futures', forex: 'Forex', crypto: 'Crypto' };
-const brokerNames = { zerodha: 'Zerodha', upstox: 'Upstox', 'angel-one': 'Angel One', dhan: 'Dhan', fyers: 'Fyers', csv: 'CSV import', manual: 'Add by hand' };
 const number = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 });
 const date = new Intl.DateTimeFormat('en-IN', { timeZone: 'UTC', dateStyle: 'medium' });
 const text = (tag, value, className) => {
@@ -127,7 +127,6 @@ export function renderDashboard(landing, { initial, load, name, save, signOut, l
 
   if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
   let data = initial;
-  let requestId;
   const recent = tradePager(page.querySelector('[data-recent-list]'), page.querySelector('[data-recent-pager]'), 'No recent trades logged.', true);
   const open = tradePager(page.querySelector('[data-open-list]'), page.querySelector('[data-open-pager]'), 'No open positions logged.', false);
   const calendar = bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loadCalendarDay, renderTrades: tradeList });
@@ -168,63 +167,13 @@ export function renderDashboard(landing, { initial, load, name, save, signOut, l
     catch { status.textContent = 'Unable to sign out. Try again.'; signOutButton.disabled = false; }
   });
 
-  const dialog = page.querySelector('[data-trade-dialog]');
-  const form = dialog.querySelector('form');
-  const tradeStatus = form.querySelector('[data-trade-status]');
-  const saveButton = form.querySelector('button[type="submit"]');
-  const resultField = form.querySelector('[data-result-field]');
-  function updateClosed() {
-    resultField.hidden = !form.elements.closed.checked;
-    form.elements.result.disabled = resultField.hidden;
-    form.elements.result.required = !resultField.hidden;
-  }
-  form.elements.closed.addEventListener('change', updateClosed);
-  page.querySelectorAll('[data-log-trade]').forEach((button) => button.addEventListener('click', () => {
-    if (!requestId) {
-      form.reset();
-      requestId = crypto.randomUUID();
-      form.elements.market.replaceChildren(...data.markets.map((market) => new Option(marketNames[market], market)));
-      form.querySelector('[data-trade-rules]').replaceChildren(...data.rules.map((rule) => {
-        const label = text('label', '', 'dash-check');
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox'; checkbox.name = 'kept'; checkbox.value = rule.id;
-        label.append(checkbox, document.createTextNode(`${rule.text}${rule.hard ? ' · Hard rule' : ''}`));
-        return label;
-      }));
-      updateClosed();
-    }
-    const broker = brokerNames[data.broker] ?? 'Add by hand';
-    form.querySelector('[data-broker-note]').textContent = `Saved entry preference: ${broker}. This form records a trade by hand.`;
-    tradeStatus.textContent = data.dailyLoss >= data.dailyLossLimit ? 'Daily loss limit reached. You can still record trades already taken.' : '';
-    dialog.showModal();
-  }));
-  dialog.querySelector('[data-close-trade]').addEventListener('click', () => { if (!saveButton.disabled) dialog.close(); });
-  dialog.addEventListener('cancel', (event) => { if (saveButton.disabled) event.preventDefault(); });
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    if (saveButton.disabled) return;
-    const fields = form.elements;
-    const optional = (name) => fields[name].value === '' ? null : fields[name].valueAsNumber;
-    const kept = new FormData(form).getAll('kept');
-    const trade = { requestId, symbol: fields.symbol.value, market: fields.market.value, side: fields.side.value,
-      setup: fields.setup.value, stop: optional('stop'), target: optional('target'), result: fields.closed.checked ? optional('result') : null, kept };
-    saveButton.disabled = true;
-    [...form.querySelectorAll('input,select')].forEach((field) => { field.disabled = true; });
-    tradeStatus.textContent = 'Saving your trade…';
-    try {
-      await save(trade);
-      requestId = undefined;
-      dialog.close();
+  bindQuickTrade(page, {
+    save, marketNames, getDashboard: () => data,
+    onSaved: async () => {
       status.textContent = 'Trade saved.';
       try { data = await load(); renderData(); fillBreakdown(); }
       catch { status.textContent = 'Trade saved. Reload Dashboard to see the updated totals.'; }
-    } catch (error) {
-      tradeStatus.textContent = error.message || 'Unable to save the trade. Try again.';
-    } finally {
-      [...form.querySelectorAll('input,select')].forEach((field) => { field.disabled = false; });
-      updateClosed();
-      saveButton.disabled = false;
-    }
+    },
   });
 
   const jump = page.querySelector('[data-search-dialog]');
@@ -247,7 +196,7 @@ export function renderDashboard(landing, { initial, load, name, save, signOut, l
   search.addEventListener('input', filterLinks);
   search.addEventListener('keydown', (event) => { if (event.key === 'Enter') results.querySelector('a')?.click(); });
   page.addEventListener('keydown', (event) => {
-    if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k' || dialog.open || jump.open) return;
+    if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k' || page.querySelector('dialog[open]')) return;
     event.preventDefault(); openJump();
   });
 }

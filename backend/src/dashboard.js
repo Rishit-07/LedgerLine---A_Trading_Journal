@@ -130,8 +130,10 @@ export function createTradeHandler(pool, authenticate) {
     const { data, error } = await readJson(request, 4096);
     const symbol = typeof data?.symbol === 'string' ? data.symbol.trim().toUpperCase() : '';
     const setup = typeof data?.setup === 'string' ? data.setup.trim() : '';
+    const mood = data?.mood ?? null;
     const validPrice = (value) => value === null || (Number.isFinite(value) && value >= 0.00000001 && value < 1e12);
     if (error || !/^[A-Z0-9][A-Z0-9 .:/_-]{0,47}$/.test(symbol) || setup.length > 100 ||
+      (mood !== null && !['Calm', 'Rushed', 'Fearful', 'Confident'].includes(mood)) ||
       !['long', 'short'].includes(data?.side) || !['stocks', 'options', 'futures', 'forex', 'crypto'].includes(data?.market) ||
       !/^[\da-f]{8}(-[\da-f]{4}){3}-[\da-f]{12}$/i.test(data?.requestId ?? '') ||
       !validPrice(data.stop) || !validPrice(data.target) ||
@@ -144,20 +146,26 @@ export function createTradeHandler(pool, authenticate) {
         WITH saved AS (
           INSERT INTO trades (user_id, symbol, market, side, r_multiple, stop, target, setup, closed_at, client_request_id)
           SELECT $1, $2, $3, $4, $5::numeric, $6, $7, $8, CASE WHEN $5::numeric IS NOT NULL THEN now() END, $9
-          FROM user_profile WHERE user_id = $1 AND onboarded_at IS NOT NULL AND $3 = ANY(markets)
-          ON CONFLICT (user_id, client_request_id) DO NOTHING RETURNING id
+          FROM user_profile WHERE user_id = $1 AND onboarded_at IS NOT NULL
+          ON CONFLICT (user_id, client_request_id) DO NOTHING RETURNING id, opened_at
         ), checks AS (
           INSERT INTO trade_checks (user_id, trade_id, rule_id, kept)
           SELECT $1, saved.id, rules.id, rules.id::text = ANY($10::text[])
           FROM saved CROSS JOIN rules WHERE rules.user_id = $1 AND rules.active
+        ), feeling AS (
+          INSERT INTO journal_entries (user_id, trade_id, date, note, mood)
+          SELECT $1, id, (opened_at AT TIME ZONE 'Asia/Kolkata')::date, '', $11::text
+          FROM saved WHERE $11::text IS NOT NULL
         )
-        SELECT EXISTS(SELECT 1 FROM saved) AS saved
-      `, [claims.uid, symbol, data.market, data.side, data.result, data.stop, data.target, setup || null, data.requestId, data.kept]);
-      if (!row.saved) {
-        const duplicate = await pool.query('SELECT 1 FROM trades WHERE user_id = $1 AND client_request_id = $2', [claims.uid, data.requestId]);
-        if (!duplicate.rowCount) return send(response, 400, { error: 'Choose a market from your onboarding preferences.' });
+        SELECT opened_at AS "openedAt" FROM saved
+      `, [claims.uid, symbol, data.market, data.side, data.result, data.stop, data.target, setup || null, data.requestId, data.kept, mood]);
+      let openedAt = row?.openedAt;
+      if (!openedAt) {
+        const duplicate = await pool.query('SELECT opened_at AS "openedAt" FROM trades WHERE user_id = $1 AND client_request_id = $2', [claims.uid, data.requestId]);
+        openedAt = duplicate.rows[0]?.openedAt;
+        if (!openedAt) return send(response, 409, { error: 'Finish onboarding before logging a trade.' });
       }
-      send(response, 200, { saved: true });
+      send(response, 200, { saved: true, openedAt });
     } catch (error) {
       console.error('Could not save the trade (' + (error.code ?? 'unknown error') + ').');
       send(response, 503, { error: 'Your trade could not be saved. Try again.' });

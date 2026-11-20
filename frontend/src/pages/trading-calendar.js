@@ -204,7 +204,8 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
       for (const note of dayData.notes) {
         const row = element('li', '', 'n-in');
         if (note.symbol) row.append(element('strong', note.symbol));
-        row.append(element('p', note.note));
+        if (note.mood) row.append(element('small', 'Feeling · ' + note.mood));
+        if (note.note) row.append(element('p', note.note));
         if (note.tags.length) row.append(element('small', note.tags.join(' · ')));
         notes.append(row);
       }
