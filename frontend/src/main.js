@@ -28,6 +28,7 @@ const appPages = {
   '/dashboard': 'Dashboard',
   '/replay': 'Replay',
   '/journal': 'Trade journal',
+  '/history': 'Trade history',
   '/forecast': 'Forecast ledger',
   '/calendar': 'Trading calendar',
   '/sizing': 'Sizing lab',

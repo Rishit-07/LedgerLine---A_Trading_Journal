@@ -10,6 +10,10 @@ The API listens on `127.0.0.1:8787` by default. A deployed frontend should route
 
 `GET /api/onboarding` returns the verified user's saved step and answers. `PUT /api/onboarding` saves one step at a time. The account API exposes `onboardingCompleted` so returning users can go straight to the app. Progress and completion are stored by Firebase UID in Neon. Broker choices are preferences, and account setup does not connect any broker.
 
+## Dashboard
+
+`GET /api/dashboard` returns the verified user's completed onboarding profile, saved plan, active rules and metrics calculated from their trades. Dashboard dates and days use IST. `POST /api/trades` records a manual trade in one of the user's selected markets, with optional realized R, stop and target. Rule checks are saved alongside the trade. The client request ID makes retries safe.
+
 ## Email
 
 `POST /api/newsletter` accepts an `{ "email": "…" }` JSON body from the About page. It stores one opt-in per normalized address in Neon. To send the weekly process note, use these opt-ins with a newsletter provider that handles unsubscribes and suppression. Account creation is independent of the newsletter.

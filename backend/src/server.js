@@ -3,6 +3,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import pg from 'pg';
 import { isEmail, readJson, send } from './http.js';
+import { createDashboardHandler, createTradeHandler } from './dashboard.js';
 import { createOnboardingHandler } from './onboarding.js';
 import { createSupportHandler } from './support.js';
 import { prepareWelcome, readMailConfig, startWelcomeDelivery } from './welcome-email.js';
@@ -99,6 +100,8 @@ const routes = new Map([
   ['/api/newsletter', { methods: ['POST'], handler: subscribe }],
   ['/api/support', { methods: ['POST'], handler: createSupportHandler(mailConfig) }],
   ['/api/onboarding', { methods: ['GET', 'PUT'], handler: createOnboardingHandler(pool, authenticateRequest) }],
+  ['/api/dashboard', { methods: ['GET'], handler: createDashboardHandler(pool, authenticateRequest) }],
+  ['/api/trades', { methods: ['POST'], handler: createTradeHandler(pool, authenticateRequest) }],
 ]);
 
 const server = createServer((request, response) => {

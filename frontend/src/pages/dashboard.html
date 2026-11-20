@@ -1,0 +1,78 @@
+<div class="n-root dashboard-page">
+  <aside class="dash-sidebar">
+    <a class="dash-brand" href="/dashboard" aria-label="Ledgerline Dashboard"><span class="n-out"><img src="/ledgerline-icon.svg" width="25" height="25" alt="" /></span><span><b>Ledger</b>line</span></a>
+    <button class="n-btn n-acc dash-button" type="button" data-log-trade><span aria-hidden="true">+</span> Log trade</button>
+    <nav class="dash-navigation" aria-label="Workspace">
+      <div><p>Trade</p><a class="n-in" href="/dashboard" aria-current="page">Dashboard</a><a href="/plan">Pre-market plan</a><a href="/journal">Journal</a><a href="/history">Trade history</a><a href="/calendar">Calendar</a></div>
+      <div><p>Learn</p><a href="/coach">AI Coach</a><a href="/replay">Replay</a><a href="/mistake">Mistake lab</a><a href="/reports">Reports</a><a href="/sizing">Sizing lab</a><a href="/forecast">Forecasts</a></div>
+      <div><p>Community</p><a href="/clubs">Clubs</a><a href="/portfolio">Portfolio</a><a href="/support">Help center</a></div>
+    </nav>
+    <div class="n-out dash-side-limit"><p>Daily loss limit</p><progress data-loss-meter max="1" value="0" aria-label="Daily loss budget used"></progress><strong data-loss-budget>—</strong></div>
+  </aside>
+  <main class="dash-content">
+    <header class="dash-toolbar">
+      <button class="n-btn n-in dash-jump" type="button" data-dash-jump><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><span>Search or jump to…</span><kbd class="n-out">Ctrl K</kbd></button>
+      <div class="dash-actions"><button class="n-btn n-out dash-button" type="button" data-page-theme>Dark mode</button><button class="n-btn n-out dash-button" type="button" data-sign-out>Sign out</button></div>
+    </header>
+    <p class="dash-status" role="status" data-dash-status></p>
+    <section class="dash-hero" aria-labelledby="dash-greeting">
+      <div class="dash-hero-copy">
+        <p class="dash-label" data-dash-date></p>
+        <h1 id="dash-greeting">Dashboard</h1>
+        <p class="dash-month-label">This month</p>
+        <p class="dash-month" data-month-result>—</p>
+        <p class="dash-muted" data-month-note></p>
+        <div class="dash-actions"><button class="n-btn n-acc dash-button" type="button" data-log-trade>Log a trade <span aria-hidden="true">→</span></button><a class="n-btn n-out dash-button" href="#today">Review today</a></div>
+      </div>
+      <div class="dash-hero-tiles">
+        <section class="n-out dash-score-tile"><h2>Trader Score</h2><div class="dash-score-ring" aria-hidden="true">—</div><p class="dash-muted">Score pending</p></section>
+        <div class="n-out dash-mini-tile"><strong data-streak>—</strong><span>Journal streak</span></div>
+        <div class="n-out dash-mini-tile"><strong data-adherence>—</strong><span>Rules followed</span></div>
+      </div>
+    </section>
+    <section class="dash-section" aria-labelledby="dash-overview"><p class="dash-kicker">Today at a glance</p><h2 id="dash-overview">Six numbers that matter</h2>
+      <div class="dash-kpis" data-dash-kpis></div>
+      <div class="dash-grid dash-overview-cards">
+        <article class="n-out dash-card"><h3>Today’s plan</h3><p data-plan-text></p><p class="dash-muted" data-plan-bias></p><a class="n-btn n-out dash-button" href="/plan">Pre-market plan</a></article>
+        <article class="n-out dash-card"><h3>Get started</h3><ul class="dash-steps" data-start-list></ul></article>
+      </div>
+    </section>
+    <section class="dash-section" aria-labelledby="dash-workflow"><p class="dash-kicker">From your own journal</p><h2 id="dash-workflow">Your day, in four steps</h2>
+      <div class="dash-workflow"><a class="n-out dash-card" href="/plan"><strong>Plan</strong><span>Set your rules before you trade.</span></a><a class="n-out dash-card" href="#today"><strong>Execute</strong><span>Record the trades you take.</span></a><a class="n-out dash-card" href="/journal"><strong>Review</strong><span>Write a note about what happened.</span></a><a class="n-out dash-card" href="#dash-performance"><strong>Learn</strong><span>Look for patterns in your results.</span></a></div>
+    </section>
+    <section class="dash-section" aria-labelledby="dash-performance"><p class="dash-kicker">Performance</p><h2 id="dash-performance">Equity and score</h2>
+      <div class="dash-grid dash-equity-grid">
+        <article class="n-out dash-card"><h3>Equity curve and drawdown</h3><p class="dash-muted">Last 42 days · In R multiples</p><div class="n-in dash-chart" data-equity-chart></div><div class="dash-equity-totals" data-equity-totals hidden></div></article>
+        <article class="n-out dash-card"><h3>Trader Score</h3><p class="dash-muted">Rules, risk-adjusted results, consistency, journal completeness and forecast calibration.</p><div class="n-in dash-empty">A score will appear when score calculation is available.</div></article>
+      </div>
+    </section>
+    <section class="dash-section" aria-labelledby="dash-risk"><p class="dash-kicker">Where it comes from</p><h2 id="dash-risk">Setups, positions and risk</h2>
+      <div class="dash-grid">
+        <article class="n-out dash-card"><h3>Performance by</h3><p class="dash-muted">Average R per closed trade, last 42 days</p><div class="dash-actions dash-breakdown-tabs" role="group" aria-label="Group performance"><button type="button" class="n-btn n-out dash-button" data-breakdown="setup" aria-pressed="true">Setup</button><button type="button" class="n-btn n-out dash-button" data-breakdown="weekday" aria-pressed="false">Weekday</button><button type="button" class="n-btn n-out dash-button" data-breakdown="hour" aria-pressed="false">Hour</button></div><div data-breakdown-list></div></article>
+        <article class="n-out dash-card"><h3>Open positions</h3><p class="dash-muted">Your logged trades</p><div data-open-list></div></article>
+        <article class="n-out dash-card"><h3>Risk</h3><p class="dash-muted">Limits from your rules</p><dl class="dash-risk-list" data-risk-list></dl><p class="n-in dash-risk-note" data-risk-note></p></article>
+      </div>
+    </section>
+    <section class="dash-section" id="today" aria-labelledby="dash-today"><p class="dash-kicker">The day, logged</p><h2 id="dash-today">Checklist, calendar and trades</h2>
+      <div class="dash-grid dash-day-grid">
+        <article class="n-out dash-card"><h3>Pre-trade checklist</h3><p class="dash-muted">Your active rules</p><ul class="dash-rules" data-rule-list></ul><button class="n-btn n-out dash-button" type="button" data-log-trade>Log a trade</button></article>
+        <article class="n-out dash-card"><h3>Five weeks</h3><p class="dash-muted">Daily result in R</p><div class="dash-calendar" data-dash-calendar></div><p class="dash-muted dash-legend"><span>● Loss</span><span>● Win</span></p></article>
+        <article class="n-out dash-card"><h3>Today’s trades</h3><p class="dash-muted" data-today-count></p><div data-today-list></div></article>
+      </div>
+    </section>
+    <section class="dash-cta"><h2>Review the day.<br />Then close the screen.</h2><p>Use your journal to reflect on the trades you logged.</p><a class="n-btn n-acc dash-button" href="/journal">Open journal</a></section>
+  </main>
+  <dialog class="n-out dash-dialog" data-trade-dialog aria-labelledby="dash-log-title">
+    <form data-trade-form autocomplete="off">
+      <div class="dash-dialog-header"><h2 id="dash-log-title">Log a trade</h2><button class="n-btn n-out dash-button" type="button" aria-label="Close trade form" data-close-trade>×</button></div>
+      <p class="dash-muted" data-broker-note></p>
+      <div class="dash-fields"><label>Instrument<input class="n-in" name="symbol" required maxlength="48" placeholder="Symbol" /></label><label>Market<select class="n-in" name="market" required></select></label><label>Side<select class="n-in" name="side"><option value="long">Long</option><option value="short">Short</option></select></label><label>Setup <span>(optional)</span><input class="n-in" name="setup" maxlength="100" /></label><label>Stop <span>(optional)</span><input class="n-in" type="number" name="stop" min="0.00000001" step="any" /></label><label>Target <span>(optional)</span><input class="n-in" type="number" name="target" min="0.00000001" step="any" /></label></div>
+      <label class="dash-check"><input type="checkbox" name="closed" /> Trade is closed</label>
+      <label class="dash-closed-field" data-result-field hidden>Realized result (R)<input class="n-in" name="result" type="number" step="0.0001" min="-10000" max="10000" disabled /></label>
+      <fieldset class="dash-trade-rules"><legend>Rules followed</legend><div data-trade-rules></div></fieldset>
+      <p class="dash-status" role="status" data-trade-status></p>
+      <button class="n-btn n-acc dash-button" type="submit">Save trade</button>
+    </form>
+  </dialog>
+  <dialog class="n-out dash-dialog dash-search-dialog" data-search-dialog aria-labelledby="dash-search-title"><div class="dash-dialog-header"><h2 id="dash-search-title">Jump to a page</h2><button type="button" class="n-btn n-out dash-button" aria-label="Close search" data-close-jump>×</button></div><label class="dash-closed-field">Search pages<input class="n-in" type="search" data-search-links placeholder="Journal, Calendar, Replay…" /></label><div class="dash-search-links" data-search-results></div></dialog>
+</div>

@@ -378,6 +378,18 @@ export async function renderAccountPage(path, landing, appPages) {
     return;
   }
 
+  if (path === '/dashboard') {
+    const { renderDashboard } = await import('./pages/dashboard.js');
+    const load = () => authenticatedRequest(user, '/api/dashboard', 'GET');
+    renderDashboard(landing, {
+      initial: await load(), load, name: account.displayName || user.displayName,
+      save: (trade) => authenticatedRequest(user, '/api/trades', 'POST', trade),
+      signOut: () => signOut(auth),
+    });
+    addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
+    return;
+  }
+
   const title = appPages[path];
   const fragment = document.querySelector('#pending-page').content.cloneNode(true);
   fragment.querySelector('h1').textContent = title;
