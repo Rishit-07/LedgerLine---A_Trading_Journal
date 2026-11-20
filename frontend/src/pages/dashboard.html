@@ -28,6 +28,7 @@
         <a href="/portfolio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v11H4z M9 8V5h6v3 M4 13h16"/></svg>Portfolio</a>
       </div>
       <div><p>Account</p>
+        <a href="/profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0z M4 21a8 8 0 0 1 16 0"/></svg>Profile</a>
         <a href="/settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2"/></svg>Settings</a>
         <a href="/support"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5 M12 16h.01"/></svg>Help center</a>
       </div>
@@ -51,11 +52,18 @@
       </div>
       <div class="dash-hero-tiles">
         <section class="n-out dash-score-tile"><h2>Trader Score</h2><div class="dash-score-ring" aria-hidden="true">—</div><p class="dash-muted">Score pending</p></section>
-        <div class="n-out dash-mini-tile"><strong data-streak>—</strong><span>Journal streak</span></div>
+        <a class="n-out dash-mini-tile dash-streak-link" href="/journal#streak"><strong data-streak>—</strong><span>Journal streak</span></a>
         <div class="n-out dash-mini-tile"><strong data-adherence>—</strong><span>Rules followed</span></div>
       </div>
     </section>
     <section class="dash-kpis" aria-label="Trading metrics" data-dash-kpis></section>
+    <section class="n-out streak-dashboard" data-dashboard-streak aria-labelledby="dash-streak-title" hidden>
+      <div class="streak-dashboard-title"><img src="/tally-calm.svg" data-tally alt="" width="52" height="52" />
+        <h2 id="dash-streak-title"><span data-streak-count></span><a href="/journal#streak">Journal streak</a></h2></div>
+      <div><div class="streak-chips"><span class="n-in" data-streak-level></span><span class="n-in" data-streak-freeze></span><span data-streak-goal></span></div>
+        <progress value="0" max="1" aria-label="Progress toward your best streak"></progress></div>
+      <p class="streak-footnote">A day counts when you log or review at least one trade, or note that you sat out.</p>
+    </section>
     <section class="n-out dash-card dash-calendar-card" id="trading-calendar" aria-labelledby="dash-calendar-title">
       <div class="dash-calendar-header">
         <div><h2 id="dash-calendar-title">Trading calendar</h2><p class="dash-muted" id="dash-calendar-period">Realized P&amp;L in R · IST</p></div>
@@ -145,6 +153,9 @@
           <label>Stop<input class="n-in ql-input" type="number" name="stop" min="0.00000001" step="any" /></label>
           <label>Target<input class="n-in ql-input" type="number" name="target" min="0.00000001" step="any" /></label>
         </div>
+        <label class="ql-result">Trade time <small>(optional backfill, within 48 hours · <span data-trade-timezone>Asia/Kolkata</span>)</small>
+          <input class="n-in ql-input" type="datetime-local" name="occurredAt" />
+        </label>
         <label class="ql-closed"><input type="checkbox" name="closed" /> Trade is closed</label>
         <label class="ql-result" data-result-field hidden>Realized result (R)<input class="n-in ql-input" name="result" type="number" step="0.0001" min="-10000" max="10000" disabled /></label>
       </details>

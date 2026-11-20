@@ -1,4 +1,5 @@
 import { bindQuickTrade } from './quick-trade.js';
+import { badgeMarkup, bindBadgeUnlock, bindDashboardStreak } from './streak-view.js';
 import { bindTradingCalendar } from './trading-calendar.js';
 import pageMarkup from './dashboard.html?raw';
 import { bindPageTheme, mountPage } from './shared.js';
@@ -75,7 +76,6 @@ function fillDashboard(page, data, name) {
   set('[data-dash-date]', `${date.format(new Date(data.day))} · IST`);
   set('[data-month-result]', r(data.monthlyBooked));
   set('[data-month-note]', data.monthlyBooked === null ? 'No closed trades this month.' : 'Realized result from your closed trades.');
-  set('[data-streak]', data.streak + (data.streak === 1 ? ' day' : ' days'));
   set('[data-adherence]', pct(data.rulesFollowed));
   const lossBudget = `${number.format(data.dailyLoss)}R of ${data.dailyLossLimit}R used`;
   set('[data-loss-budget]', lossBudget);
@@ -114,9 +114,10 @@ function fillDashboard(page, data, name) {
 
 }
 
-export function renderDashboard(landing, { initial, load, name, save, signOut, loadCalendar, loadCalendarMonth, loadCalendarDay }) {
+export function renderDashboard(landing, { initial, load, name, save, signOut, request, loadCalendar, loadCalendarMonth, loadCalendarDay }) {
   document.title = 'Dashboard — Ledgerline';
   const page = mountPage(landing, pageMarkup);
+  page.insertAdjacentHTML('beforeend', badgeMarkup);
   bindPageTheme(page);
   const menu = page.querySelector('[data-dash-menu]');
   menu.addEventListener('click', () => {
@@ -160,6 +161,17 @@ export function renderDashboard(landing, { initial, load, name, save, signOut, l
   }));
   fillBreakdown();
   const status = page.querySelector('[data-dash-status]');
+  const paintStreak = bindDashboardStreak(page.querySelector('[data-dashboard-streak]'), page.querySelector('[data-streak]'));
+  const showBadge = request ? bindBadgeUnlock(page, request) : () => {};
+  let streak;
+  function applyStreak(next) {
+    streak = next;
+    paintStreak(streak);
+    showBadge(streak);
+  }
+  if (request) void request('/api/streak', 'GET').then((initialStreak) => {
+    if (!streak) applyStreak(initialStreak);
+  }).catch(() => { if (!streak) page.querySelector('[data-streak]').textContent = 'Unavailable'; });
   const signOutButton = page.querySelector('[data-sign-out]');
   signOutButton.addEventListener('click', async () => {
     signOutButton.disabled = true;
@@ -168,8 +180,9 @@ export function renderDashboard(landing, { initial, load, name, save, signOut, l
   });
 
   bindQuickTrade(page, {
-    save, marketNames, getDashboard: () => data,
-    onSaved: async () => {
+    save, marketNames, getDashboard: () => ({ ...data, streakTimezone: streak?.timezone ?? data.streakTimezone }),
+    onSaved: async (saved) => {
+      if (saved?.streak) applyStreak(saved.streak);
       status.textContent = 'Trade saved.';
       try { data = await load(); renderData(); fillBreakdown(); }
       catch { status.textContent = 'Trade saved. Reload Dashboard to see the updated totals.'; }

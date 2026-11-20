@@ -383,11 +383,19 @@ export async function renderAccountPage(path, landing, appPages) {
     return;
   }
 
+  const request = (route, method, body) => authenticatedRequest(user, route, method, body);
+  if (['/journal', '/profile', '/badges', '/settings'].includes(path)) {
+    const { renderStreakPage } = await import('./pages/streak-pages.js');
+    await renderStreakPage(landing, { path, request, name: account.displayName || user.displayName, signOut: () => signOut(auth) });
+    addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
+    return;
+  }
+
   if (path === '/dashboard') {
     const { renderDashboard } = await import('./pages/dashboard.js');
     const load = () => authenticatedRequest(user, '/api/dashboard', 'GET');
     renderDashboard(landing, {
-      initial: await load(), load, name: account.displayName || user.displayName,
+      initial: await load(), load, name: account.displayName || user.displayName, request,
       save: (trade) => authenticatedRequest(user, '/api/trades', 'POST', trade),
       loadCalendar: () => authenticatedRequest(user, '/api/calendar', 'GET'),
       loadCalendarMonth: (month) => authenticatedRequest(user, '/api/calendar/month?month=' + encodeURIComponent(month), 'GET'),

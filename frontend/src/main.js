@@ -42,6 +42,7 @@ const appPages = {
   '/people': 'People',
   '/spaces': 'Mentor spaces',
   '/settings': 'Settings',
+  '/profile': 'Profile',
 };
 const path = location.pathname.replace(/\/$/, '') || '/';
 bindPageNavigation();
@@ -105,6 +106,9 @@ if (path === '/') {
   landing.hidden = true;
   if (path === '/legal') history.replaceState(null, '', '/privacy' + location.hash);
   import('./pages/legal.js').then(({ renderLegal }) => renderLegal(landing)).catch(renderLoadError);
+} else if (path === '/streak/share') {
+  landing.hidden = true;
+  import('./pages/streak-share.js').then(({ renderSharedStreak }) => renderSharedStreak(landing)).catch(renderLoadError);
 } else if (path === '/auth' || path === '/onboarding' || Object.hasOwn(appPages, path)) {
   landing.hidden = true;
   import('./auth.js')

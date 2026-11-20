@@ -2,6 +2,23 @@ import './quick-trade.css';
 
 const holdTime = 1200;
 
+function localTradeInstant(value, timezone) {
+  if (!value) return undefined;
+  const clock = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+  });
+  const wallTime = Date.parse(value + 'Z');
+  let guess = wallTime;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const p = Object.fromEntries(clock.formatToParts(new Date(guess)).map(({ type, value }) => [type, value]));
+    const display = Date.parse(p.year + '-' + p.month + '-' + p.day + 'T' + p.hour + ':' + p.minute + ':' + p.second + 'Z');
+    if (wallTime === display) return new Date(guess).toISOString();
+    guess += wallTime - display;
+  }
+  throw new RangeError('Choose a valid time in your streak timezone.');
+}
+
 export function bindQuickTrade(page, { save, getDashboard, marketNames, onSaved }) {
   const dialog = page.querySelector('[data-trade-dialog]');
   const receipt = page.querySelector('[data-trade-receipt]');
@@ -17,6 +34,7 @@ export function bindQuickTrade(page, { save, getDashboard, marketNames, onSaved 
   const progress = form.querySelector('[data-rule-progress]');
   const score = form.querySelector('[data-rule-score]');
   let rules = [];
+  let timezone;
   let requestId;
   let hold;
 
@@ -41,6 +59,8 @@ export function bindQuickTrade(page, { save, getDashboard, marketNames, onSaved 
   function open() {
     if (page.querySelector('dialog[open]')) return;
     const data = getDashboard();
+    timezone = data.streakTimezone ?? 'Asia/Kolkata';
+    form.querySelector('[data-trade-timezone]').textContent = timezone;
     if (!requestId) {
       form.reset();
       details.open = false;
@@ -127,12 +147,15 @@ export function bindQuickTrade(page, { save, getDashboard, marketNames, onSaved 
     event.preventDefault();
     if (submit.disabled) return;
     endHold();
+    let occurredAt;
+    try { occurredAt = localTradeInstant(fields.occurredAt.value, timezone); }
+    catch { details.open = true; status.textContent = 'Choose a valid time in ' + timezone + '.'; return; }
     const optional = (name) => fields[name].value === '' ? null : fields[name].valueAsNumber;
     const trade = {
       requestId, symbol: fields.symbol.value.trim(), side: fields.side.value, market: fields.market.value,
       setup: fields.setup.value, stop: optional('stop'), target: optional('target'),
       result: fields.closed.checked ? optional('result') : null, mood: fields.mood.value || null,
-      kept: new FormData(form).getAll('kept'),
+      kept: new FormData(form).getAll('kept'), occurredAt,
     };
     const controls = [...form.querySelectorAll('input, select, button')].filter((control) => !control.disabled);
     controls.forEach((control) => { control.disabled = true; });
@@ -142,7 +165,7 @@ export function bindQuickTrade(page, { save, getDashboard, marketNames, onSaved 
       requestId = undefined;
       dialog.close();
       showReceipt(receipt, trade, rules, saved);
-      void onSaved();
+      void onSaved(saved);
     } catch (error) {
       status.textContent = error.message || 'Unable to save the trade. Try again.';
     } finally {
