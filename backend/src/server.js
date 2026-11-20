@@ -4,6 +4,7 @@ import { getAuth } from 'firebase-admin/auth';
 import pg from 'pg';
 import { isEmail, readJson, send } from './http.js';
 import { createDashboardHandler, createTradeHandler } from './dashboard.js';
+import { createCalendarHandlers } from './calendar.js';
 import { createOnboardingHandler } from './onboarding.js';
 import { createSupportHandler } from './support.js';
 import { prepareWelcome, readMailConfig, startWelcomeDelivery } from './welcome-email.js';
@@ -95,17 +96,20 @@ async function loadAccount(request, response) {
   }
 }
 
+const calendar = createCalendarHandlers(pool, authenticateRequest);
 const routes = new Map([
   ['/api/account', { methods: ['PUT'], handler: loadAccount }],
   ['/api/newsletter', { methods: ['POST'], handler: subscribe }],
   ['/api/support', { methods: ['POST'], handler: createSupportHandler(mailConfig) }],
   ['/api/onboarding', { methods: ['GET', 'PUT'], handler: createOnboardingHandler(pool, authenticateRequest) }],
   ['/api/dashboard', { methods: ['GET'], handler: createDashboardHandler(pool, authenticateRequest) }],
+  ['/api/calendar', { methods: ['GET'], handler: calendar.calendar }],
+  ['/api/calendar/day', { methods: ['GET'], handler: calendar.day }],
   ['/api/trades', { methods: ['POST'], handler: createTradeHandler(pool, authenticateRequest) }],
 ]);
 
 const server = createServer((request, response) => {
-  const route = routes.get(request.url);
+  const route = routes.get(request.url.split('?', 1)[0]);
   if (!route) {
     send(response, 404, { error: 'Route not found.' });
     return;

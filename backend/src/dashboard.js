@@ -35,8 +35,7 @@ function metrics({ day, trades, activityDays }) {
   const windowStart = earlier(day, 41);
   const recentTrades = trades
     .filter((trade) => (trade.closedDay ?? trade.openedDay) >= windowStart)
-    .sort((a, b) => tradeActivity(b).localeCompare(tradeActivity(a)))
-    .slice(0, 5);
+    .sort((a, b) => tradeActivity(b).localeCompare(tradeActivity(a)));
   const dailyNet = total(closed.filter((trade) => trade.closedDay === day));
   let equity = 0;
   let peak = 0;
@@ -49,13 +48,30 @@ function metrics({ day, trades, activityDays }) {
   });
   const days = Array.from({ length: 35 }, (_, index) => earlier(day, 34 - index));
   const daily = new Map();
-  for (const trade of closed) daily.set(trade.closedDay, (daily.get(trade.closedDay) ?? 0) + trade.result);
+  for (const trade of closed) {
+    const group = daily.get(trade.closedDay) ?? [];
+    group.push(trade);
+    daily.set(trade.closedDay, group);
+  }
+  const monday = earlier(day, (new Date(day).getUTCDay() + 6) % 7);
+  const periods = [
+    ['This week', closed.filter((trade) => trade.closedDay >= monday && trade.closedDay <= day)],
+    ['This month', month],
+  ].map(([label, trades]) => ({
+    label, result: trades.length ? total(trades) : null, count: trades.length,
+    winRate: percent(trades.filter((trade) => trade.result > 0).length, trades.length),
+    adherence: percent(trades.reduce((sum, trade) => sum + trade.kept, 0), trades.reduce((sum, trade) => sum + trade.checks, 0)),
+  }));
   return {
     monthlyBooked, winRate: percent(recent.filter((trade) => trade.result > 0).length, recent.length),
     average: recent.length ? total(recent) / recent.length : null,
     rulesFollowed: percent(keptCount, checkCount), streak, today, recentTrades,
     open: trades.filter((trade) => trade.result === null), dailyLoss: dailyNet < 0 ? -dailyNet : 0,
-    curve, peak, drawdown, days: days.map((date) => ({ date, result: daily.get(date) ?? null })),
+    curve, peak, drawdown, periods,
+    days: days.map((date) => {
+      const trades = daily.get(date) ?? [];
+      return { date, result: trades.length ? total(trades) : null, count: trades.length };
+    }),
     breakdown: {
       setup: groupPerformance(closed, (trade) => trade.setup || 'No setup recorded'),
       weekday: groupPerformance(closed, (trade) => weekday.format(new Date(trade.closedAt))),

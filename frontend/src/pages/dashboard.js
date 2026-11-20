@@ -1,3 +1,4 @@
+import { bindTradingCalendar } from './trading-calendar.js';
 import pageMarkup from './dashboard.html?raw';
 import { bindPageTheme, mountPage } from './shared.js';
 import '@fontsource/instrument-serif/latin-400.css';
@@ -33,32 +34,35 @@ function tradeList(container, trades, empty, showDate = false) {
   container.replaceChildren(list);
 }
 
-function fillCalendar(calendar, days, today) {
-  const firstDay = days.length ? new Date(days[0].date) : null;
-  const cells = firstDay ? Array((firstDay.getUTCDay() + 6) % 7).fill(null).concat(days) : [];
-  const weeks = [];
-  for (let start = 0; start < cells.length; start += 7) {
-    const row = document.createElement('tr');
-    for (let offset = 0; offset < 7; offset++) {
-      const entry = cells[start + offset];
-      const cell = document.createElement('td');
-      row.append(cell);
-      if (!entry) continue;
-      const value = entry.result;
-      const result = value === null ? 'No closed trades' : r(value);
-      const state = value === null ? '' : value > 0 ? 'is-win' : value < 0 ? 'is-loss' : 'is-flat';
-      const day = new Date(entry.date);
-      const tile = text('div', '', 'dash-calendar-day ' + state);
-      cell.title = date.format(day) + ' · ' + result;
-      cell.setAttribute('aria-label', cell.title);
-      if (entry.date === today) cell.setAttribute('aria-current', 'date');
-      tile.append(text('span', day.getUTCDate()));
-      if (value !== null) tile.append(text('small', result));
-      cell.append(tile);
-    }
-    weeks.push(row);
+function tradePager(container, controls, empty, showDate) {
+  let trades = [];
+  let page = 0;
+  const previous = text('button', 'Previous', 'n-btn n-out dash-button');
+  const next = text('button', 'Next', 'n-btn n-out dash-button');
+  const status = text('span', '');
+  status.setAttribute('role', 'status');
+  previous.type = next.type = 'button';
+  controls.setAttribute('role', 'group');
+  controls.setAttribute('aria-label', showDate ? 'Recent trades pages' : 'Open positions pages');
+  controls.append(previous, status, next);
+
+  function render() {
+    const pageCount = Math.max(1, Math.ceil(trades.length / 5));
+    page = Math.min(page, pageCount - 1);
+    tradeList(container, trades.slice(page * 5, page * 5 + 5), empty, showDate);
+    controls.hidden = pageCount < 2;
+    status.textContent = `Page ${page + 1} of ${pageCount}`;
+    previous.disabled = page === 0;
+    next.disabled = page === pageCount - 1;
   }
-  calendar.replaceChildren(...weeks);
+
+  previous.addEventListener('click', () => { page--; render(); if (previous.disabled) next.focus(); });
+  next.addEventListener('click', () => { page++; render(); if (next.disabled) previous.focus(); });
+  return (items, reset = false) => {
+    trades = items;
+    if (reset) page = 0;
+    render();
+  };
 }
 
 function fillDashboard(page, data, name) {
@@ -106,18 +110,11 @@ function fillDashboard(page, data, name) {
     if (rule.hard) item.append(text('small', 'Hard rule'));
     return item;
   }));
-  fillCalendar(one('[data-dash-calendar]'), data.days, data.day);
-  const range = data.days.length ? date.formatRange(new Date(data.days[0].date), new Date(data.days.at(-1).date)) : '';
-  set('[data-calendar-range]', range ? ' · ' + range : '');
   set('[data-open-count]', data.open.length + (data.open.length === 1 ? ' open position' : ' open positions'));
-  tradeList(one('[data-open-list]'), data.open.slice(0, 5), 'No open positions logged.');
-  const extraPositions = one('[data-more-positions]');
-  extraPositions.hidden = data.open.length <= 5;
-  if (!extraPositions.hidden) tradeList(one('[data-extra-positions]'), data.open.slice(5));
-  tradeList(one('[data-recent-list]'), data.recentTrades ?? data.today, 'No trades logged in the last 42 days.', true);
+
 }
 
-export function renderDashboard(landing, { initial, load, name, save, signOut }) {
+export function renderDashboard(landing, { initial, load, name, save, signOut, loadCalendar, loadCalendarDay }) {
   document.title = 'Dashboard — Ledgerline';
   const page = mountPage(landing, pageMarkup);
   bindPageTheme(page);
@@ -131,7 +128,16 @@ export function renderDashboard(landing, { initial, load, name, save, signOut })
   if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
   let data = initial;
   let requestId;
-  fillDashboard(page, data, name);
+  const recent = tradePager(page.querySelector('[data-recent-list]'), page.querySelector('[data-recent-pager]'), 'No recent trades logged.', true);
+  const open = tradePager(page.querySelector('[data-open-list]'), page.querySelector('[data-open-pager]'), 'No open positions logged.', false);
+  const calendar = bindTradingCalendar(page, { loadCalendar, loadCalendarDay, renderTrades: tradeList });
+  function renderData() {
+    fillDashboard(page, data, name);
+    recent(data.recentTrades ?? data.today, true);
+    open(data.open);
+    calendar(data);
+  }
+  renderData();
   const breakdown = page.querySelector('[data-breakdown-list]');
   const breakdownTabs = [...page.querySelectorAll('[data-breakdown]')];
   let selectedBreakdown = 'setup';
@@ -210,7 +216,7 @@ export function renderDashboard(landing, { initial, load, name, save, signOut })
       requestId = undefined;
       dialog.close();
       status.textContent = 'Trade saved.';
-      try { data = await load(); fillDashboard(page, data, name); fillBreakdown(); }
+      try { data = await load(); renderData(); fillBreakdown(); }
       catch { status.textContent = 'Trade saved. Reload Dashboard to see the updated totals.'; }
     } catch (error) {
       tradeStatus.textContent = error.message || 'Unable to save the trade. Try again.';

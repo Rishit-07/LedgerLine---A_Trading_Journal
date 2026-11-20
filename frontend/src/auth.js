@@ -378,12 +378,19 @@ export async function renderAccountPage(path, landing, appPages) {
     return;
   }
 
+  if (path === '/calendar') {
+    location.replace('/dashboard#trading-calendar');
+    return;
+  }
+
   if (path === '/dashboard') {
     const { renderDashboard } = await import('./pages/dashboard.js');
     const load = () => authenticatedRequest(user, '/api/dashboard', 'GET');
     renderDashboard(landing, {
       initial: await load(), load, name: account.displayName || user.displayName,
       save: (trade) => authenticatedRequest(user, '/api/trades', 'POST', trade),
+      loadCalendar: () => authenticatedRequest(user, '/api/calendar', 'GET'),
+      loadCalendarDay: (day) => authenticatedRequest(user, '/api/calendar/day?date=' + encodeURIComponent(day), 'GET'),
       signOut: () => signOut(auth),
     });
     addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
