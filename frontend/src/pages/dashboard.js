@@ -114,7 +114,7 @@ function fillDashboard(page, data, name) {
 
 }
 
-export function renderDashboard(landing, { initial, load, name, save, signOut, loadCalendar, loadCalendarDay }) {
+export function renderDashboard(landing, { initial, load, name, save, signOut, loadCalendar, loadCalendarMonth, loadCalendarDay }) {
   document.title = 'Dashboard — Ledgerline';
   const page = mountPage(landing, pageMarkup);
   bindPageTheme(page);
@@ -130,7 +130,7 @@ export function renderDashboard(landing, { initial, load, name, save, signOut, l
   let requestId;
   const recent = tradePager(page.querySelector('[data-recent-list]'), page.querySelector('[data-recent-pager]'), 'No recent trades logged.', true);
   const open = tradePager(page.querySelector('[data-open-list]'), page.querySelector('[data-open-pager]'), 'No open positions logged.', false);
-  const calendar = bindTradingCalendar(page, { loadCalendar, loadCalendarDay, renderTrades: tradeList });
+  const calendar = bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loadCalendarDay, renderTrades: tradeList });
   function renderData() {
     fillDashboard(page, data, name);
     recent(data.recentTrades ?? data.today, true);

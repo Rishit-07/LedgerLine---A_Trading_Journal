@@ -138,6 +138,49 @@ export function createCalendarHandlers(pool, authenticate) {
   }, 15 * minute);
 
   return {
+    month: async (request, response) => {
+      const claims = await authenticate(request, response);
+      if (!claims) return;
+      const month = new URL(request.url, 'http://localhost').searchParams.get('month');
+      const first = month + '-01';
+      if (!validDay(first) || first < '0001-01-01' || first > today()) {
+        return send(response, 400, { error: 'Choose a valid calendar month.' });
+      }
+      try {
+        const { rows: [summary] } = await pool.query(`
+          WITH bounds AS (
+            SELECT $2::date::timestamp AT TIME ZONE 'Asia/Kolkata' AS start_time,
+              ($2::date + interval '1 month') AT TIME ZONE 'Asia/Kolkata' AS end_time
+          ),
+          closed AS (
+            SELECT (t.closed_at AT TIME ZONE 'Asia/Kolkata')::date AS day, t.symbol, t.r_multiple AS result,
+              rules.checks, rules.kept
+            FROM trades t CROSS JOIN bounds b
+            CROSS JOIN LATERAL (
+              SELECT count(*)::int AS checks, (count(*) FILTER (WHERE c.kept))::int AS kept
+              FROM trade_checks c WHERE c.user_id = t.user_id AND c.trade_id = t.id
+            ) rules
+            WHERE t.user_id = $1 AND t.closed_at >= b.start_time AND t.closed_at < b.end_time
+          ),
+          daily AS (
+            SELECT day::text AS date, count(*)::int AS count, sum(result)::float AS result,
+              (count(*) FILTER (WHERE result > 0))::int AS wins, sum(checks) AS checks, sum(kept) AS kept
+            FROM closed GROUP BY day
+          )
+          SELECT coalesce((SELECT json_agg(daily ORDER BY date) FROM daily), '[]') AS days,
+            (SELECT count(*)::int FROM daily) AS "tradingDays",
+            (SELECT symbol FROM closed GROUP BY symbol ORDER BY count(*) DESC, symbol LIMIT 1) AS "mostTraded",
+            count(*)::int AS "tradeCount", sum(result)::float AS "netR", avg(result)::float AS "averageR",
+            (count(*) FILTER (WHERE result > 0) * 100.0 / nullif(count(*), 0))::float AS "winRate",
+            (sum(kept) * 100.0 / nullif(sum(checks), 0))::float AS adherence
+          FROM closed
+        `, [claims.uid, first]);
+        send(response, 200, summary);
+      } catch (error) {
+        console.error('Could not load the trading month (' + (error.code ?? 'unknown error') + ').');
+        send(response, 503, { error: 'This trading month is temporarily unavailable.' });
+      }
+    },
     calendar: async (request, response) => {
       if (!await authenticate(request, response)) return;
       const day = today();
@@ -159,13 +202,16 @@ export function createCalendarHandlers(pool, authenticate) {
     day: async (request, response) => {
       const claims = await authenticate(request, response);
       if (!claims) return;
-      const day = new URL(request.url, 'http://localhost').searchParams.get('date');
-      if (!validDay(day) || day < shift(today(), -34) || day > shift(today(), 14)) {
+      const query = new URL(request.url, 'http://localhost').searchParams;
+      const day = query.get('date');
+      const market = query.get('view') === 'market';
+      const current = today();
+      if (!validDay(day) || day < (market ? shift(current, -34) : '0001-01-01') || day > (market ? shift(current, 14) : current)) {
         return send(response, 400, { error: 'Choose a day in the calendar range.' });
       }
       try {
-        const [journal, marketHours] = await Promise.all([loadJournal(pool, claims.uid, day), hours(day)]);
-        send(response, 200, { ...journal, marketHours });
+        const data = market ? { marketHours: await hours(day) } : await loadJournal(pool, claims.uid, day);
+        send(response, 200, data);
       } catch (error) {
         console.error('Could not load the trading day (' + (error.code ?? 'unknown error') + ').');
         send(response, 503, { error: 'This trading day is temporarily unavailable.' });

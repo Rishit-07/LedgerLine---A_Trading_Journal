@@ -104,6 +104,7 @@ const routes = new Map([
   ['/api/onboarding', { methods: ['GET', 'PUT'], handler: createOnboardingHandler(pool, authenticateRequest) }],
   ['/api/dashboard', { methods: ['GET'], handler: createDashboardHandler(pool, authenticateRequest) }],
   ['/api/calendar', { methods: ['GET'], handler: calendar.calendar }],
+  ['/api/calendar/month', { methods: ['GET'], handler: calendar.month }],
   ['/api/calendar/day', { methods: ['GET'], handler: calendar.day }],
   ['/api/trades', { methods: ['POST'], handler: createTradeHandler(pool, authenticateRequest) }],
 ]);

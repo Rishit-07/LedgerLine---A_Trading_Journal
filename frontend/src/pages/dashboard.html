@@ -56,19 +56,28 @@
       </div>
     </section>
     <section class="dash-kpis" aria-label="Trading metrics" data-dash-kpis></section>
-    <div class="dash-board">
-      <section class="n-out dash-card dash-calendar-card" id="trading-calendar" aria-labelledby="dash-calendar-title">
-        <div class="dash-calendar-header"><h2 id="dash-calendar-title">Trading calendar</h2><button type="button" class="n-btn n-out dash-button" data-calendar-events>Market events</button></div>
-        <p class="dash-muted" id="dash-calendar-period">Daily realized result<span data-calendar-range></span></p>
-        <table class="dash-calendar" aria-labelledby="dash-calendar-title" aria-describedby="dash-calendar-period">
-          <thead><tr><th scope="col">Mon</th><th scope="col">Tue</th><th scope="col">Wed</th><th scope="col">Thu</th><th scope="col">Fri</th><th scope="col">Sat</th><th scope="col">Sun</th></tr></thead>
-          <tbody data-dash-calendar></tbody>
-        </table>
-        <ul class="dash-legend" aria-label="Calendar legend">
-          <li class="is-win">Gain</li><li class="is-loss">Loss</li><li class="is-flat">Flat</li><li>No closes</li><li class="has-event">Market event</li>
-        </ul>
-        <div class="dash-periods" data-calendar-periods></div>
-      </section>
+    <section class="n-out dash-card dash-calendar-card" id="trading-calendar" aria-labelledby="dash-calendar-title">
+      <div class="dash-calendar-header">
+        <div><h2 id="dash-calendar-title">Trading calendar</h2><p class="dash-muted" id="dash-calendar-period">Realized P&amp;L in R · IST</p></div>
+        <button type="button" class="n-btn n-out dash-button" data-calendar-events>Market events</button>
+      </div>
+      <div class="dash-month-nav" aria-label="Calendar month navigation">
+        <button type="button" class="n-btn n-out dash-button" data-previous-month aria-label="Previous month">‹</button>
+        <h3 data-calendar-month aria-live="polite"></h3>
+        <button type="button" class="n-btn n-out dash-button" data-next-month aria-label="Next month">›</button>
+      </div>
+      <div class="dash-month-metrics" data-calendar-metrics></div>
+      <div class="dash-month-status" data-month-status role="status"></div>
+      <table class="dash-calendar" aria-labelledby="dash-calendar-title" aria-describedby="dash-calendar-period">
+        <thead><tr><th scope="col">Mon</th><th scope="col">Tue</th><th scope="col">Wed</th><th scope="col">Thu</th><th scope="col">Fri</th><th scope="col">Sat</th><th scope="col">Sun</th><th scope="col">Week</th></tr></thead>
+        <tbody data-dash-calendar></tbody>
+      </table>
+        <details class="dash-calendar-rollups" data-calendar-rollups hidden>
+          <summary>Win rate and rule adherence</summary>
+          <ul data-calendar-rollup-list></ul>
+        </details>
+    </section>
+    <div class="dash-board dash-activity-grid">
       <section class="n-out dash-card dash-performance-card" id="performance" aria-labelledby="dash-breakdown">
         <h2 id="dash-breakdown">Performance breakdown</h2>
         <p class="dash-muted">Average R per closed trade · Last 42 days</p>
@@ -79,8 +88,6 @@
         </div>
         <div class="dash-breakdown-body" data-breakdown-list aria-live="polite"></div>
       </section>
-    </div>
-    <div class="dash-board dash-activity-grid">
       <section class="n-out dash-card" id="dash-risk" aria-labelledby="dash-risk-title">
         <h2 id="dash-risk-title">Risk &amp; limits</h2><p class="dash-muted" data-risk-note></p>
         <dl class="dash-risk-list" data-risk-list></dl>
@@ -117,13 +124,13 @@
   </dialog>
   <dialog class="n-out dash-dialog dash-calendar-dialog" data-calendar-dialog aria-labelledby="dash-calendar-dialog-title">
     <div class="dash-dialog-header"><h2 id="dash-calendar-dialog-title">Trading calendar</h2><form method="dialog"><button class="n-btn n-out dash-button" aria-label="Close calendar">×</button></form></div>
-    <div class="dash-calendar-controls">
+    <div class="dash-calendar-controls" data-calendar-controls>
       <label>Trading day (IST)<input class="n-in" type="date" data-calendar-date /></label>
       <label>Event time zone<select class="n-in" data-calendar-zone><option value="local">My local time</option><option value="Asia/Kolkata">India (IST)</option><option value="UTC">UTC</option></select></label>
       <label>Economic impact<select class="n-in" data-calendar-impact><option value="all">All impacts</option><option value="3">High</option><option value="2">Medium</option><option value="1">Low</option></select></label>
     </div>
     <div data-calendar-day></div>
-    <section aria-labelledby="dash-agenda-title">
+    <section aria-labelledby="dash-agenda-title" data-calendar-agenda-section>
       <div class="dash-calendar-header"><h3 id="dash-agenda-title">Market events</h3><button type="button" class="n-btn n-out dash-button" data-calendar-upcoming aria-pressed="false">Upcoming</button></div>
       <div data-calendar-agenda aria-live="polite"></div>
     </section>

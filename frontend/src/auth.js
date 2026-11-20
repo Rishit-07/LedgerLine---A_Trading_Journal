@@ -390,7 +390,8 @@ export async function renderAccountPage(path, landing, appPages) {
       initial: await load(), load, name: account.displayName || user.displayName,
       save: (trade) => authenticatedRequest(user, '/api/trades', 'POST', trade),
       loadCalendar: () => authenticatedRequest(user, '/api/calendar', 'GET'),
-      loadCalendarDay: (day) => authenticatedRequest(user, '/api/calendar/day?date=' + encodeURIComponent(day), 'GET'),
+      loadCalendarMonth: (month) => authenticatedRequest(user, '/api/calendar/month?month=' + encodeURIComponent(month), 'GET'),
+      loadCalendarDay: (day, market) => authenticatedRequest(user, '/api/calendar/day?date=' + encodeURIComponent(day) + (market ? '&view=market' : ''), 'GET'),
       signOut: () => signOut(auth),
     });
     addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });

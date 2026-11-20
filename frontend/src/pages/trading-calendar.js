@@ -1,11 +1,15 @@
 const india = 'Asia/Kolkata';
 const date = new Intl.DateTimeFormat('en-IN', { timeZone: 'UTC', dateStyle: 'medium' });
+const monthLabel = new Intl.DateTimeFormat('en-IN', { timeZone: 'UTC', month: 'long', year: 'numeric' });
 const tradingDate = new Intl.DateTimeFormat('en-CA', { timeZone: india, dateStyle: 'short' });
 const number = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 });
 const liveRefresh = 5 * 60_000;
 const eventDay = (event) => event.date ?? tradingDate.format(new Date(event.at));
 const result = (value) => value == null ? '—' : (value > 0 ? '+' : '') + number.format(value) + 'R';
-const percent = (value) => value == null ? '—' : value + '%';
+const percent = (value) => value == null ? '—' : number.format(value) + '%';
+
+const resultClass = (value) => value > 0 ? 'is-win' : value < 0 ? 'is-loss' : value === 0 ? 'is-flat' : '';
+const tradeCount = (count) => count + (count === 1 ? ' trade' : ' trades');
 
 function element(tag, content = '', className = '') {
   const node = document.createElement(tag);
@@ -14,7 +18,7 @@ function element(tag, content = '', className = '') {
   return node;
 }
 
-export function bindTradingCalendar(page, { loadCalendar, loadCalendarDay, renderTrades }) {
+export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loadCalendarDay, renderTrades }) {
   const one = (selector) => page.querySelector(selector);
   const grid = one('[data-dash-calendar]');
   const dialog = one('[data-calendar-dialog]');
@@ -25,7 +29,14 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarDay, rende
   const journal = one('[data-calendar-day]');
   const agendaTitle = one('#dash-agenda-title');
   const upcomingButton = one('[data-calendar-upcoming]');
-  let model;
+  const previousMonth = one('[data-previous-month]');
+  const nextMonth = one('[data-next-month]');
+  const monthStatus = one('[data-month-status]');
+  let currentDay;
+  let selectedMonth;
+  let summary;
+  let monthRequest = 0;
+  let marketView = false;
   let feed;
   let feedFailed = false;
   let dayData;
@@ -42,70 +53,131 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarDay, rende
     });
   }
 
-  function paintMarkers() {
-    const marked = new Map();
-    for (const event of feed?.events ?? []) {
-      const key = eventDay(event);
-      const priority = event.impact === 3 || ['holiday', 'expiry'].includes(event.kind) ? 2 : 1;
-      marked.set(key, Math.max(marked.get(key) ?? 0, priority));
-    }
-    for (const button of grid.querySelectorAll('[data-day]')) {
-      const priority = marked.get(button.dataset.day);
-      button.classList.toggle('has-event', Boolean(priority));
-      button.classList.toggle('has-priority-event', priority === 2);
-      button.setAttribute('aria-label', button.title + (priority ? ' · Market events' : ''));
-    }
-  }
+  function renderMonth() {
+    const start = new Date(selectedMonth + '-01');
+    one('[data-calendar-month]').textContent = monthLabel.format(start);
+    previousMonth.disabled = selectedMonth === '0001-01';
+    nextMonth.disabled = selectedMonth >= currentDay.slice(0, 7);
+    const metrics = [
+      ['Closed trades', summary?.tradeCount ?? '—'],
+      ['Trading days', summary?.tradingDays ?? '—'],
+      ['Avg. realized R', result(summary?.averageR)],
+      ['Most traded asset', summary?.mostTraded ?? '—'],
+      ['Win rate', percent(summary?.winRate)],
+      ['Month P&L', result(summary?.netR), resultClass(summary?.netR)],
+    ];
+    one('[data-calendar-metrics]').replaceChildren(...metrics.map(([label, value, state]) => {
+      const tile = element('div', '', 'dash-month-metric');
+      tile.append(element('span', label), element('strong', value, state));
+      return tile;
+    }));
 
-  function renderCalendar() {
-    const days = model.days;
-    const first = days[0]?.date;
-    dayInput.min = first ?? model.day;
-    dayInput.max = feed?.last ?? model.day;
-    one('[data-calendar-range]').textContent = first ? ' · ' + date.formatRange(new Date(first), new Date(days.at(-1).date)) : '';
-    const cells = first ? Array((new Date(first).getUTCDay() + 6) % 7).fill(null).concat(days) : [];
+    const blankBefore = (start.getUTCDay() + 6) % 7;
+    const next = new Date(start);
+    next.setUTCMonth(next.getUTCMonth() + 1);
+    const last = new Date(next.getTime() - 86_400_000).getUTCDate();
+    const daily = new Map((summary?.days ?? []).map((entry) => [entry.date, entry]));
     const weeks = [];
-    for (let start = 0; start < cells.length; start += 7) {
+    const weekStats = [];
+    for (let offset = 0; offset < blankBefore + last; offset += 7) {
       const row = element('tr');
-      for (let offset = 0; offset < 7; offset++) {
-        const entry = cells[start + offset];
+      let weekResult = 0;
+      let weekCount = 0;
+      let wins = 0;
+      let checks = 0;
+      let kept = 0;
+      let firstDay;
+      let lastDay;
+      for (let weekday = 0; weekday < 7; weekday++) {
+        const day = offset + weekday + 1 - blankBefore;
         const cell = element('td');
         row.append(cell);
-        if (!entry) continue;
-        const value = entry.result;
-        const state = value == null ? '' : value > 0 ? 'is-win' : value < 0 ? 'is-loss' : 'is-flat';
-        const day = new Date(entry.date);
-        const button = element('button', '', 'dash-calendar-day ' + state);
-        button.type = 'button';
-        button.dataset.day = entry.date;
-        const count = entry.count == null ? '' : ' · ' + entry.count + (entry.count === 1 ? ' close' : ' closes');
-        button.title = date.format(day) + ' · ' + (value == null ? 'No closed trades' : result(value) + count);
-        if (entry.date === model.day) button.setAttribute('aria-current', 'date');
-        button.append(element('span', day.getUTCDate()));
-        if (value != null) {
-          const subtitle = element('small', result(value));
-          if (entry.count != null) subtitle.append(element('span', ' / ' + entry.count, 'dash-close-count'));
-          button.append(subtitle);
+        if (day < 1 || day > last) continue;
+        const key = selectedMonth + '-' + String(day).padStart(2, '0');
+        firstDay ??= key;
+        lastDay = key;
+        const entry = daily.get(key);
+        const count = entry?.count ?? 0;
+        const total = entry?.result;
+        if (count) {
+          weekCount += count;
+          weekResult += Math.round(total * 10_000);
+          wins += entry.wins ?? 0;
+          checks += entry.checks ?? 0;
+          kept += entry.kept ?? 0;
         }
+        const button = element('button', '', 'dash-calendar-day ' + resultClass(total));
+        button.type = 'button';
+        button.dataset.day = key;
+        button.disabled = key > currentDay;
+        const activity = !summary ? '' : count ? ' · ' + result(total) + ' · ' + tradeCount(count) : ' · No closed trades';
+        button.title = date.format(new Date(key)) + activity;
+        button.setAttribute('aria-label', button.title);
+        if (key === currentDay) button.setAttribute('aria-current', 'date');
+        button.append(element('span', day, 'dash-date-number'));
+        if (count) button.append(element('strong', result(total)), element('small', tradeCount(count)));
         cell.append(button);
       }
+      const weekTotal = summary ? weekResult / 10_000 : null;
+      const weekly = element('td', '', 'dash-week-cell');
+      const tile = element('div', '', 'dash-calendar-week ' + resultClass(weekCount ? weekTotal : null));
+      tile.append(element('strong', result(weekTotal)));
+      if (summary) tile.append(element('small', tradeCount(weekCount)));
+      weekly.append(tile);
+      row.append(weekly);
       weeks.push(row);
+      if (weekCount) weekStats.push([
+        date.formatRange(new Date(firstDay), new Date(lastDay)), wins * 100 / weekCount, checks ? kept * 100 / checks : null,
+      ]);
     }
     grid.replaceChildren(...weeks);
-    paintMarkers();
-    one('[data-calendar-periods]').replaceChildren(...(model.periods ?? []).map((period) => {
-      const tile = element('article', '', 'n-in');
-      tile.append(element('h3', period.label), element('strong', result(period.result)), element('p',
-        period.count + (period.count === 1 ? ' close' : ' closes') + ' · ' + percent(period.winRate) + ' win · ' + percent(period.adherence) + ' rules followed'));
-      return tile;
+    one('[data-calendar-rollups]').hidden = !summary?.tradeCount;
+    one('[data-calendar-rollup-list]').replaceChildren(...[
+      ['Month total', summary?.winRate, summary?.adherence], ...weekStats,
+    ].map(([label, winRate, adherence]) => {
+      const item = element('li');
+      item.append(element('strong', label), element('span', percent(winRate) + ' win rate · ' + percent(adherence) + ' rules followed'));
+      return item;
     }));
   }
 
+  async function selectMonth(month, refresh = false) {
+    const request = ++monthRequest;
+    if (!refresh) summary = undefined;
+    selectedMonth = month;
+    renderMonth();
+    monthStatus.textContent = 'Loading journal results…';
+    try {
+      const updated = await loadCalendarMonth(month);
+      if (request !== monthRequest) return;
+      summary = updated;
+      renderMonth();
+      monthStatus.textContent = '';
+    } catch {
+      if (request !== monthRequest) return;
+      const retry = element('button', 'Try again', 'n-btn n-out dash-button');
+      retry.type = 'button';
+      retry.addEventListener('click', () => void selectMonth(month, true));
+      monthStatus.replaceChildren(element('span', 'Monthly results are unavailable. '), retry);
+    }
+  }
+
+  function stepMonth(step) {
+    const target = new Date(selectedMonth + '-01');
+    target.setUTCMonth(target.getUTCMonth() + step);
+    void selectMonth(target.toISOString().slice(0, 7));
+  }
+  previousMonth.addEventListener('click', () => stepMonth(-1));
+  nextMonth.addEventListener('click', () => {
+    stepMonth(1);
+    if (nextMonth.disabled) previousMonth.focus();
+  });
+
   function renderJournal() {
     journal.replaceChildren();
-    if (upcoming) return;
+    if (marketView) return;
     if (!dayData) {
-      journal.append(element('p', dayError ? 'Unable to load this day. Choose a date to retry.' : 'Loading your trading activity…', 'dash-muted'));
+      journal.append(element('p', dayError ? 'Unable to load this day. Reopen it to retry.' : 'Loading your trading activity…', 'dash-muted'));
       return;
     }
     const formatTime = timeFormatter();
@@ -121,9 +193,11 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarDay, rende
       if (trade.closedAt) rows[index]?.append(element('small', 'Closed ' + formatTime.format(new Date(trade.closedAt))));
     });
     journal.append(element('h3', 'Trading activity'));
-    const summary = model.days.find(({ date }) => date === dayInput.value);
-    if (summary?.count) journal.append(element('p', result(summary.result) + ' realized · ' + summary.count
-      + (summary.count === 1 ? ' trade closed' : ' trades closed'), 'dash-muted'));
+    const closed = dayData.trades.filter(({ closedAt }) => closedAt && tradingDate.format(new Date(closedAt)) === dayInput.value);
+    if (closed.length) {
+      const net = closed.reduce((sum, trade) => sum + Math.round(trade.result * 10_000), 0) / 10_000;
+      journal.append(element('p', result(net) + ' realized · ' + tradeCount(closed.length) + ' closed', 'dash-muted'));
+    }
     journal.append(trades);
     if (dayData.notes.length) {
       const notes = element('ul', '', 'dash-agenda-list');
@@ -155,6 +229,7 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarDay, rende
   }
 
   function renderAgenda() {
+    if (!marketView) return;
     const formatTime = timeFormatter();
     agenda.replaceChildren();
     agendaTitle.textContent = upcoming ? 'Upcoming market events' : 'Market events';
@@ -176,7 +251,7 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarDay, rende
       return;
     }
     if (feedFailed) agenda.append(element('p', 'Refresh failed. Showing the last available feed.', 'dash-muted'));
-    const scope = upcoming ? (event) => eventDay(event) >= model.day : (event) => eventDay(event) === dayInput.value;
+    const scope = upcoming ? (event) => eventDay(event) >= currentDay : (event) => eventDay(event) === dayInput.value;
     const events = feed.events.filter((event) => scope(event) && (event.kind !== 'economic' || impact.value === 'all' || event.impact === Number(impact.value)))
       .sort((a, b) => eventDay(a).localeCompare(eventDay(b)) || (a.at ?? '').localeCompare(b.at ?? ''));
     const list = element('ul', '', 'dash-agenda-list');
@@ -200,7 +275,7 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarDay, rende
       feedFailed = false;
       lastFetch = Date.now();
       dayInput.max = next.last;
-      paintMarkers();
+      dayInput.min = next.first;
     }).catch(() => { feedFailed = true; }).finally(() => {
       pending = undefined;
       if (dialog.open) renderAgenda();
@@ -217,7 +292,7 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarDay, rende
     renderJournal();
     renderAgenda();
     try {
-      const next = await loadCalendarDay(day);
+      const next = await loadCalendarDay(day, marketView);
       if (request !== dayRequest) return;
       dayData = next;
     } catch {
@@ -231,6 +306,7 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarDay, rende
   }
 
   function showUpcoming() {
+    dayRequest++;
     upcoming = true;
     dayInput.value = '';
     renderJournal();
@@ -239,12 +315,19 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarDay, rende
 
   grid.addEventListener('click', (event) => {
     const button = event.target.closest('[data-day]');
-    if (!button) return;
-    dialog.showModal();
+    if (!button || button.disabled) return;
+    marketView = false;
+    one('[data-calendar-controls]').hidden = true;
+    one('[data-calendar-agenda-section]').hidden = true;
+    one('#dash-calendar-dialog-title').textContent = date.format(new Date(button.dataset.day));
     void selectDay(button.dataset.day);
-    void refreshFeed();
+    dialog.showModal();
   });
   one('[data-calendar-events]').addEventListener('click', () => {
+    marketView = true;
+    one('[data-calendar-controls]').hidden = false;
+    one('[data-calendar-agenda-section]').hidden = false;
+    one('#dash-calendar-dialog-title').textContent = 'Market events';
     showUpcoming();
     dialog.showModal();
     void refreshFeed();
@@ -258,12 +341,12 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarDay, rende
   impact.addEventListener('change', renderAgenda);
   const timer = setInterval(() => {
     if (!page.isConnected) return clearInterval(timer);
-    if (!document.hidden) void refreshFeed();
+    if (!document.hidden && dialog.open && marketView) void refreshFeed();
   }, liveRefresh);
 
   return (data) => {
-    model = data;
-    renderCalendar();
-    void refreshFeed();
+    currentDay = data.day;
+    const month = selectedMonth ?? currentDay.slice(0, 7);
+    void selectMonth(month, Boolean(selectedMonth));
   };
 }
