@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import pg from 'pg';
-import { createTradeHandler } from '../src/dashboard.js';
+import { createDashboardHandler, createTradeHandler } from '../src/dashboard.js';
 import { createStreakApi } from '../src/streak-api.js';
 import { createStreakStore } from '../src/streak-store.js';
 
@@ -65,6 +65,9 @@ test('streak API applies the rules to real Postgres queries under a rolled-back 
     const previous = await call(createTrade, alice, { body: template });
     assert.equal(previous.status, 200);
     assert.equal(previous.body.streak.todayCounted, false);
+    const rebucket = await call(api.savePreferences, alice, { body: { timezone: 'UTC', exchanges: [], reminderTime: null } });
+    assert.equal(rebucket.body.todayCounted, true);
+    await call(api.savePreferences, alice, { body: { timezone: 'Asia/Kolkata', exchanges: [], reminderTime: null } });
     const expired = await call(createTrade, alice, { body: { ...template, requestId: randomUUID(), occurredAt: '2026-11-17T18:29:00Z' } });
     assert.equal(expired.status, 400);
     const journal = await call(api.journal, alice);
@@ -78,8 +81,15 @@ test('streak API applies the rules to real Postgres queries under a rolled-back 
     assert.equal((await call(api.remove, alice, { url: '/?tradeId=' + tradeId })).body.current, 0);
     const rest = await call(api.rest, alice, { body: { note: 'Waited for a setup.' } });
     assert.equal(rest.body.kindToday, 'rest');
+    assert.equal((await call(createDashboardHandler(pool, authenticate), alice)).body.streak, 1);
     await call(api.rest, alice, { body: {} });
     assert.deepEqual((await call(api.journal, alice)).body.restDays, [{ day: '2026-11-21', note: 'Waited for a setup.' }]);
+    const share = await call(api.share, alice, { body: { theme: 'indigo', current: 999 } });
+    assert.equal(share.status, 200);
+    const shared = await call(api.shared, null, { url: '/?token=' + share.body.token });
+    assert.deepEqual([shared.status, shared.body.current, shared.body.theme], [200, 1, 'indigo']);
+    assert.equal(Object.hasOwn(shared.body, 'userId'), false);
+    assert.equal((await call(api.shared, null, { url: '/?token=invalid' })).status, 404);
     const bobStatus = await call(api.status, bob);
     assert.equal((await call(api.invite, alice, { body: { code: bobStatus.body.inviteCode } })).status, 200);
     const relation = (await call(api.friends, bob)).body.friends[0];
@@ -95,6 +105,9 @@ test('streak API applies the rules to real Postgres queries under a rolled-back 
     })).status, 200);
     assert.equal((await call(api.preferences, alice)).body.reminderTime, '20:00');
     now = new Date('2026-12-01T18:31:00Z');
+    await db.query("UPDATE streak_battles SET started_on='2026-11-21',length_days=3 WHERE challenger_id=$1", [alice]);
+    assert.equal((await call(api.battles, alice)).body.battles[0].result, 'won');
+    assert.equal((await call(api.battles, bob)).body.battles[0].result, 'lost');
     await call(api.status, alice);
     for (let offset = 1; offset <= 7; offset++) {
       now = new Date(Date.UTC(2026, 11, offset, 10));
@@ -104,6 +117,12 @@ test('streak API applies the rules to real Postgres queries under a rolled-back 
     assert.ok(badges.some((badge) => badge.key === 'streak-7' && badge.seen === false));
     await call(api.badgesSeen, outsider, { body: { key: 'streak-7' } });
     assert.equal((await call(api.status, outsider)).body.badges.find((badge) => badge.key === 'streak-7').seen, true);
+    now = new Date('2026-12-24T10:00:00Z');
+    await call(api.savePreferences, bob, { body: { timezone: 'Asia/Kolkata', exchanges: ['NSE', 'BSE'], reminderTime: null } });
+    await call(api.rest, bob, { body: {} });
+    now = new Date('2026-12-25T10:00:00Z');
+    const holiday = (await call(api.status, bob)).body;
+    assert.deepEqual([holiday.current, holiday.kindToday, holiday.todayCounted], [2, 'rest', true]);
   } finally {
     await db.query('ROLLBACK');
     await db.end();

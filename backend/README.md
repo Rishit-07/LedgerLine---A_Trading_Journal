@@ -12,7 +12,15 @@ The API listens on `127.0.0.1:8787` by default. A deployed frontend should route
 
 ## Dashboard
 
-`GET /api/dashboard` returns the verified user's completed onboarding profile, saved plan, active rules and metrics calculated from their trades. Dashboard dates and days use IST. `POST /api/trades` records a manual trade in one of the user's selected markets, with optional realized R, stop and target. Rule checks are saved alongside the trade. The client request ID makes retries safe.
+`GET /api/dashboard` returns the verified user's completed onboarding profile, saved plan, active rules and metrics calculated from their trades. Dashboard and P&L dates use IST. `POST /api/trades` records a manual trade in a supported market, with optional realized R, stop and target. Rule checks are saved alongside the trade. The client request ID makes retries safe.
+
+## Journal streak
+
+The verified user's streak is rebuilt from their trades, first review timestamps, and rest-day entries, using `user_profile.timezone`. Changing timezone rebuckets trade and review instants. Explicit rest-day notes retain their recorded calendar dates. The published 2026 NSE/BSE equity schedules are in `exchange_holidays`. Add new notices and special sessions through migrations as those exchanges announce them.
+
+Run `node --test backend/test/streak*.test.js` for the unit and API authorization tests. Set `STREAK_TEST_DATABASE_URL` to the direct URL of a migrated development database to include the transactional API integration test. Its test records are rolled back.
+
+The `streakmaintenance` Neon Function and its five-minute UTC trigger are declared in `neon.ts`. It advances streaks after midnight in each user's timezone. It also sends at most one opt-in email reminder per local date when a sender is configured, and settles completed battles after the backfill window. The Node backend runs the same job while it is running unless `STREAK_NEON_SCHEDULE=true`. Set that flag when the hosted Function has the mail sender and public `APP_URL` configured. Provide those values through a private deployment environment passed to `neon deploy --env`.
 
 ## Email
 

@@ -15,6 +15,7 @@ export default {
       return Response.json({ error: 'Invalid schedule trigger.' }, { status: 400 });
     }
     await runStreakMaintenance(pool, mailConfig);
+    console.log('Streak maintenance completed for ' + scheduledAt.toISOString());
     return Response.json({ ok: true });
   },
 };

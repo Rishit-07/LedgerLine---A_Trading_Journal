@@ -123,6 +123,8 @@ const routes = new Map([
   ['/api/streak/battles', { methods: ['GET', 'POST'], handler: (request, response) =>
     (request.method === 'GET' ? streak.battles : streak.challenge)(request, response) }],
   ['/api/streak/badges/seen', { methods: ['POST'], handler: streak.badgesSeen }],
+  ['/api/streak/share', { methods: ['GET', 'POST'], handler: (request, response) =>
+    (request.method === 'GET' ? streak.shared : streak.share)(request, response) }],
   ['/api/streak/preferences', { methods: ['GET', 'PUT'], handler: (request, response) =>
     (request.method === 'GET' ? streak.preferences : streak.savePreferences)(request, response) }],
 ]);

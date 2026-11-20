@@ -18,18 +18,17 @@ export function preferredExchanges(profile) {
 }
 
 function isMarketClosed({ timezone, exchanges, holidays }) {
-  const exceptions = new Map(holidays.map((row) => [row.exchange + row.day, row.closed]));
+  const exceptions = new Map(holidays.map((row) => [row.exchange + row.day, row]));
   return (day) => exchanges.length > 0 && ![-1, 0, 1].some((offset) => {
     const exchangeDay = shiftDay(day, offset);
     const weekday = new Date(exchangeDay).getUTCDay();
-    const special = exchanges.some((exchange) => exceptions.get(exchange + exchangeDay) === false);
-    const open = special || (weekday !== 0 && weekday !== 6 && exchanges.some((exchange) => exceptions.get(exchange + exchangeDay) !== true));
-    if (!open) return false;
-    // The regular cash session can span two local dates for a user outside India.
-    const [openAt, closeAt] = special && weekday === 0 && exchangeDay.endsWith('-11-08')
-      ? ['14:20', '15:30'] : ['09:15', '15:30'];
-    return localDay(exchangeDay + 'T' + openAt + ':00+05:30', timezone) <= day &&
-      localDay(exchangeDay + 'T' + closeAt + ':00+05:30', timezone) >= day;
+    return exchanges.some((exchange) => {
+      const session = exceptions.get(exchange + exchangeDay);
+      if (session?.closed ?? (weekday === 0 || weekday === 6)) return false;
+      // One exchange session can span two local dates outside India.
+      return localDay(exchangeDay + 'T' + (session?.opensAt ?? '09:15:00') + '+05:30', timezone) <= day &&
+        localDay(exchangeDay + 'T' + (session?.closesAt ?? '15:30:00') + '+05:30', timezone) >= day;
+    });
   });
 }
 
@@ -64,7 +63,7 @@ export function createStreakStore(pool, clock = () => new Date()) {
       `, [userId, profile.timezone]);
       const first = activity.reduce((min, item) => item.day < min ? item.day : min, today);
       const { rows: holidays } = activity.length && exchanges.length ? await db.query(`
-        SELECT exchange, day::text, closed FROM exchange_holidays
+        SELECT exchange, day::text, closed, opens_at::text AS "opensAt", closes_at::text AS "closesAt" FROM exchange_holidays
         WHERE exchange = ANY($1) AND day BETWEEN $2::date - 1 AND $3::date + 1
       `, [exchanges, first, today]) : { rows: [] };
       const { days, perfectBest, ...state } = calculateStreak({
@@ -113,7 +112,8 @@ export function createStreakStore(pool, clock = () => new Date()) {
     const now = clock();
     if (localDay(now, battle.challengerTimezone) <= shiftDay(end, 2) ||
         localDay(now, battle.opponentTimezone) <= shiftDay(end, 2)) return battle;
-    const [challenger, opponent] = await Promise.all([recomputeStreak(battle.challenger), recomputeStreak(battle.opponent)]);
+    const challenger = await recomputeStreak(battle.challenger);
+    const opponent = await recomputeStreak(battle.opponent);
     const a = scoreBattle(challenger.dates, battle.startedOn, battle.lengthDays);
     const b = scoreBattle(opponent.dates, battle.startedOn, battle.lengthDays);
     const winner = a === b ? null : a > b ? battle.challenger : battle.opponent;

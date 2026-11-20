@@ -22,16 +22,13 @@ function groupPerformance(trades, label) {
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
-function metrics({ day, trades, activityDays }) {
+function metrics({ day, trades }) {
   const closed = trades.filter((trade) => trade.result !== null);
   const month = closed.filter((trade) => trade.closedDay.startsWith(day.slice(0, 7)));
   const recent = closed.filter((trade) => trade.closedDay >= earlier(day, 6));
   const monthlyBooked = month.length ? total(month) : null;
   const checkCount = recent.reduce((sum, trade) => sum + trade.checks, 0);
   const keptCount = recent.reduce((sum, trade) => sum + trade.kept, 0);
-  const activeDays = new Set(activityDays);
-  let streak = 0;
-  for (let offset = activeDays.has(day) ? 0 : 1; activeDays.has(earlier(day, offset)); offset++) streak++;
   const today = trades.filter((trade) => trade.openedDay === day || trade.closedDay === day);
   const tradeActivity = (trade) => trade.closedAt ?? trade.openedAt;
   const windowStart = earlier(day, 41);
@@ -67,7 +64,7 @@ function metrics({ day, trades, activityDays }) {
   return {
     monthlyBooked, winRate: percent(recent.filter((trade) => trade.result > 0).length, recent.length),
     average: recent.length ? total(recent) / recent.length : null,
-    rulesFollowed: percent(keptCount, checkCount), streak, today, recentTrades,
+    rulesFollowed: percent(keptCount, checkCount), today, recentTrades,
     open: trades.filter((trade) => trade.result === null), dailyLoss: dailyNet < 0 ? -dailyNet : 0,
     curve, peak, drawdown, periods,
     days: days.map((date) => {
@@ -101,23 +98,21 @@ export function createDashboardHandler(pool, authenticate) {
             OR t.closed_at >= (today.day - 41)::timestamp AT TIME ZONE 'Asia/Kolkata')
           ORDER BY t.opened_at DESC
         )
-        SELECT today.day::text AS day, p.display_name AS "displayName", p.markets,
+        SELECT today.day::text AS day, p.display_name AS "displayName", p.markets, p.timezone AS "streakTimezone",
           p.risk_per_trade_pct::float AS "riskPerTrade", p.daily_loss_limit_r AS "dailyLossLimit",
           p.max_trades_per_day AS "maxTrades", p.broker,
           (SELECT json_build_object('bias', bias, 'locked', locked_at IS NOT NULL)
            FROM plans WHERE user_id = $1 AND date = today.day) AS plan,
           coalesce((SELECT json_agg(json_build_object('id', id::text, 'text', text, 'hard', hard) ORDER BY position)
            FROM rules WHERE user_id = $1 AND active), '[]') AS rules,
-          coalesce((SELECT json_agg(date::text) FROM (
-            SELECT date FROM journal_entries WHERE user_id = $1
-            UNION SELECT (opened_at AT TIME ZONE 'Asia/Kolkata')::date FROM trades WHERE user_id = $1
-          ) AS days), '[]') AS "activityDays",
+          coalesce(s.current,0) AS streak,
           coalesce((SELECT json_agg(visible_trades ORDER BY "openedAt" DESC, id DESC) FROM visible_trades), '[]') AS trades
-        FROM user_profile p CROSS JOIN today WHERE p.user_id = $1 AND p.onboarded_at IS NOT NULL
+        FROM user_profile p CROSS JOIN today LEFT JOIN streak_state s ON s.user_id=p.user_id
+        WHERE p.user_id = $1 AND p.onboarded_at IS NOT NULL
       `, [claims.uid]);
       if (!data) return send(response, 409, { error: 'Finish onboarding to open Dashboard.' });
-      const { trades, activityDays, ...profile } = data;
-      send(response, 200, { ...profile, ...metrics({ day: data.day, trades, activityDays }) });
+      const { trades, ...profile } = data;
+      send(response, 200, { ...profile, ...metrics({ day: data.day, trades }) });
     } catch (error) {
       console.error('Could not load the dashboard (' + (error.code ?? 'unknown error') + ').');
       send(response, 503, { error: 'Dashboard is temporarily unavailable.' });

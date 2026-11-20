@@ -89,6 +89,7 @@ export function calculateStreak({ today, activity, isClosed = () => false }) {
     todayCounted: Boolean(kindToday), nextFreezeIn: 7 - current % 7,
     todayIndex: (new Date(today).getUTCDay() + 6) % 7,
     kindToday, skippedToday: Boolean(todayActivity && todayActivity.kept < todayActivity.checks),
+    manualRestToday: activity.some(({ day, kind }) => day === today && kind === 'rest'),
     lastCountedDay: days.at(-1)?.day ?? null, days, perfectBest,
   };
 }

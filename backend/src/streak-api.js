@@ -118,6 +118,28 @@ export function createStreakApi(pool, authenticate, store, { remindersAvailable 
       await pool.query('UPDATE badges_earned SET seen_at=coalesce(seen_at,now()) WHERE user_id=$1 AND badge_key=$2', [uid, key]);
       return { ok: true };
     }, true),
+    share: endpoint(async ({ uid }, { theme }) => {
+      if (!['ivory', 'indigo', 'night'].includes(theme)) throw new StreakError(400, 'Choose a share card theme.');
+      const { streak: { current, best, level, week } } = await recomputeStreak(uid);
+      const snapshot = { current, best, level, week, theme };
+      const { rows: [row] } = await pool.query(`
+        INSERT INTO streak_shares (user_id,snapshot) VALUES ($1,$2)
+        ON CONFLICT (user_id,snapshot) DO UPDATE SET snapshot=excluded.snapshot
+        RETURNING id AS token
+      `, [uid, snapshot]);
+      return row;
+    }, true),
+    shared: async (request, response) => {
+      const token = new URL(request.url, 'http://localhost').searchParams.get('token');
+      if (!uuid.test(token ?? '')) return send(response, 404, { error: 'This streak link is unavailable.' });
+      try {
+        const { rows: [entry] } = await pool.query('SELECT snapshot FROM streak_shares WHERE id=$1', [token]);
+        if (!entry) return send(response, 404, { error: 'This streak link is unavailable.' });
+        send(response, 200, entry.snapshot);
+      } catch {
+        send(response, 503, { error: 'This streak link could not load.' });
+      }
+    },
     preferences: endpoint(async ({ uid }) => {
       const { rows: [row] } = await pool.query(`
         SELECT timezone, markets, streak_exchanges AS exchanges, to_char(streak_reminder_time,'HH24:MI') AS "reminderTime"
