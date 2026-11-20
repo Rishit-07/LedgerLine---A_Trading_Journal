@@ -16,7 +16,7 @@ const text = (tag, value, className) => {
 const r = (value) => value === null ? '—' : `${value > 0 ? '+' : ''}${number.format(value)}R`;
 const pct = (value) => value === null ? '—' : `${number.format(value)}%`;
 
-function tradeList(container, trades, empty) {
+function tradeList(container, trades, empty, showDate = false) {
   if (!trades.length) return container.replaceChildren(text('p', empty, 'n-in dash-empty'));
   const list = text('ul', '', 'dash-trades');
   for (const trade of trades) {
@@ -26,7 +26,7 @@ function tradeList(container, trades, empty) {
     if (trade.result === null && (trade.stop !== null || trade.target !== null)) {
       details.append(text('small', `Stop ${trade.stop ?? '—'} · Target ${trade.target ?? '—'}`));
     }
-    if (trade.checks) details.append(text('small', `${trade.kept} of ${trade.checks} rules followed`));
+    if (showDate) details.append(text('small', date.format(new Date(trade.closedDay ?? trade.openedDay))));
     row.append(details, text('strong', trade.result === null ? 'Open' : r(trade.result), trade.result < 0 ? 'is-loss' : trade.result > 0 ? 'is-win' : ''));
     list.append(row);
   }
@@ -42,10 +42,13 @@ function equityChart(container, curve) {
   const points = values.map((value, index) => `${12 + index / (values.length - 1) * 576},${y(value)}`).join(' ');
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 600 216');
+  svg.setAttribute('preserveAspectRatio', 'none');
   svg.setAttribute('role', 'img');
+  svg.setAttribute('focusable', 'false');
   svg.setAttribute('aria-label', `Cumulative realized result ends at ${r(values.at(-1))}.`);
   const line = document.createElementNS(svg.namespaceURI, 'polyline');
   line.setAttribute('points', points);
+  line.setAttribute('vector-effect', 'non-scaling-stroke');
   svg.append(line);
   container.replaceChildren(svg);
 }
@@ -60,7 +63,7 @@ function fillDashboard(page, data, name) {
   set('[data-dash-date]', `${date.format(new Date(data.day))} · IST`);
   set('[data-month-result]', r(data.monthlyBooked));
   set('[data-month-note]', data.monthlyBooked === null ? 'No closed trades this month.' : 'Realized result from your closed trades.');
-  set('[data-streak]', `${data.streak} ${data.streak === 1 ? 'day' : 'days'}`);
+  set('[data-streak]', data.streak + (data.streak === 1 ? ' day' : ' days'));
   set('[data-adherence]', pct(data.rulesFollowed));
   const lossBudget = `${number.format(data.dailyLoss)}R of ${data.dailyLossLimit}R used`;
   set('[data-loss-budget]', lossBudget);
@@ -68,30 +71,26 @@ function fillDashboard(page, data, name) {
   one('[data-loss-meter]').value = data.dailyLoss;
   const hitLimit = data.dailyLoss >= data.dailyLossLimit;
   page.classList.toggle('dash-loss-limit-hit', hitLimit);
-  set('[data-risk-note]', hitLimit ? 'Daily loss limit reached.' : 'Realized losses are within your daily limit.');
+  set('[data-risk-note]', hitLimit ? 'Daily loss limit reached.' : 'Daily loss budget available.');
   set('[data-plan-text]', data.plan ? (data.plan.locked ? 'Plan locked' : 'Plan in progress') : 'No plan for today yet.');
-  set('[data-plan-bias]', data.plan?.bias ?? '');
-  set('[data-today-count]', `${data.today.length} ${data.today.length === 1 ? 'trade' : 'trades'} logged`);
+  set('[data-plan-bias]', data.plan?.bias ? ' · ' + data.plan.bias : '');
 
   one('[data-dash-kpis]').replaceChildren(...[
-    ['Rules followed', pct(data.rulesFollowed)], ['Journal streak', `${data.streak}d`], ['Win rate', pct(data.winRate)],
-    ['Average per trade', r(data.average)], ['Risk used today', `${number.format(data.dailyLoss)}R`], ['Today’s trades', String(data.today.length)],
-  ].map(([label, value]) => {
+    ['Win rate', pct(data.winRate), 'Last 7 days'],
+    ['Average per trade', r(data.average), 'Last 7 days', data.average],
+    ['Max drawdown', r(data.curve.length ? data.drawdown : null), 'Last 42 days', data.drawdown],
+    ['Open positions', String(data.open.length), 'Currently logged'],
+  ].map(([label, value, period, signedValue]) => {
     const card = text('div', '', 'n-out dash-kpi');
-    card.append(text('span', label), text('strong', value));
+    const valueClass = signedValue > 0 ? 'is-win' : signedValue < 0 ? 'is-loss' : '';
+    card.append(text('span', label), text('strong', value, valueClass), text('small', period));
     return card;
   }));
 
-  one('[data-start-list]').replaceChildren(...[
-    [data.streak || data.today.length ? 'Trading activity recorded' : 'Log your first trade', Boolean(data.streak || data.today.length)],
-    [`Trade entry: ${brokerNames[data.broker] ?? 'Add by hand'}`, true],
-    [`Markets: ${data.markets.map((market) => marketNames[market]).join(', ')}`, data.markets.length > 0],
-    [data.rules.length ? `${data.rules.length} starting rules saved` : 'Set a starting rule', data.rules.length > 0],
-  ].map(([label, done]) => text('li', label, done ? 'is-done' : '')));
-
+  const openedToday = data.today.filter((trade) => trade.openedDay === data.day).length;
   const risk = one('[data-risk-list]');
   risk.replaceChildren();
-  for (const [label, value] of [['Risk per trade', pct(data.riskPerTrade)], ['Daily loss limit', lossBudget], ['Max trades per day', String(data.maxTrades)]]) {
+  for (const [label, value] of [['Risk per trade', pct(data.riskPerTrade)], ['Daily loss limit', lossBudget], ['Opened today / daily max', openedToday + ' / ' + data.maxTrades]]) {
     risk.append(text('dt', label), text('dd', value));
   }
   one('[data-rule-list]').replaceChildren(...data.rules.map((rule) => {
@@ -108,9 +107,13 @@ function fillDashboard(page, data, name) {
   equityChart(one('[data-equity-chart]'), data.curve);
   const totals = one('[data-equity-totals]');
   totals.hidden = !data.curve.length;
-  totals.textContent = `Max drawdown ${r(data.drawdown)} · Peak ${r(data.peak)}`;
-  tradeList(one('[data-open-list]'), data.open, 'No open positions logged.');
-  tradeList(one('[data-today-list]'), data.today, 'No trades logged today.');
+  totals.textContent = 'Peak equity ' + r(data.peak);
+  set('[data-open-count]', data.open.length + (data.open.length === 1 ? ' open position' : ' open positions'));
+  tradeList(one('[data-open-list]'), data.open.slice(0, 5), 'No open positions logged.');
+  const extraPositions = one('[data-more-positions]');
+  extraPositions.hidden = data.open.length <= 5;
+  if (!extraPositions.hidden) tradeList(one('[data-extra-positions]'), data.open.slice(5));
+  tradeList(one('[data-recent-list]'), data.recentTrades ?? data.today, 'No trades logged in the last 42 days.', true);
 }
 
 export function renderDashboard(landing, { initial, load, name, save, signOut }) {
@@ -124,20 +127,7 @@ export function renderDashboard(landing, { initial, load, name, save, signOut })
     page.toggleAttribute('data-menu-open', !expanded);
   });
 
-  const viewLinks = [...page.querySelectorAll('.dash-views a')];
-  const views = [...page.querySelectorAll('[data-dash-view]')];
-  function selectView(scroll = false) {
-    const target = document.getElementById(location.hash.slice(1));
-    const selected = target?.closest('[data-dash-view]') ?? views[0];
-    views.forEach((view) => { view.hidden = view !== selected; });
-    viewLinks.forEach((link) => {
-      if (link.hash === '#' + selected.id) link.setAttribute('aria-current', 'location');
-      else link.removeAttribute('aria-current');
-    });
-    if (scroll && target) (target === selected ? selected : target).scrollIntoView({ block: 'start' });
-  }
-  selectView(Boolean(location.hash));
-  addEventListener('hashchange', () => selectView(true));
+  if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
   let data = initial;
   let requestId;
   fillDashboard(page, data, name);

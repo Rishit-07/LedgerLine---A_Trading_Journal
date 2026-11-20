@@ -31,6 +31,12 @@ function metrics({ day, trades, activityDays }) {
   let streak = 0;
   for (let offset = activeDays.has(day) ? 0 : 1; activeDays.has(earlier(day, offset)); offset++) streak++;
   const today = trades.filter((trade) => trade.openedDay === day || trade.closedDay === day);
+  const tradeActivity = (trade) => trade.closedAt ?? trade.openedAt;
+  const windowStart = earlier(day, 41);
+  const recentTrades = trades
+    .filter((trade) => (trade.closedDay ?? trade.openedDay) >= windowStart)
+    .sort((a, b) => tradeActivity(b).localeCompare(tradeActivity(a)))
+    .slice(0, 5);
   const dailyNet = total(closed.filter((trade) => trade.closedDay === day));
   let equity = 0;
   let peak = 0;
@@ -47,7 +53,7 @@ function metrics({ day, trades, activityDays }) {
   return {
     monthlyBooked, winRate: percent(recent.filter((trade) => trade.result > 0).length, recent.length),
     average: recent.length ? total(recent) / recent.length : null,
-    rulesFollowed: percent(keptCount, checkCount), streak, today,
+    rulesFollowed: percent(keptCount, checkCount), streak, today, recentTrades,
     open: trades.filter((trade) => trade.result === null), dailyLoss: dailyNet < 0 ? -dailyNet : 0,
     curve, peak, drawdown, days: days.map((date) => ({ date, result: daily.get(date) ?? null })),
     breakdown: {
@@ -67,7 +73,7 @@ export function createDashboardHandler(pool, authenticate) {
         WITH today AS (SELECT (now() AT TIME ZONE 'Asia/Kolkata')::date AS day),
         visible_trades AS (
           SELECT t.id::text, t.symbol, t.market, t.side, t.stop::float, t.target::float, t.setup,
-            t.r_multiple::float AS result, t.closed_at AS "closedAt",
+            t.r_multiple::float AS result, t.opened_at AS "openedAt", t.closed_at AS "closedAt",
             (t.opened_at AT TIME ZONE 'Asia/Kolkata')::date AS "openedDay",
             (t.closed_at AT TIME ZONE 'Asia/Kolkata')::date AS "closedDay",
             (SELECT count(*)::int FROM trade_checks c WHERE c.user_id = $1 AND c.trade_id = t.id) AS checks,
@@ -88,7 +94,7 @@ export function createDashboardHandler(pool, authenticate) {
             SELECT date FROM journal_entries WHERE user_id = $1
             UNION SELECT (opened_at AT TIME ZONE 'Asia/Kolkata')::date FROM trades WHERE user_id = $1
           ) AS days), '[]') AS "activityDays",
-          coalesce((SELECT json_agg(visible_trades) FROM visible_trades), '[]') AS trades
+          coalesce((SELECT json_agg(visible_trades ORDER BY "openedAt" DESC, id DESC) FROM visible_trades), '[]') AS trades
         FROM user_profile p CROSS JOIN today WHERE p.user_id = $1 AND p.onboarded_at IS NOT NULL
       `, [claims.uid]);
       if (!data) return send(response, 409, { error: 'Finish onboarding to open Dashboard.' });
