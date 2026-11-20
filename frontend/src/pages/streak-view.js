@@ -44,36 +44,19 @@ function paintTally(mascot, state, previous) {
   mascot.alt = 'Tally ' + { sleep: 'resting', tuck: 'tucking in', cheer: 'cheering', calm: 'calm' }[mood];
 }
 
-export function bindDashboardStreak(card, hero) {
-  const count = card.querySelector('[data-streak-count]');
-  let previous;
-  return (state) => {
-    const target = state.best || 1;
-    count.textContent = state.current;
-    hero.textContent = state.current + (state.current === 1 ? ' day' : ' days');
-    card.querySelector('[data-streak-level]').textContent = 'Level ' + state.level;
-    card.querySelector('[data-streak-freeze]').textContent = 'Freeze held: ' + state.freezes;
-    card.querySelector('[data-streak-goal]').textContent = progressText(state);
-    const bar = card.querySelector('progress');
-    bar.max = target;
-    bar.value = state.current;
-    paintTally(card.querySelector('[data-tally]'), state, previous);
-    card.hidden = false;
-    previous = state;
-  };
-}
-
 export function bindStreakPanel(panel) {
   const number = panel.querySelector('[data-streak-count]');
   const mascot = panel.querySelector('[data-tally]');
   const week = panel.querySelector('[data-streak-week]');
   const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const dots = dayNames.map((name) => {
+  const dateLabel = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const columns = dayNames.map((name) => {
     const dot = element('span', '', 'streak-dot');
     const column = element('div', '', 'streak-day');
-    column.append(dot, element('span', name[0]));
+    const label = element('time', name.slice(0, 3));
+    column.append(dot, label);
     week.append(column);
-    return dot;
+    return { dot, label };
   });
   let previous;
   let tween;
@@ -89,14 +72,23 @@ export function bindStreakPanel(panel) {
     const progress = panel.querySelector('progress');
     progress.max = state.best || 1;
     progress.value = state.current;
-    dots.forEach((dot, index) => {
+    const today = new Date(state.today + 'T00:00:00Z');
+    const todayIndex = (today.getUTCDay() + 6) % 7;
+    columns.forEach(({ dot, label }, index) => {
       const counted = state.week[index];
+      const day = new Date(today);
+      day.setUTCDate(day.getUTCDate() - todayIndex + index);
+      const isToday = index === todayIndex;
+      label.dateTime = day.toISOString().slice(0, 10);
+      label.textContent = dayNames[index].slice(0, 3) + ' ' + day.getUTCDate();
+      dot.title = dayNames[index] + ', ' + dateLabel.format(day) + (isToday ? ' · Today' : '');
       dot.classList.toggle('is-counted', counted);
-      const today = index === state.todayIndex;
-      dot.classList.toggle('is-today', today);
+      dot.classList.toggle('is-today', isToday);
       dot.textContent = counted ? '✓' : '';
       dot.setAttribute('role', 'img');
-      dot.setAttribute('aria-label', dayNames[index] + (today ? ', today' : '') + (counted ? ', counted' : ', open'));
+      dot.setAttribute('aria-label', dot.title + (counted ? ', counted' : ', uncounted'));
+      if (isToday) label.setAttribute('aria-current', 'date');
+      else label.removeAttribute('aria-current');
       if (counted && !previous?.week[index] && !reducedMotion()) {
         gsap.fromTo(dot, { scale: .5 }, { scale: 1, duration: .5, ease: 'back.out(2)', overwrite: true });
       }

@@ -52,18 +52,11 @@
       </div>
       <div class="dash-hero-tiles">
         <section class="n-out dash-score-tile"><h2>Trader Score</h2><div class="dash-score-ring" aria-hidden="true">—</div><p class="dash-muted">Score pending</p></section>
-        <a class="n-out dash-mini-tile dash-streak-link" href="/journal#streak"><strong data-streak>—</strong><span>Journal streak</span></a>
+        <button type="button" class="n-btn n-out dash-mini-tile dash-streak-badge" data-open-streak aria-haspopup="dialog" aria-controls="streak"><strong data-streak>—</strong><span>Journal streak <b aria-hidden="true">↗</b></span></button>
         <div class="n-out dash-mini-tile"><strong data-adherence>—</strong><span>Rules followed</span></div>
       </div>
     </section>
     <section class="dash-kpis" aria-label="Trading metrics" data-dash-kpis></section>
-    <section class="n-out streak-dashboard" data-dashboard-streak aria-labelledby="dash-streak-title" hidden>
-      <div class="streak-dashboard-title"><img src="/tally-calm.svg" data-tally alt="" width="52" height="52" />
-        <h2 id="dash-streak-title"><span data-streak-count></span><a href="/journal#streak">Journal streak</a></h2></div>
-      <div><div class="streak-chips"><span class="n-in" data-streak-level></span><span class="n-in" data-streak-freeze></span><span data-streak-goal></span></div>
-        <progress value="0" max="1" aria-label="Progress toward your best streak"></progress></div>
-      <p class="streak-footnote">A day counts when you log or review at least one trade, or note that you sat out.</p>
-    </section>
     <section class="n-out dash-card dash-calendar-card" id="trading-calendar" aria-labelledby="dash-calendar-title">
       <div class="dash-calendar-header">
         <div><h2 id="dash-calendar-title">Trading calendar</h2><p class="dash-muted" id="dash-calendar-period">Realized P&amp;L in R · IST</p></div>

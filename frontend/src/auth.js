@@ -11,6 +11,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import firebaseConfig from './firebase-config.js';
+import { streakInviteCode, streakInvitePath } from './streak-invite.js';
 import { mountPage, bindPageTheme } from './pages/shared.js';
 import { animatePageEntry } from './pages/navigation.js';
 import { bindTicketMotion } from './pages/ticket-motion.js';
@@ -336,45 +337,55 @@ function requestAccount(user) {
 
 async function enterVerified(page, user, next) {
   const account = await requestAccount(user).catch(() => null);
-  const destination = account?.onboardingCompleted === false ? '/onboarding' : next;
+  const invite = next.startsWith('/dashboard?') ? streakInviteCode(next.slice('/dashboard'.length)) : '';
+  const destination = account?.onboardingCompleted === false ? streakInvitePath('/onboarding', invite) : next;
   showWelcome(page, { displayName: account?.displayName || user.displayName }, destination);
 }
 
 export async function renderAccountPage(path, landing, appPages) {
+  if (path === '/journal' && location.hash === '#streak') {
+    location.replace('/dashboard#streak');
+    return;
+  }
   await auth.authStateReady();
   const user = auth.currentUser;
   if (path === '/auth') {
     const destination = new URLSearchParams(location.search).get('next');
-    const next = Object.hasOwn(appPages, destination) ? destination : '/dashboard';
+    const invite = destination?.startsWith('/dashboard?') ? streakInviteCode(destination.slice('/dashboard'.length)) : '';
+    const next = Object.hasOwn(appPages, destination) || destination === '/dashboard#streak'
+      ? destination : streakInvitePath('/dashboard', invite);
     if (user?.emailVerified === true) location.replace(next);
     else if (user) verifyEmail(landing, user, next, false);
     else renderSignIn(landing, next);
     return;
   }
 
+  const invite = ['/dashboard', '/onboarding'].includes(path) ? streakInviteCode(location.search) : '';
+  const dashboardDestination = streakInvitePath('/dashboard', invite);
   if (user?.emailVerified !== true) {
-    location.replace(signInPath(path));
+    const next = invite ? dashboardDestination : path === '/dashboard' && location.hash === '#streak' ? '/dashboard#streak' : path;
+    location.replace(signInPath(next));
     return;
   }
 
   const account = await requestAccount(user);
   if (path === '/onboarding') {
     if (account.onboardingCompleted) {
-      location.replace('/dashboard');
+      location.replace(dashboardDestination);
       return;
     }
     const { renderOnboarding } = await import('./pages/onboarding.js');
     const initial = await authenticatedRequest(user, '/api/onboarding', 'GET');
-    if (initial.completedAt) location.replace('/dashboard');
+    if (initial.completedAt) location.replace(dashboardDestination);
     else renderOnboarding(landing, {
-      initial, email: user.email,
+      initial, email: user.email, destination: dashboardDestination,
       save: (data) => authenticatedRequest(user, '/api/onboarding', 'PUT', data),
       signOut: () => signOut(auth),
     });
     return;
   }
   if (!account.onboardingCompleted) {
-    location.replace('/onboarding');
+    location.replace(streakInvitePath('/onboarding', invite));
     return;
   }
 

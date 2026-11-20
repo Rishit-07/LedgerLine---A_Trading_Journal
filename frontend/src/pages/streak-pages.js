@@ -1,8 +1,7 @@
 import dashboardMarkup from './dashboard.html?raw';
 import { bindPageTheme, mountPage } from './shared.js';
 import { bindQuickTrade } from './quick-trade.js';
-import { badgeMarkup, bindBadgeUnlock, bindStreakPanel, element, renderBadges, streakRule } from './streak-view.js';
-import { bindStreakShare, shareMarkup } from './streak-share.js';
+import { badgeMarkup, bindBadgeUnlock, element, renderBadges } from './streak-view.js';
 import '@fontsource/instrument-serif/latin-400.css';
 import './dashboard.css';
 
@@ -10,41 +9,6 @@ const captions = { journal: 'Trade journal', profile: 'Profile', badges: 'Badges
 const markets = { stocks: 'Stocks', options: 'Options', futures: 'Futures', forex: 'Forex', crypto: 'Crypto' };
 
 const journal = `
-  <div class="streak-journal">
-    <section class="n-out streak-panel" id="streak" aria-labelledby="streak-title" hidden>
-      <div class="streak-stage"><img data-tally src="/tally-calm.svg" alt="Tally calm" width="138" height="138" /></div>
-      <div class="streak-number" data-streak-count aria-live="off">0</div>
-      <h2 id="streak-title">day streak</h2>
-      <p data-streak-message aria-live="polite"></p>
-      <div class="streak-week" data-streak-week aria-label="Week from Monday through Sunday"></div>
-      <div class="n-in streak-goal">
-        <div><strong data-streak-goal></strong><span data-streak-ratio></span></div>
-        <progress max="1" value="0" aria-label="Progress toward your best streak"></progress>
-      </div>
-      <div class="streak-chips">
-        <span class="n-in" data-streak-freeze></span><span class="n-in" data-streak-best></span>
-        <span class="n-in" data-streak-level></span><span class="n-in" data-streak-xp></span>
-      </div>
-      <section class="n-in streak-social" aria-labelledby="streak-friends-title">
-        <h3 id="streak-friends-title">Streak together</h3>
-        <button type="button" class="n-btn n-out streak-btn" data-copy-invite>Copy my friend code</button>
-        <form data-invite-form><label>Friend code<input class="n-out" name="code" required maxlength="36" /></label>
-          <button class="n-btn n-out streak-btn">Invite</button></form>
-        <div data-friends></div>
-      </section>
-      <section class="n-in streak-social" aria-labelledby="streak-battle-title">
-        <h3 id="streak-battle-title">Streak battle</h3>
-        <form data-battle-form>
-          <label>Friend<select name="friendId" class="n-out" required></select></label>
-          <label>Length<select name="lengthDays" class="n-out"><option value="3">3 days</option><option value="7">7 days</option><option value="14">14 days</option></select></label>
-          <button class="n-btn n-out streak-btn">Send challenge</button>
-        </form>
-        <div data-battles></div>
-      </section>
-      <p class="streak-message" role="status" data-social-status></p>
-      <button type="button" class="n-btn n-acc streak-btn streak-share-button" data-share-streak>Share</button>
-      <p class="streak-footnote">${streakRule}</p>
-    </section>
     <div class="streak-journal-activity">
       <section class="n-out streak-tile" aria-labelledby="streak-rest-title">
         <h2 id="streak-rest-title">Rest day</h2>
@@ -60,12 +24,11 @@ const journal = `
         <div data-rest-days></div>
         <p class="streak-message" role="status" data-journal-status></p>
       </section>
-    </div>
-  </div>`;
+    </div>`;
 
 const profile = `
   <section class="n-out streak-tile streak-profile" aria-labelledby="streak-profile-title">
-    <div class="streak-heading"><h2 id="streak-profile-title" data-profile-name></h2><a href="/journal#streak">Open journal</a></div>
+    <div class="streak-heading"><h2 id="streak-profile-title" data-profile-name></h2><a href="/dashboard#streak">Open streak</a></div>
     <dl class="streak-profile-metrics">
       <div class="n-in"><dt>Current streak</dt><dd data-profile-current>—</dd></div>
       <div class="n-in"><dt>Best streak</dt><dd data-profile-best>—</dd></div>
@@ -125,7 +88,7 @@ export async function renderStreakPage(landing, { path, request, name, signOut }
         <p class="streak-message" role="status" data-streak-page-status>Loading…</p>
         ${mode === 'journal' ? journal : mode === 'settings' ? settings : profile}
       </main>
-      ${tradeDialogs}${mode === 'journal' ? shareMarkup : ''}${badgeMarkup}
+      ${tradeDialogs}${badgeMarkup}
     </div>`);
   bindPageTheme(page);
   const menu = page.querySelector('[data-dash-menu]');
@@ -156,20 +119,13 @@ export async function renderStreakPage(landing, { path, request, name, signOut }
     }
     pageStatus.textContent = '';
   } catch (error) { pageStatus.textContent = error.message; }
-  if (location.hash === '#streak') page.querySelector('#streak')?.scrollIntoView();
 }
 
 async function bindJournal(page, request, showBadge) {
-  const panel = page.querySelector('[id="streak"]');
-  const paint = bindStreakPanel(panel);
-  const share = bindStreakShare(page, request);
   const journalStatus = page.querySelector('[data-journal-status]');
-  const socialStatus = page.querySelector('[data-social-status]');
   const tradeList = page.querySelector('[data-journal-activity]');
   const restDays = page.querySelector('[data-rest-days]');
   const more = page.querySelector('[data-more-trades]');
-  const invite = page.querySelector('[data-invite-form]');
-  const battle = page.querySelector('[data-battle-form]');
   const rest = page.querySelector('[data-rest-form]');
   let state;
   let cursor;
@@ -177,8 +133,6 @@ async function bindJournal(page, request, showBadge) {
 
   function applyStreak(next) {
     state = next;
-    panel.hidden = false;
-    paint(state);
     rest.querySelector('button').textContent = state.manualRestToday ? 'Update rest-day note' : 'I sat out today';
     showBadge(state);
   }
@@ -220,29 +174,6 @@ async function bindJournal(page, request, showBadge) {
     more.hidden = !cursor;
   }
 
-  async function loadSocial() {
-    const [{ friends }, { battles }] = await Promise.all([request('/api/streak/friends', 'GET'), request('/api/streak/battles', 'GET')]);
-    battle.elements.friendId.replaceChildren(new Option('Choose a friend', ''), ...friends.filter(({ status }) => status === 'active')
-      .map(({ id, name }) => new Option(name || 'Ledgerline member', id)));
-    battle.querySelector('button').disabled = battle.elements.friendId.options.length < 2;
-    const rows = friends.map((friend) => {
-      const row = element('div', '', 'streak-social-row');
-      const label = friend.status === 'active' ? friend.current + ' day streak' : friend.outgoing ? 'Invite sent' : 'Invited you';
-      row.append(element('span', (friend.name || 'Ledgerline member') + ' · ' + label));
-      if (friend.status === 'pending' && !friend.outgoing) row.append(action('Accept', async () => {
-        await request('/api/streak/friends/accept', 'POST', { id: friend.id }); await loadSocial();
-      }, socialStatus));
-      row.append(action(friend.status === 'active' ? 'End' : friend.outgoing ? 'Cancel invite' : 'Decline', async () => {
-        await request('/api/streak/friends/end', 'POST', { id: friend.id }); await loadSocial();
-      }, socialStatus));
-      return row;
-    });
-    page.querySelector('[data-friends]').replaceChildren(...rows);
-    page.querySelector('[data-battles]').replaceChildren(...battles.map((record) => element('div',
-      (record.name || 'Ledgerline member') + ' · ' + record.lengthDays + ' days · ' +
-      ({ tie: 'Tie', won: 'Won', lost: 'Lost' }[record.result] ?? 'In progress'), 'streak-social-row')));
-  }
-
   const [initial, dashboardData] = await Promise.all([request('/api/streak', 'GET'), request('/api/dashboard', 'GET')]);
   dashboard = initialDashboard(dashboardData, initial);
   applyStreak(initial);
@@ -257,27 +188,13 @@ async function bindJournal(page, request, showBadge) {
   });
   if (location.hash === '#log' && !page.querySelector('dialog[open]')) page.querySelector('[data-log-trade]').click();
   more.addEventListener('click', () => run(more, journalStatus, () => loadJournal(true)));
-  page.querySelector('[data-share-streak]').addEventListener('click', () => share(state));
-  page.querySelector('[data-copy-invite]').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(state.inviteCode); socialStatus.textContent = 'Friend code copied.'; }
-    catch { socialStatus.textContent = 'Your friend code: ' + state.inviteCode; }
-  });
   bindSubmit(rest, journalStatus, async (data) => {
     const next = await request('/api/streak/rest-day', 'POST', { note: data.get('note') });
     applyStreak(next);
     rest.reset();
     await loadJournal();
   });
-  bindSubmit(invite, socialStatus, async (data) => {
-    await request('/api/streak/friends/invite', 'POST', { code: data.get('code') });
-    invite.reset();
-    await loadSocial();
-  });
-  bindSubmit(battle, socialStatus, async (data) => {
-    await request('/api/streak/battles', 'POST', { friendId: data.get('friendId'), lengthDays: Number(data.get('lengthDays')) });
-    await loadSocial();
-  });
-  await Promise.all([loadJournal(), loadSocial()]);
+  await loadJournal();
 }
 
 function initialDashboard(data, state) {

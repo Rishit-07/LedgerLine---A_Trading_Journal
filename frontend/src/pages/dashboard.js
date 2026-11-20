@@ -1,5 +1,7 @@
 import { bindQuickTrade } from './quick-trade.js';
-import { badgeMarkup, bindBadgeUnlock, bindDashboardStreak } from './streak-view.js';
+import { badgeMarkup, bindBadgeUnlock } from './streak-view.js';
+import { bindStreakDialog, streakPanelMarkup } from './streak-panel.js';
+import { streakInviteCode } from '../streak-invite.js';
 import { bindTradingCalendar } from './trading-calendar.js';
 import pageMarkup from './dashboard.html?raw';
 import { bindPageTheme, mountPage } from './shared.js';
@@ -117,7 +119,7 @@ function fillDashboard(page, data, name) {
 export function renderDashboard(landing, { initial, load, name, save, signOut, request, loadCalendar, loadCalendarMonth, loadCalendarDay }) {
   document.title = 'Dashboard — Ledgerline';
   const page = mountPage(landing, pageMarkup);
-  page.insertAdjacentHTML('beforeend', badgeMarkup);
+  page.insertAdjacentHTML('beforeend', streakPanelMarkup + badgeMarkup);
   bindPageTheme(page);
   const menu = page.querySelector('[data-dash-menu]');
   menu.addEventListener('click', () => {
@@ -161,17 +163,24 @@ export function renderDashboard(landing, { initial, load, name, save, signOut, r
   }));
   fillBreakdown();
   const status = page.querySelector('[data-dash-status]');
-  const paintStreak = bindDashboardStreak(page.querySelector('[data-dashboard-streak]'), page.querySelector('[data-streak]'));
+  const badge = page.querySelector('[data-open-streak]');
   const showBadge = request ? bindBadgeUnlock(page, request) : () => {};
   let streak;
+  const streakDialog = request ? bindStreakDialog(page, { request, getState: () => streak, onState: applyStreak }) : null;
   function applyStreak(next) {
     streak = next;
-    paintStreak(streak);
+    badge.querySelector('[data-streak]').textContent = streak.current + (streak.current === 1 ? ' day' : ' days');
+    if (streakDialog?.dialog.open) streakDialog.paintState(streak);
     showBadge(streak);
   }
-  if (request) void request('/api/streak', 'GET').then((initialStreak) => {
-    if (!streak) applyStreak(initialStreak);
-  }).catch(() => { if (!streak) page.querySelector('[data-streak]').textContent = 'Unavailable'; });
+  if (streakDialog) {
+    badge.addEventListener('click', () => streakDialog.open());
+    const invite = streakInviteCode(location.search);
+    if (invite || location.hash === '#streak') streakDialog.open(invite);
+    else void request('/api/streak', 'GET').then((initialStreak) => {
+      if (!streak) applyStreak(initialStreak);
+    }).catch(() => { if (!streak) badge.querySelector('[data-streak]').textContent = 'View'; });
+  }
   const signOutButton = page.querySelector('[data-sign-out]');
   signOutButton.addEventListener('click', async () => {
     signOutButton.disabled = true;

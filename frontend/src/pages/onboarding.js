@@ -10,7 +10,7 @@ const limits = [
   ['trades', 'Max trades per day', [2, 3, 5, 8, 10], ''],
 ];
 
-export function renderOnboarding(landing, { initial, email, save, signOut }) {
+export function renderOnboarding(landing, { initial, email, save, signOut, destination = '/dashboard' }) {
   document.title = 'Set up Ledgerline';
   const page = mountPage(landing, pageMarkup);
   bindPageTheme(page);
@@ -153,7 +153,7 @@ export function renderOnboarding(landing, { initial, email, save, signOut }) {
         page.inert = true;
         const exit = animatePageExit(page);
         await exit?.finished.catch(() => {});
-        location.replace('/dashboard');
+        location.replace(destination);
         return;
       }
       step++;
