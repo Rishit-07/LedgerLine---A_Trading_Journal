@@ -11,6 +11,7 @@ import { initToolWheel } from './tool-wheel.js';
 import { transitionTheme } from './theme-transition.js';
 import './styles/auth.css';
 import { animatePageEntry, bindPageNavigation } from './pages/navigation.js';
+import { bindPublicAccount } from './pages/public-account.js';
 
 const landing = document.querySelector('#landing');
 const root = document.documentElement;
@@ -73,6 +74,7 @@ const renderLoadError = () => renderPending('Page unavailable', 'Reload the page
 
 if (path === '/') {
   animatePageEntry(landing);
+  bindPublicAccount(landing);
   themeToggle.addEventListener('click', (event) =>
     transitionTheme(event, () => {
       const dark = !root.classList.contains('dark');
@@ -98,17 +100,20 @@ if (path === '/') {
   initToolWheel();
 } else if (path === '/about') {
   landing.hidden = true;
-  import('./pages/about.js').then(({ renderAbout }) => renderAbout(landing)).catch(renderLoadError);
+  import('./pages/about.js').then(({ renderAbout }) => bindPublicAccount(renderAbout(landing))).catch(renderLoadError);
 } else if (path === '/support') {
   landing.hidden = true;
-  import('./pages/support.js').then(({ renderSupport }) => renderSupport(landing)).catch(renderLoadError);
+  import('./pages/support.js').then(({ renderSupport }) => bindPublicAccount(renderSupport(landing))).catch(renderLoadError);
 } else if (path === '/terms' || path === '/privacy' || path === '/legal') {
   landing.hidden = true;
   if (path === '/legal') history.replaceState(null, '', '/privacy' + location.hash);
-  import('./pages/legal.js').then(({ renderLegal }) => renderLegal(landing)).catch(renderLoadError);
+  import('./pages/legal.js').then(({ renderLegal }) => bindPublicAccount(renderLegal(landing))).catch(renderLoadError);
 } else if (path === '/streak/share') {
   landing.hidden = true;
   import('./pages/streak-share.js').then(({ renderSharedStreak }) => renderSharedStreak(landing)).catch(renderLoadError);
+} else if (path === '/streak/invite') {
+  landing.hidden = true;
+  import('./pages/streak-invite-page.js').then(({ renderStreakInvite }) => renderStreakInvite(landing)).catch(renderLoadError);
 } else if (path === '/auth' || path === '/onboarding' || Object.hasOwn(appPages, path)) {
   landing.hidden = true;
   import('./auth.js')

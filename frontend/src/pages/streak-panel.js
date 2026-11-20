@@ -81,13 +81,21 @@ export function bindStreakDialog(page, { request, getState, onState }) {
   const rest = dialog.querySelector('[data-streak-rest]');
   let socialVersion = 0;
   let refreshing;
+  let showIncomingInvite = false;
 
   const friendName = (friend) => friend.name || 'Ledgerline member';
+  function revealIncomingInvite() {
+    if (!showIncomingInvite || !dialog.open || content.hidden) return;
+    showIncomingInvite = false;
+    invite.scrollIntoView({ block: 'center' });
+    invite.querySelector('button').focus({ preventScroll: true });
+  }
   function paintState(state) {
     paint(state);
     dialog.querySelector('[data-streak-zone]').textContent = 'Timezone · ' + state.timezone;
     rest.querySelector('button').textContent = state.manualRestToday ? 'Update rest note' : 'Log rest day';
     content.hidden = false;
+    revealIncomingInvite();
   }
 
   async function action(button, status, pendingMessage, callback) {
@@ -163,6 +171,9 @@ export function bindStreakDialog(page, { request, getState, onState }) {
   bindForm(invite, inviteStatus, 'Sending invite…', async (values) => {
     const code = parseStreakInvite(values.get('invite'));
     if (!code) throw new Error('Enter a Ledgerline invite link or a friend’s code.');
+    if (code.toLowerCase() === getState()?.inviteCode?.toLowerCase()) {
+      throw new Error('This is your invite link. Share it with the friend you want to invite.');
+    }
     await request('/api/streak/friends/invite', 'POST', { code });
     invite.reset();
     const url = new URL(location.href);
@@ -190,7 +201,7 @@ export function bindStreakDialog(page, { request, getState, onState }) {
   dialog.querySelector('[data-copy-invite]').addEventListener('click', async () => {
     const code = getState()?.inviteCode;
     if (!code) { inviteStatus.textContent = 'Your invite link is not ready yet.'; return; }
-    const link = new URL(streakInvitePath('/dashboard', code), location.origin).href;
+    const link = new URL(streakInvitePath('/streak/invite', code), location.origin).href;
     try {
       await navigator.clipboard.writeText(link);
       inviteStatus.textContent = 'Invite link copied.';
@@ -208,6 +219,7 @@ export function bindStreakDialog(page, { request, getState, onState }) {
   function open(code = '') {
     if (dialog.open || page.querySelector('dialog[open]')) return;
     if (code) {
+      showIncomingInvite = true;
       inviteInput.value = code;
       inviteStatus.textContent = 'Invite link received. Choose Send invite to request the connection.';
     }
@@ -215,6 +227,7 @@ export function bindStreakDialog(page, { request, getState, onState }) {
     if (current) paintState(current);
     dialog.showModal();
     dialog.scrollTop = 0;
+    revealIncomingInvite();
     loadStatus.textContent = current ? '' : 'Loading your streak…';
     if (!refreshing) refreshing = request('/api/streak', 'GET').then((state) => {
       if (getState() === current) onState(state);

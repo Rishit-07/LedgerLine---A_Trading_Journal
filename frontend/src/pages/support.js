@@ -180,4 +180,5 @@ export function renderSupport(landing) {
   bindHelpSearch(page);
   bindContactForm(page);
   if (location.hash === '#contact') page.querySelector('#contact').scrollIntoView();
+  return page;
 }

@@ -168,4 +168,5 @@ export function renderAbout(landing) {
   document.fonts.ready.then(schedule);
   animate();
   if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
+  return page;
 }

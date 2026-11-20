@@ -1,16 +1,13 @@
-import { initializeApp } from 'firebase/app';
 import {
-  connectAuthEmulator,
   createUserWithEmailAndPassword,
   getAdditionalUserInfo,
-  getAuth,
   GoogleAuthProvider,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
   updateProfile,
 } from 'firebase/auth';
-import firebaseConfig from './firebase-config.js';
+import { auth } from './firebase-session.js';
 import { streakInviteCode, streakInvitePath } from './streak-invite.js';
 import { mountPage, bindPageTheme } from './pages/shared.js';
 import { animatePageEntry } from './pages/navigation.js';
@@ -23,11 +20,6 @@ import '@fontsource/instrument-serif/latin-400.css';
 import '@fontsource/instrument-serif/latin-400-italic.css';
 import './pages/sign-in-design.css';
 import './pages/sign-in-layout.css';
-
-const auth = getAuth(initializeApp(firebaseConfig));
-if (import.meta.env.DEV && import.meta.env.VITE_FIREBASE_USE_EMULATOR === 'true') {
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099');
-}
 
 const errors = {
   'auth/invalid-email': 'Enter a valid email address.',
@@ -65,7 +57,7 @@ function verifyEmail(page, user, next, sendAutomatically) {
   });
 }
 
-function renderSignIn(landing, next) {
+function renderSignIn(landing, next, startWithSignup = false) {
   const page = mountPage(landing, signInMarkup);
   bindPageTheme(page);
   const form = page.querySelector('form');
@@ -84,7 +76,7 @@ function renderSignIn(landing, next) {
   const addCandle = animateSignInChart(page.querySelector('#hero-svg'));
   const meter = form.querySelector('[data-meter]');
   const segments = [...form.querySelectorAll('.au-seg2')];
-  let creating = false;
+  let creating = startWithSignup;
   let submitting = false;
   let accepted = false;
   let editVersion = 0;
@@ -350,13 +342,14 @@ export async function renderAccountPage(path, landing, appPages) {
   await auth.authStateReady();
   const user = auth.currentUser;
   if (path === '/auth') {
-    const destination = new URLSearchParams(location.search).get('next');
+    const parameters = new URLSearchParams(location.search);
+    const destination = parameters.get('next');
     const invite = destination?.startsWith('/dashboard?') ? streakInviteCode(destination.slice('/dashboard'.length)) : '';
     const next = Object.hasOwn(appPages, destination) || destination === '/dashboard#streak'
       ? destination : streakInvitePath('/dashboard', invite);
     if (user?.emailVerified === true) location.replace(next);
     else if (user) verifyEmail(landing, user, next, false);
-    else renderSignIn(landing, next);
+    else renderSignIn(landing, next, Boolean(invite && parameters.get('mode') === 'signup'));
     return;
   }
 

@@ -14,6 +14,7 @@ export function parseStreakInvite(value) {
   if (inviteCodePattern.test(input)) return input;
   try {
     const url = new URL(input);
-    return ['https:', 'http:'].includes(url.protocol) && url.pathname === '/dashboard' ? streakInviteCode(url.search) : '';
+    return ['https:', 'http:'].includes(url.protocol) && ['/dashboard', '/streak/invite'].includes(url.pathname)
+      ? streakInviteCode(url.search) : '';
   } catch { return ''; }
 }

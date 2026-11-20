@@ -78,4 +78,5 @@ export function renderLegal(landing) {
   );
   addEventListener('popstate', setDocument);
   page.querySelector('[data-print]').addEventListener('click', () => print());
+  return page;
 }

@@ -51,3 +51,10 @@
     flex-direction: column;
   }
 }
+.n-root[data-account-loading] [data-public-account] {
+  visibility: hidden;
+}
+
+[data-guest-only][hidden] {
+  display: none !important;
+}
