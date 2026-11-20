@@ -23,13 +23,12 @@ export function renderOnboarding(landing, { initial, email, save, signOut }) {
   const signOutButton = page.querySelector('[data-onboarding-sign-out]');
   const markets = [...form.querySelectorAll('[data-market]')];
   const selected = new Set(initial.markets ?? []);
-  const values = { risk: initial.risk ?? 1, loss: initial.loss ?? 2, trades: initial.trades ?? 5 };
+  const values = { risk: initial.risk ?? 1, loss: initial.loss ?? 2, trades: initial.trades ?? 3 };
   const hardRules = new Set(initial.hardRules ?? []);
   let step = initial.step;
   let saving = false;
   form.elements.displayName.value = initial.displayName ?? '';
   form.elements.email.value = email ?? '';
-  form.elements.broker.value = initial.broker ?? 'manual';
 
   signOutButton.addEventListener('click', async () => {
     signOutButton.disabled = true;
@@ -63,6 +62,14 @@ export function renderOnboarding(landing, { initial, email, save, signOut }) {
       </div><label><input type="checkbox" aria-label="Hard rule for ${label.toLowerCase()}" /> Hard rule</label>`;
     const [decrease, increase] = rule.querySelectorAll('button');
     const hard = rule.querySelector('input');
+    if (key === 'trades') {
+      const tip = document.createElement('p');
+      tip.className = 'onboarding-rule-tip';
+      tip.id = 'onboarding-trade-limit-tip';
+      tip.textContent = 'We suggest starting with a cap of 2–3 trades per day to help avoid overtrading. Only take trades that fit your plan.';
+      rule.querySelector('.onboarding-adjust').after(tip);
+      for (const button of [decrease, increase]) button.setAttribute('aria-describedby', tip.id);
+    }
     hard.checked = hardRules.has(key);
     hard.addEventListener('change', () => hard.checked ? hardRules.add(key) : hardRules.delete(key));
     function update() {
@@ -103,7 +110,6 @@ export function renderOnboarding(landing, { initial, email, save, signOut }) {
       summary.replaceChildren();
       for (const [label, content] of [
         ['Display name', form.elements.displayName.value], ['Markets', labels.join(', ')],
-        ['Trade entry', form.elements.broker.selectedOptions[0].textContent],
         ...limits.map(([key, title, , unit]) => [title, `${values[key]}${unit}${hardRules.has(key) ? ' · Hard rule' : ''}`]),
       ]) {
         const term = document.createElement('dt');
@@ -135,7 +141,7 @@ export function renderOnboarding(landing, { initial, email, save, signOut }) {
       return;
     }
     const data = step === 1 ? { displayName } : step === 2 ? { markets: [...selected] }
-      : step === 3 ? { ...values, hardRules: [...hardRules], broker: form.elements.broker.value } : {};
+      : step === 3 ? { ...values, hardRules: [...hardRules] } : {};
     const panel = panels[step - 1];
     panel.inert = signOutButton.disabled = true;
     saving = next.disabled = back.disabled = true;

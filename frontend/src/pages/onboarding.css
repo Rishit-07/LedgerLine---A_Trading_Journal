@@ -29,11 +29,9 @@
 .onboarding-progress .is-complete span { color: var(--on-indigo); background: var(--acc); box-shadow: none; }
 .onboarding-form { width: min(100%, 1000px); margin-inline: auto; }
 .onboarding-panels { display: grid; justify-items: center; gap: 28px; animation: onboarding-rise 360ms cubic-bezier(.2,.8,.3,1) both; }
-.onboarding-split { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 .onboarding-card { width: min(100%, 700px); padding: clamp(24px, 4vw, 40px); border-radius: 36px; }
 .onboarding-card h1 { margin: 8px 0; font: 400 clamp(36px, 5vw, 46px)/1.04 'Instrument Serif', Georgia, serif; letter-spacing: -0.02em; }
 .onboarding-card h1:focus { outline: none; }
-.onboarding-card h2 { font-size: 20px; margin: 0; }
 .onboarding-card p { margin: 8px 0 0; color: var(--sub); line-height: 1.55; }
 .onboarding-card .onboarding-step { margin: 0; font-size: 13px; font-weight: 700; }
 .onboarding-label { display: grid; gap: 7px; margin-top: 20px; font-size: 14px; font-weight: 700; }
@@ -50,6 +48,7 @@
 .onboarding-rule > div { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
 .onboarding-rule output { color: var(--acc); font: 600 14px var(--font-mono); }
 .onboarding-rule .onboarding-adjust { margin: 8px 0; }
+.onboarding-rule .onboarding-rule-tip { margin: 0 0 10px; font-size: 13px; }
 .onboarding-adjust button { flex: none; width: 42px; height: 40px; border-radius: 13px; font-size: 18px; }
 .onboarding-adjust span { flex: 1; height: 14px; padding: 3px; border-radius: 99px; }
 .onboarding-adjust i { display: block; height: 100%; border-radius: inherit; background: var(--acc); transition: width 350ms ease; }
@@ -63,7 +62,6 @@
 .onboarding-page button:disabled { opacity: .5; cursor: default; transform: none; }
 .onboarding-status { min-height: 1.5em; margin: 14px auto 0; text-align: center; color: var(--sub); }
 @keyframes onboarding-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-@media (max-width: 760px) { .onboarding-split { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 440px) {
   .onboarding-page { padding-top: 20px; }
   .onboarding-header { flex-wrap: wrap; }

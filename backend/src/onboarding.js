@@ -22,7 +22,7 @@ function validStep(payload) {
   }
   if (payload?.step === 3) {
     return [0.25, 0.5, 1, 1.5, 2].includes(payload.risk) && [1, 2, 3, 4].includes(payload.loss) &&
-      [2, 3, 5, 8, 10].includes(payload.trades) && brokers.has(payload.broker) &&
+      [2, 3, 5, 8, 10].includes(payload.trades) && (payload.broker === undefined || brokers.has(payload.broker)) &&
       Array.isArray(payload.hardRules) && new Set(payload.hardRules).size === payload.hardRules.length &&
       payload.hardRules.every((key) => ruleKeys.includes(key));
   }
@@ -38,12 +38,12 @@ async function saveStep(db, uid, input) {
     await db.query(`UPDATE user_profile SET markets = $2, onboarding_step = greatest(onboarding_step, 3) WHERE user_id = $1`, [uid, input.markets]);
   } else if (input.step === 3) {
     await db.query(`UPDATE user_profile SET risk_per_trade_pct = $2, daily_loss_limit_r = $3,
-      max_trades_per_day = $4, broker = $5, onboarding_step = 4 WHERE user_id = $1`, [uid, input.risk, input.loss, input.trades, input.broker]);
+      max_trades_per_day = $4, broker = coalesce($5, broker, 'manual'), onboarding_step = 4 WHERE user_id = $1`, [uid, input.risk, input.loss, input.trades, input.broker ?? null]);
     const texts = [`Risk no more than ${input.risk}% per trade`, `Stop at a daily loss of ${input.loss}R`, `Take at most ${input.trades} trades per day`];
     await db.query(`INSERT INTO rules (user_id, rule_key, text, hard, position)
       SELECT $1, key, label, key = ANY($4::text[]), position FROM unnest($2::text[], $3::text[]) WITH ORDINALITY AS entry(key, label, position)
       ON CONFLICT (user_id, rule_key) DO UPDATE SET text = excluded.text, hard = excluded.hard`, [uid, ruleKeys, texts, input.hardRules]);
-    await db.query(`INSERT INTO broker_links (user_id, broker) VALUES ($1, $2)
+    if (input.broker !== undefined) await db.query(`INSERT INTO broker_links (user_id, broker) VALUES ($1, $2)
       ON CONFLICT (user_id) DO UPDATE SET broker = excluded.broker, status = 'not_connected', linked_at = NULL
       WHERE broker_links.broker <> excluded.broker`, [uid, input.broker]);
   } else {

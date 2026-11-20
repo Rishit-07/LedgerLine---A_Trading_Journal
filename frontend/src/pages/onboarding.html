@@ -9,7 +9,7 @@
   <ol class="onboarding-progress" aria-label="Setup progress">
     <li><span class="n-in" aria-hidden="true">1</span>Account</li>
     <li><span class="n-in" aria-hidden="true">2</span>Markets</li>
-    <li><span class="n-in" aria-hidden="true">3</span>Broker and rules</li>
+    <li><span class="n-in" aria-hidden="true">3</span>Rules</li>
     <li><span class="n-in" aria-hidden="true">4</span>Done</li>
   </ol>
   <form class="onboarding-form">
@@ -36,21 +36,10 @@
         </div>
       </section>
     </div>
-    <div class="onboarding-panels onboarding-split" data-onboarding-panel="3" hidden>
+    <div class="onboarding-panels" data-onboarding-panel="3" hidden>
       <section class="n-out onboarding-card">
         <p class="onboarding-step">Step 3 of 4</p>
-        <h1 tabindex="-1">Broker and rules</h1>
-        <label class="onboarding-label">How do you add trades?
-          <select class="n-in" name="broker">
-            <option value="manual">Add by hand</option><option value="csv">CSV import</option>
-            <option value="zerodha">Zerodha</option><option value="upstox">Upstox</option>
-            <option value="angel-one">Angel One</option><option value="dhan">Dhan</option><option value="fyers">Fyers</option>
-          </select>
-        </label>
-        <p>Choose an import preference. Broker connections will be read-only.</p>
-      </section>
-      <section class="n-out onboarding-card onboarding-rules" aria-labelledby="onboarding-rules-title">
-        <h2 id="onboarding-rules-title">Your starting rules</h2>
+        <h1 tabindex="-1">Your starting rules</h1>
         <p>Set your limits and mark the rules you always intend to follow.</p>
         <div data-rules></div>
       </section>
