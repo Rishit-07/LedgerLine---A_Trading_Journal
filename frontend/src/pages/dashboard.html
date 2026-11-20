@@ -1,11 +1,36 @@
 <div class="n-root dashboard-page">
   <aside class="dash-sidebar">
-    <a class="dash-brand" href="/dashboard" aria-label="Ledgerline Dashboard"><span class="n-out"><img src="/ledgerline-icon.svg" width="25" height="25" alt="" /></span><span><b>Ledger</b>line</span></a>
-    <button class="n-btn n-acc dash-button" type="button" data-log-trade><span aria-hidden="true">+</span> Log trade</button>
-    <nav class="dash-navigation" aria-label="Workspace">
-      <div><p>Trade</p><a class="n-in" href="/dashboard" aria-current="page">Dashboard</a><a href="/plan">Pre-market plan</a><a href="/journal">Journal</a><a href="/history">Trade history</a><a href="/calendar">Calendar</a></div>
-      <div><p>Learn</p><a href="/coach">AI Coach</a><a href="/replay">Replay</a><a href="/mistake">Mistake lab</a><a href="/reports">Reports</a><a href="/sizing">Sizing lab</a><a href="/forecast">Forecasts</a></div>
-      <div><p>Community</p><a href="/clubs">Clubs</a><a href="/portfolio">Portfolio</a><a href="/support">Help center</a></div>
+    <div class="dash-sidebar-header">
+      <a class="dash-brand" href="/dashboard" aria-label="Ledgerline Dashboard"><span class="n-out"><svg width="24" height="24" viewBox="0 0 100 100" fill="none" aria-hidden="true"><path d="M12 62h21m34 0h21M50 11v12m0 52v12" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><rect x="39" y="23" width="22" height="52" rx="9" fill="currentColor"/></svg></span><span><b>Ledger</b>line</span></a>
+      <button class="n-btn n-out dash-button dash-menu-toggle" type="button" data-dash-menu aria-expanded="false" aria-controls="dash-workspace-navigation">Menu</button>
+    </div>
+    <button class="n-btn n-acc dash-button dash-sidebar-log" type="button" data-log-trade><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg> Log trade</button>
+    <nav class="dash-navigation" id="dash-workspace-navigation" aria-label="Workspace">
+      <div><p>Trade</p>
+        <a href="/dashboard" class="n-in" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v4h-7z M13 10h7v10h-7z M4 13h7v7H4z"/></svg>Dashboard</a>
+        <a href="/plan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z M9 8l1.5 1.5L13 7 M9 14l1.5 1.5L13 13 M15 9h0 M15 15h0"/></svg>Pre-market plan</a>
+        <a href="/journal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z M9 8h6 M9 12h6 M9 16h4"/></svg>Journal</a>
+        <a href="/history"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 8v5l3 2"/></svg>Trade history</a>
+        <a href="/calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v14H4z M4 10h16 M8 3v4 M16 3v4"/></svg>Calendar</a>
+      </div>
+      <div><p>Learn</p>
+        <a href="/coach"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z M8 9h8 M8 12h5"/></svg>AI Coach</a>
+        <a href="/replay"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5v14l7-7z M13 5v14l7-7z"/></svg>Replay</a>
+        <a href="/mistake"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l10 18H2z M12 10v5 M12 18h.01"/></svg>Mistake lab</a>
+        <a href="/reports"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M15 3v4h4 M9 13h7 M9 17h5"/></svg>Reports</a>
+        <a href="/sizing"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4 M4 20h16 M8 16l4-5 3 3 5-7"/></svg>Sizing lab</a>
+        <a href="/forecast"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 7v5l3 2"/></svg>Forecasts</a>
+      </div>
+      <div><p>Community</p>
+        <a href="/people"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a2 2 0 1 0 0-.01 M5 19a2 2 0 1 0 0-.01 M19 19a2 2 0 1 0 0-.01 M12 7v4 M12 11l-6 6 M12 11l6 6"/></svg>People</a>
+        <a href="/spaces"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 4.5-9 4.5-9-4.5z M7 10.5V15c0 1.7 2.2 3 5 3s5-1.3 5-3v-4.5 M21 7.5V13"/></svg>Mentor spaces</a>
+        <a href="/clubs"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M16 12a2.5 2.5 0 1 0 0-5 M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6 M16 15c2.8 0 5 2 5 5"/></svg>Clubs</a>
+        <a href="/portfolio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v11H4z M9 8V5h6v3 M4 13h16"/></svg>Portfolio</a>
+      </div>
+      <div><p>Account</p>
+        <a href="/settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2"/></svg>Settings</a>
+        <a href="/support"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5 M12 16h.01"/></svg>Help center</a>
+      </div>
     </nav>
     <div class="n-out dash-side-limit"><p>Daily loss limit</p><progress data-loss-meter max="1" value="0" aria-label="Daily loss budget used"></progress><strong data-loss-budget>—</strong></div>
   </aside>
@@ -15,6 +40,8 @@
       <div class="dash-actions"><button class="n-btn n-out dash-button" type="button" data-page-theme>Dark mode</button><button class="n-btn n-out dash-button" type="button" data-sign-out>Sign out</button></div>
     </header>
     <p class="dash-status" role="status" data-dash-status></p>
+    <nav class="n-in dash-views" aria-label="Dashboard sections"><a href="#overview" aria-current="location">Overview</a><a href="#performance">Performance</a><a href="#today">Today</a></nav>
+    <div class="dash-view" id="overview" data-dash-view="overview">
     <section class="dash-hero" aria-labelledby="dash-greeting">
       <div class="dash-hero-copy">
         <p class="dash-label" data-dash-date></p>
@@ -37,9 +64,8 @@
         <article class="n-out dash-card"><h3>Get started</h3><ul class="dash-steps" data-start-list></ul></article>
       </div>
     </section>
-    <section class="dash-section" aria-labelledby="dash-workflow"><p class="dash-kicker">From your own journal</p><h2 id="dash-workflow">Your day, in four steps</h2>
-      <div class="dash-workflow"><a class="n-out dash-card" href="/plan"><strong>Plan</strong><span>Set your rules before you trade.</span></a><a class="n-out dash-card" href="#today"><strong>Execute</strong><span>Record the trades you take.</span></a><a class="n-out dash-card" href="/journal"><strong>Review</strong><span>Write a note about what happened.</span></a><a class="n-out dash-card" href="#dash-performance"><strong>Learn</strong><span>Look for patterns in your results.</span></a></div>
-    </section>
+    </div>
+    <div class="dash-view" id="performance" data-dash-view="performance" hidden>
     <section class="dash-section" aria-labelledby="dash-performance"><p class="dash-kicker">Performance</p><h2 id="dash-performance">Equity and score</h2>
       <div class="dash-grid dash-equity-grid">
         <article class="n-out dash-card"><h3>Equity curve and drawdown</h3><p class="dash-muted">Last 42 days · In R multiples</p><div class="n-in dash-chart" data-equity-chart></div><div class="dash-equity-totals" data-equity-totals hidden></div></article>
@@ -53,14 +79,20 @@
         <article class="n-out dash-card"><h3>Risk</h3><p class="dash-muted">Limits from your rules</p><dl class="dash-risk-list" data-risk-list></dl><p class="n-in dash-risk-note" data-risk-note></p></article>
       </div>
     </section>
-    <section class="dash-section" id="today" aria-labelledby="dash-today"><p class="dash-kicker">The day, logged</p><h2 id="dash-today">Checklist, calendar and trades</h2>
+    </div>
+    <div class="dash-view" id="today" data-dash-view="today" hidden>
+    <section class="dash-section" aria-labelledby="dash-today"><p class="dash-kicker">The day, logged</p><h2 id="dash-today">Checklist, calendar and trades</h2>
       <div class="dash-grid dash-day-grid">
         <article class="n-out dash-card"><h3>Pre-trade checklist</h3><p class="dash-muted">Your active rules</p><ul class="dash-rules" data-rule-list></ul><button class="n-btn n-out dash-button" type="button" data-log-trade>Log a trade</button></article>
         <article class="n-out dash-card"><h3>Five weeks</h3><p class="dash-muted">Daily result in R</p><div class="dash-calendar" data-dash-calendar></div><p class="dash-muted dash-legend"><span>● Loss</span><span>● Win</span></p></article>
         <article class="n-out dash-card"><h3>Today’s trades</h3><p class="dash-muted" data-today-count></p><div data-today-list></div></article>
       </div>
     </section>
+    <section class="dash-section" aria-labelledby="dash-workflow"><p class="dash-kicker">From your own journal</p><h2 id="dash-workflow">Your day, in four steps</h2>
+      <div class="dash-workflow"><a class="n-out dash-card" href="/plan"><strong>Plan</strong><span>Set your rules before you trade.</span></a><a class="n-out dash-card" href="#today"><strong>Execute</strong><span>Record the trades you take.</span></a><a class="n-out dash-card" href="/journal"><strong>Review</strong><span>Write a note about what happened.</span></a><a class="n-out dash-card" href="#performance"><strong>Learn</strong><span>Look for patterns in your results.</span></a></div>
+    </section>
     <section class="dash-cta"><h2>Review the day.<br />Then close the screen.</h2><p>Use your journal to reflect on the trades you logged.</p><a class="n-btn n-acc dash-button" href="/journal">Open journal</a></section>
+    </div>
   </main>
   <dialog class="n-out dash-dialog" data-trade-dialog aria-labelledby="dash-log-title">
     <form data-trade-form autocomplete="off">

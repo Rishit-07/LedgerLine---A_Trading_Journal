@@ -117,6 +117,27 @@ export function renderDashboard(landing, { initial, load, name, save, signOut })
   document.title = 'Dashboard — Ledgerline';
   const page = mountPage(landing, pageMarkup);
   bindPageTheme(page);
+  const menu = page.querySelector('[data-dash-menu]');
+  menu.addEventListener('click', () => {
+    const expanded = menu.getAttribute('aria-expanded') === 'true';
+    menu.setAttribute('aria-expanded', String(!expanded));
+    page.toggleAttribute('data-menu-open', !expanded);
+  });
+
+  const viewLinks = [...page.querySelectorAll('.dash-views a')];
+  const views = [...page.querySelectorAll('[data-dash-view]')];
+  function selectView(scroll = false) {
+    const target = document.getElementById(location.hash.slice(1));
+    const selected = target?.closest('[data-dash-view]') ?? views[0];
+    views.forEach((view) => { view.hidden = view !== selected; });
+    viewLinks.forEach((link) => {
+      if (link.hash === '#' + selected.id) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    });
+    if (scroll && target) (target === selected ? selected : target).scrollIntoView({ block: 'start' });
+  }
+  selectView(Boolean(location.hash));
+  addEventListener('hashchange', () => selectView(true));
   let data = initial;
   let requestId;
   fillDashboard(page, data, name);

@@ -39,6 +39,9 @@ const appPages = {
   '/reports': 'Weekly reports',
   '/badges': 'Badges',
   '/portfolio': 'Portfolio',
+  '/people': 'People',
+  '/spaces': 'Mentor spaces',
+  '/settings': 'Settings',
 };
 const path = location.pathname.replace(/\/$/, '') || '/';
 bindPageNavigation();
