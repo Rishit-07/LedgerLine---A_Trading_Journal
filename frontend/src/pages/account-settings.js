@@ -9,14 +9,23 @@ const providers = [
   ['dhan','Dhan','DhanHQ'],['fyers','Fyers','Fyers API'],['csv','CSV file','Any broker']
 ];
 const ruleDefinitions = [['risk','Risk per trade',[0.25,0.5,1,1.5,2],'%'],['loss','Daily loss limit',[1,2,3,4],'R'],['trades','Max trades per day',[2,3,5,8,10],'']];
+const iconPaths = {
+  user:'M15.5 8a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0 M4 21a8 8 0 0 1 16 0',
+  'briefcase-business':'M10 14l4-4 M9 15l-1 1a3 3 0 1 1-4-4l4-4a3 3 0 0 1 4 0 M12 16a3 3 0 0 0 4 0l4-4a3 3 0 1 0-4-4l-1 1',
+  'list-checks':'M12 3l8 3v6c0 5-4 8-8 10-4-2-8-5-8-10V6z M8 12l3 3 5-6',
+  bell:'M4 18h16l-2-3V9a6 6 0 0 0-12 0v6z M10 21h4',
+  sun:'M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M12 1v3 M12 20v3 M1 12h3 M20 12h3 M4 4l2 2 M18 18l2 2 M20 4l-2 2 M6 18l-2 2',
+  shield:'M5 10h14v11H5z M8 10V7a4 4 0 0 1 8 0v3',
+  'credit-card':'M3 7h18v14H3z M8 7V4h8v3 M3 12h18'
+};
 const saveButton = '<button class="n-btn n-acc dash-button">Save changes</button><p role="status"></p>';
 const panel = (key,title,content) => `<section class="n-out account-panel" data-preference="${key}" hidden><h2>${title}</h2>${content}</section>`;
 export function settingsMarkup(notifications) {
   return `<div class="account-settings-layout account-board">
-    <nav class="n-out account-panel account-nav" aria-label="Settings sections">${sections.map(([id,label],i)=>`<button type="button" class="n-btn" data-pref-tab="${id}"><span aria-hidden="true">${['◎','▦','☷','◷','☼','◇','▤'][i]}</span>${label}</button>`).join('')}</nav>
+    <nav class="n-out account-panel account-nav" aria-label="Settings sections">${sections.map(([id,label,icon])=>`<button type="button" class="n-btn" data-pref-tab="${id}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${iconPaths[icon]}"/></svg>${label}</button>`).join('')}</nav>
     <div class="account-settings-panels">
     ${panel('account','Account',`<form class="ws-form" data-edit="account"><label>Display name<input class="n-in" name="displayName" maxlength="100" required></label><fieldset><legend>Your markets</legend>${Object.entries(markets).map(([key,label])=>`<label><input name="markets" type="checkbox" value="${key}"> ${label}</label>`).join('')}</fieldset>${saveButton}</form>`)}
-    ${panel('brokers','Brokers',`<p>Choose your preferred import method. CSV imports are available for any broker.</p><form data-edit="broker"><div class="account-providers">${providers.map(([key,label,api])=>`<label class="n-in"><span class="account-provider-icon">${label.slice(0,1)}</span><span><strong>${label}</strong><small>${api}</small></span><input type="radio" name="broker" value="${key}" required></label>`).join('')}</div><label><input type="radio" name="broker" value="manual"> Add trades by hand</label><div class="account-actions">${saveButton}<a href="/history#import">Import CSV</a></div></form><div class="account-read"><div class="n-in"><strong>What Ledgerline reads</strong><p>Trade rows from the CSV file you choose. Direct broker sync requires a connected integration.</p></div><div class="n-in"><strong>What it never does</strong><p>Place orders, move money or change positions in your brokerage account.</p></div></div>`)}
+    ${panel('brokers','Brokers',`<p>Choose your preferred import method. CSV imports are available for any broker.</p><form data-edit="broker"><div class="account-providers">${providers.map(([key,label,api])=>`<label class="n-out"><span class="account-provider-icon">${key==='csv'?'CSV':label.slice(0,1)}</span><span><strong>${label}</strong><small>${api}</small></span><input type="radio" name="broker" value="${key}" required></label>`).join('')}</div><label><input type="radio" name="broker" value="manual"> Add trades by hand</label><div class="account-actions">${saveButton}<a href="/history#import">Import CSV</a></div></form><div class="account-read"><div class="n-in"><strong>What Ledgerline reads</strong><p>Trade rows from the CSV file you choose. Direct broker sync requires a connected integration.</p></div><div class="n-in"><strong>What it never does</strong><p>Place orders, move money or change positions in your brokerage account.</p></div></div>`)}
     ${panel('rules','Trading rules',`<form class="ws-form" data-edit="rules">${ruleDefinitions.map(([key,label,values,unit])=>`<div class="account-rule"><label>${label}<select name="${key}" class="n-in">${values.map(v=>`<option value="${v}">${v}${unit}</option>`).join('')}</select></label><label><input type="checkbox" name="hardRules" value="${key}"> Hard rule</label></div>`).join('')}${saveButton}</form>`)}
     <div data-preference="notifications" hidden>${notifications}</div>
     ${panel('appearance','Appearance','<p>Choose a light or dark workspace on this device.</p><button class="n-btn n-out dash-button" data-change-theme>Switch theme</button>')}
