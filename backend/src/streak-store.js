@@ -96,7 +96,7 @@ export function createStreakStore(pool, clock = () => new Date()) {
       await db.query('COMMIT');
       return {
         result, dates,
-        streak: { ...state, today, timezone: profile.timezone, inviteCode: profile.inviteCode,
+        streak: { ...state, perfectBest, today, timezone: profile.timezone, inviteCode: profile.inviteCode,
           badges: badges.map((badge) => ({ ...badge, title: badgeTitles[badge.key] ?? badge.key })) },
       };
     } catch (error) {
