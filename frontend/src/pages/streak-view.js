@@ -20,6 +20,7 @@ export function element(tag, text = '', className = '') {
 
 export function stateMessage(state) {
   if (!state.best) return 'Log your first trade to start your streak';
+  if (state.marketClosedToday) return 'Market closed. Your streak is protected. Today counts as a rest day after midnight.';
   if (state.kindToday === 'rest') return 'Not trading counts too';
   if (state.skippedToday) return 'A rule was skipped. Your streak still counts.';
   if (state.todayCounted) return 'Today counts';
@@ -84,7 +85,10 @@ export function bindStreakPanel(panel) {
       dot.title = dayNames[index] + ', ' + dateLabel.format(day) + (isToday ? ' · Today' : '');
       dot.classList.toggle('is-counted', counted);
       dot.classList.toggle('is-today', isToday);
-      dot.textContent = counted ? '✓' : '';
+      const reason = state.weekReasons?.[index];
+      const labels = {trade:'Trade logged', review:'Trade reviewed', rest:'Rest day logged', marketClosed:'Market closed · automatic rest', freeze:'Freeze used'};
+      if (reason) dot.title += ' · ' + labels[reason];
+      dot.textContent = reason === 'marketClosed' ? '☾' : reason === 'freeze' ? '❄' : counted ? '✓' : '';
       dot.setAttribute('role', 'img');
       dot.setAttribute('aria-label', dot.title + (counted ? ', counted' : ', uncounted'));
       if (isToday) label.setAttribute('aria-current', 'date');

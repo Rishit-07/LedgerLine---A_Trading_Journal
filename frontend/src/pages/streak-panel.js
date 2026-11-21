@@ -1,4 +1,6 @@
-import { parseStreakInvite, streakInviteCode, streakInvitePath } from '../streak-invite.js';
+import { paginate } from './pagination.js';
+import { gsap } from 'gsap';
+import { fetchStreakInviter, parseStreakInvite, streakInviteCode, streakInvitePath } from '../streak-invite.js';
 import { bindStreakShare, shareMarkup } from './streak-share.js';
 import { bindStreakPanel, element, streakRule } from './streak-view.js';
 
@@ -35,14 +37,31 @@ export const streakPanelMarkup = `
       <section class="n-in streak-social" aria-labelledby="streak-friends-title">
         <div class="streak-heading">
           <h3 id="streak-friends-title">Streak together</h3>
-          <button type="button" class="n-btn n-out streak-btn" data-copy-invite>Copy invite link</button>
+          <div class="streak-invite-actions">
+            <button type="button" class="n-btn n-out streak-btn" data-copy-invite>Copy invite link</button>
+            <button type="button" class="n-btn n-out streak-btn" aria-expanded="false" aria-controls="streak-invite-qr" data-show-invite-qr>Show QR code</button>
+          </div>
         </div>
+        <figure class="streak-invite-qr" id="streak-invite-qr" hidden>
+          <div class="streak-qr-frame">
+            <canvas role="img" aria-label="Your Ledgerline streak invite QR code"></canvas>
+          </div>
+          <figcaption>Ask a friend to scan with their phone camera.</figcaption>
+        </figure>
         <label class="streak-invite-fallback" hidden>Your invite link<input type="text" class="n-out" data-invite-link readonly /></label>
         <form class="streak-action-form" data-invite-form>
           <label>Friend’s invite link or code<input class="n-out" name="invite" required maxlength="512" /></label>
           <button class="n-btn n-acc streak-btn">Send invite</button>
         </form>
         <p class="streak-message" role="status" data-invite-status></p>
+        <div class="streak-connected" data-streak-connected hidden>
+          <div class="streak-tally-pair" aria-hidden="true">
+            <img src="/tally-cheer.svg" alt="" width="64" height="64" />
+            <img src="/tally-cheer.svg" alt="" width="64" height="64" />
+          </div>
+          <strong role="status"></strong>
+          <small>Log, review, or take a rest day to keep your own streak going.</small>
+        </div>
         <div data-friends></div>
       </section>
       <section class="n-in streak-social" aria-labelledby="streak-battle-title">
@@ -84,6 +103,31 @@ export function bindStreakDialog(page, { request, getState, onState }) {
   let showIncomingInvite = false;
 
   const friendName = (friend) => friend.name || 'Ledgerline member';
+  const connection = dialog.querySelector('[data-streak-connected]');
+  const pendingConnections = new Set();
+  function celebrate(name) {
+    connection.hidden = false;
+    connection.querySelector('strong').textContent = 'You and ' + name + ' are now streaking together!';
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      gsap.fromTo(connection.querySelectorAll('img'), { y: 10, opacity: .3 },
+        { y: 0, opacity: 1, stagger: .09, duration: .42, ease: 'back.out(2)', overwrite: true });
+    }
+    connection.scrollIntoView({ block: 'nearest' });
+  }
+  function rememberConnections(friends) {
+    const code = getState()?.inviteCode;
+    if (!code) return;
+    const key = 'ledgerline-streak-pending:' + code;
+    let saved = [];
+    try { saved = JSON.parse(localStorage.getItem(key) ?? '[]'); } catch {}
+    const accepted = friends.find((friend) => friend.outgoing && friend.status === 'active'
+      && (pendingConnections.has(friend.id) || saved.includes(friend.id)));
+    const pending = friends.filter((friend) => friend.outgoing && friend.status === 'pending');
+    pendingConnections.clear();
+    for (const friend of pending) pendingConnections.add(friend.id);
+    try { localStorage.setItem(key, JSON.stringify([...pendingConnections])); } catch {}
+    if (accepted) celebrate(friendName(accepted));
+  }
   function revealIncomingInvite() {
     if (!showIncomingInvite || !dialog.open || content.hidden) return;
     showIncomingInvite = false;
@@ -126,6 +170,7 @@ export function bindStreakDialog(page, { request, getState, onState }) {
       await request('/api/streak/friends/' + route, 'POST', { id: friend.id });
       inviteStatus.textContent = success;
       await refreshSocial();
+      if (route === 'accept' && dialog.open) celebrate(friendName(friend));
     }));
     return button;
   }
@@ -137,6 +182,7 @@ export function bindStreakDialog(page, { request, getState, onState }) {
     ]);
     if (version !== socialVersion) return;
     if (friends.status === 'fulfilled') {
+      if (dialog.open) rememberConnections(friends.value.friends);
       const active = friends.value.friends.filter(({ status }) => status === 'active');
       const select = battle.elements.friendId;
       const selected = select.value;
@@ -155,6 +201,7 @@ export function bindStreakDialog(page, { request, getState, onState }) {
         return row;
       });
       dialog.querySelector('[data-friends]').replaceChildren(...rows);
+      paginate(dialog.querySelector('[data-friends]'),'Streak friends');
     } else {
       battle.hidden = true;
       inviteStatus.textContent = 'Could not load friends. Close and reopen the streak to retry.';
@@ -163,6 +210,7 @@ export function bindStreakDialog(page, { request, getState, onState }) {
       dialog.querySelector('[data-battles]').replaceChildren(...battles.value.battles.map((record) => element('div',
         friendName(record) + ' · ' + record.lengthDays + ' days · ' +
         ({ tie: 'Tie', won: 'Won', lost: 'Lost' }[record.result] ?? 'In progress'), 'streak-social-row')));
+      paginate(dialog.querySelector('[data-battles]'),'Streak battles');
     } else battleStatus.textContent = 'Could not load battles. Close and reopen the streak to retry.';
   }
 
@@ -174,7 +222,8 @@ export function bindStreakDialog(page, { request, getState, onState }) {
     if (code.toLowerCase() === getState()?.inviteCode?.toLowerCase()) {
       throw new Error('This is your invite link. Share it with the friend you want to invite.');
     }
-    await request('/api/streak/friends/invite', 'POST', { code });
+    const { id } = await request('/api/streak/friends/invite', 'POST', { code });
+    if (id) pendingConnections.add(id);
     invite.reset();
     const url = new URL(location.href);
     if (streakInviteCode(url.search) === code) {
@@ -198,10 +247,44 @@ export function bindStreakDialog(page, { request, getState, onState }) {
     rest.reset();
     restStatus.textContent = 'Rest day saved.';
   });
-  dialog.querySelector('[data-copy-invite]').addEventListener('click', async () => {
+  function getInviteLink() {
     const code = getState()?.inviteCode;
-    if (!code) { inviteStatus.textContent = 'Your invite link is not ready yet.'; return; }
-    const link = new URL(streakInvitePath('/streak/invite', code), location.origin).href;
+    return code ? new URL(streakInvitePath('/streak/invite', code), location.origin).href : '';
+  }
+
+  const qrButton = dialog.querySelector('[data-show-invite-qr]');
+  const qrFigure = dialog.querySelector('#streak-invite-qr');
+  const qrCanvas = qrFigure.querySelector('canvas');
+  function showInviteQr(visible) {
+    qrFigure.hidden = !visible;
+    qrButton.setAttribute('aria-expanded', String(visible));
+    qrButton.textContent = visible ? 'Hide QR code' : 'Show QR code';
+  }
+  qrButton.addEventListener('click', async () => {
+    if (!qrFigure.hidden) {
+      showInviteQr(false);
+      return;
+    }
+    const link = getInviteLink();
+    if (!link) { inviteStatus.textContent = 'Your invite link is not ready yet.'; return; }
+    qrButton.disabled = true;
+    inviteStatus.textContent = 'Preparing your QR code…';
+    try {
+      const { drawInviteQr } = await import('./streak-invite-qr.js');
+      await drawInviteQr(qrCanvas, link);
+      if (dialog.open) showInviteQr(true);
+      inviteStatus.textContent = '';
+    } catch {
+      inviteStatus.textContent = 'Could not show the QR code. Try again or copy your invite link.';
+    } finally {
+      qrButton.disabled = false;
+    }
+  });
+  dialog.addEventListener('close', () => showInviteQr(false));
+
+  dialog.querySelector('[data-copy-invite]').addEventListener('click', async () => {
+    const link = getInviteLink();
+    if (!link) { inviteStatus.textContent = 'Your invite link is not ready yet.'; return; }
     try {
       await navigator.clipboard.writeText(link);
       inviteStatus.textContent = 'Invite link copied.';
@@ -214,7 +297,20 @@ export function bindStreakDialog(page, { request, getState, onState }) {
       inviteStatus.textContent = 'Select and copy your invite link.';
     }
   });
-  dialog.querySelector('[data-share-streak]').addEventListener('click', () => share(getState()));
+  const shareButton = dialog.querySelector('[data-share-streak]');
+  shareButton.addEventListener('click', () => {
+    const state = getState();
+    if (!state) return;
+    const scrollTop = dialog.scrollTop;
+    dialog.close();
+    share(state, () => {
+      if (!dialog.isConnected) return;
+      dialog.showModal();
+      dialog.scrollTop = scrollTop;
+      shareButton.focus({ preventScroll: true });
+      void refreshSocial();
+    });
+  });
 
   function open(code = '') {
     if (dialog.open || page.querySelector('dialog[open]')) return;
@@ -222,6 +318,12 @@ export function bindStreakDialog(page, { request, getState, onState }) {
       showIncomingInvite = true;
       inviteInput.value = code;
       inviteStatus.textContent = 'Invite link received. Choose Send invite to request the connection.';
+      const initialMessage = inviteStatus.textContent;
+      void fetchStreakInviter(code).then((name) => {
+        if (name && inviteInput.value === code && inviteStatus.textContent === initialMessage) {
+          inviteStatus.textContent = name + ' invited you. Send a connection request so they can accept it.';
+        }
+      }).catch(() => {});
     }
     const current = getState();
     if (current) paintState(current);

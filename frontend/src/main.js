@@ -108,6 +108,10 @@ if (path === '/') {
   landing.hidden = true;
   if (path === '/legal') history.replaceState(null, '', '/privacy' + location.hash);
   import('./pages/legal.js').then(({ renderLegal }) => bindPublicAccount(renderLegal(landing))).catch(renderLoadError);
+} else if (path.startsWith('/p/')) {
+  landing.hidden = true;
+  import('./pages/workspace-portfolio.js').then(({ renderPublicPortfolio }) =>
+    renderPublicPortfolio(landing, path.slice(3))).catch(renderLoadError);
 } else if (path === '/streak/share') {
   landing.hidden = true;
   import('./pages/streak-share.js').then(({ renderSharedStreak }) => renderSharedStreak(landing)).catch(renderLoadError);

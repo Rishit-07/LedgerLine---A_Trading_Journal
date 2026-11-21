@@ -13,7 +13,8 @@
     "@fontsource/instrument-serif": "5.3.0",
     "firebase": "12.13.0",
     "gsap": "3.15.1",
-    "motion": "14.14.0"
+    "motion": "14.14.0",
+    "qrcode": "1.5.4"
   },
   "devDependencies": {
     "vite": "8.3.8"

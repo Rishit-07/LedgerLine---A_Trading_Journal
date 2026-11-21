@@ -1,0 +1,2 @@
+.n-root a[data-workspace-streak] { display:inline-flex; align-items:center; justify-content:center; gap:6px; border-radius:14px; padding:9px 13px; font:700 14px var(--font-sans,sans-serif); color:var(--warn,#ae5223); text-decoration:none; }
+.n-root [data-workspace-streak][hidden] { display:none; }

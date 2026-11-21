@@ -305,14 +305,14 @@ function showWelcome(page, user, next) {
   }, 650);
 }
 
-async function authenticatedRequest(user, path, method, body) {
+export async function authenticatedRequest(user, path, method, body) {
   const token = await user.getIdToken();
   const headers = { Authorization: 'Bearer ' + token };
   if (body) headers['Content-Type'] = 'application/json';
   const response = await fetch(path, {
     method, headers,
     body: body ? JSON.stringify(body) : undefined,
-    signal: AbortSignal.timeout(10000),
+    signal: AbortSignal.timeout(method === 'POST' && path === '/api/workspace?page=coach' ? 40000 : 10000),
   });
   const data = await response.json();
   if (!response.ok) throw Object.assign(new Error(data.error ?? 'Account unavailable'), { status: response.status });
@@ -382,15 +382,18 @@ export async function renderAccountPage(path, landing, appPages) {
     return;
   }
 
-  if (path === '/calendar') {
-    location.replace('/dashboard#trading-calendar');
-    return;
-  }
 
   const request = (route, method, body) => authenticatedRequest(user, route, method, body);
+  if (['/history','/plan','/replay','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach','/calendar'].includes(path)) {
+    const { renderWorkspace } = await import('./pages/workspace.js');
+    await renderWorkspace(landing, { path, request, name:account.displayName || user.displayName,
+      photoUrl:user.photoURL, signOut:() => signOut(auth) });
+    addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
+    return;
+  }
   if (['/journal', '/profile', '/badges', '/settings'].includes(path)) {
     const { renderStreakPage } = await import('./pages/streak-pages.js');
-    await renderStreakPage(landing, { path, request, name: account.displayName || user.displayName, signOut: () => signOut(auth) });
+    await renderStreakPage(landing, { path, request, name: account.displayName || user.displayName, photoUrl:user.photoURL, signOut: () => signOut(auth) });
     addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
     return;
   }
@@ -399,7 +402,7 @@ export async function renderAccountPage(path, landing, appPages) {
     const { renderDashboard } = await import('./pages/dashboard.js');
     const load = () => authenticatedRequest(user, '/api/dashboard', 'GET');
     renderDashboard(landing, {
-      initial: await load(), load, name: account.displayName || user.displayName, request,
+      initial: await load(), load, name: account.displayName || user.displayName, photoUrl: user.photoURL, request,
       save: (trade) => authenticatedRequest(user, '/api/trades', 'POST', trade),
       loadCalendar: () => authenticatedRequest(user, '/api/calendar', 'GET'),
       loadCalendarMonth: (month) => authenticatedRequest(user, '/api/calendar/month?month=' + encodeURIComponent(month), 'GET'),

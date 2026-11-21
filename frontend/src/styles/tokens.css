@@ -42,3 +42,8 @@
   --glow: rgba(138, 148, 255, 0.35);
   color-scheme: dark;
 }
+
+:where(a:any-link) {
+  color: var(--acc);
+  text-underline-offset: 0.17em;
+}

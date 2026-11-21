@@ -9,6 +9,14 @@ export function streakInvitePath(path, code) {
   return code ? path + '?' + new URLSearchParams({ streakInvite: code }) : path;
 }
 
+export async function fetchStreakInviter(code) {
+  const response = await fetch('/api/streak/friends/preview?' + new URLSearchParams({ code }), {
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!response.ok) return null;
+  return (await response.json()).name;
+}
+
 export function parseStreakInvite(value) {
   const input = value.trim();
   if (inviteCodePattern.test(input)) return input;

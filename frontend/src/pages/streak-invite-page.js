@@ -1,7 +1,8 @@
+import { bindPublicAccount } from './public-account.js';
 import { gsap } from 'gsap';
 import { animate } from 'motion/mini';
 import { bindPageTheme, mountPage } from './shared.js';
-import { streakInviteCode, streakInvitePath } from '../streak-invite.js';
+import { fetchStreakInviter, streakInviteCode, streakInvitePath } from '../streak-invite.js';
 import '@fontsource/instrument-serif/latin-400.css';
 import './streak-invite-page.css';
 
@@ -34,6 +35,7 @@ export function renderStreakInvite(landing) {
   document.title = 'Streak invitation — Ledgerline';
   const page = mountPage(landing, markup);
   bindPageTheme(page);
+  bindPublicAccount(page);
   const note = page.querySelector('[data-invite-state]');
   const options = page.querySelector('[data-invite-options]');
   const existing = page.querySelector('[data-invite-existing]');
@@ -53,6 +55,9 @@ export function renderStreakInvite(landing) {
       .from(page.querySelectorAll('[data-invite-greeting] > *'), { y: 12, opacity: 0, stagger: .09 }, '-=.24');
   }
   const destination = streakInvitePath('/dashboard', code);
+  void fetchStreakInviter(code).then((name) => {
+    if (name) page.querySelector('h1').textContent = name + ' invited you to streak together.';
+  }).catch(() => {});
   const login = '/auth?' + new URLSearchParams({ next: destination });
   newcomer.href = '/auth?' + new URLSearchParams({ next: destination, mode: 'signup' });
   let transition;
