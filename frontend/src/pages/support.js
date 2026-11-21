@@ -5,7 +5,7 @@ import './support.css';
 
 const inbox = 'ledgerline.team@gmail.com';
 const faqs = [
-  ['journal', 'How is the Trader Score calculated?', 'The score weighs rule-following (30%), risk-adjusted results (30%), consistency (20%), journal completeness (10%) and forecast calibration (10%). Results are measured in R and percent.', 'score scoring formula process risk journal rules'],
+  ['journal', 'How is the Trader Score calculated?', 'The score weighs rule-following (30%), keeping your risk limit (30%), consistency (20%), journal completeness (10%) and forecast calibration (10%). Results are measured in R and percent.', 'score scoring formula process risk journal rules'],
   ['ai', 'Does Ledgerline give trade ideas or signals?', 'Ledgerline records and scores your own trading. It does not recommend trades or provide investment advice.', 'tips trade ideas alerts buy sell recommendation AI coach'],
   ['getting-started', 'How do I create and verify an account?', 'On the sign-in page, choose Create account. With email and password, open the verification link in your inbox, then return to Ledgerline and choose “I’ve verified my email.” You can also continue with Google.', 'register signup sign up create account Google login'],
   ['account', 'What if my verification email hasn’t arrived?', 'Check spam and confirm that you used the right address. Choose Resend verification email on the verification screen, or Use another account to enter a different address.', 'missing verification mail not received code resend delivery inbox spam getting receive'],
@@ -103,7 +103,7 @@ function bindHelpSearch(page) {
   });
   page.querySelector('[data-focus-support-search]').addEventListener('click', () => search.focus());
   document.addEventListener('keydown', (event) => {
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+    if (page.isConnected && !page.closest('[data-workspace-mode]') && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
       search.focus();
     }
@@ -180,5 +180,33 @@ export function renderSupport(landing) {
   bindHelpSearch(page);
   bindContactForm(page);
   if (location.hash === '#contact') page.querySelector('#contact').scrollIntoView();
+  void attachAccountNavigation(page).catch(()=>{});
   return page;
+}
+
+async function attachAccountNavigation(page) {
+  const {auth}=await import('../firebase-session.js');
+  await auth.authStateReady();
+  const user=auth.currentUser;
+  if(!user?.emailVerified || !page.isConnected)return;
+  const {authenticatedRequest}=await import('../auth.js');
+  const request=(path,method,body)=>authenticatedRequest(user,path,method,body);
+  const account=await request('/api/onboarding','GET');
+  if(!account.completedAt || !page.isConnected || auth.currentUser!==user)return;
+  const {mountWorkspace,bindToolbarStreak,paintTradingShell}=await import('./workspace-shell.js');
+  const shell=mountWorkspace(page,{mode:'support',title:'Support',description:'Find an answer fast, or talk to a person.',content:'<div data-account-help></div>',name:account.displayName,photoUrl:user.photoURL,signOut:()=>auth.signOut()});
+  const content=page.querySelector('.support-content');
+  const inner=document.createElement('div');
+  inner.className=content.className;
+  inner.append(...content.childNodes);
+  content.replaceWith(inner);
+  page.querySelector('.support-sidebar').remove();
+  page.querySelector('.support-top').remove();
+  page.querySelector('.support-intro').remove();
+  page.classList.add('account-help');
+  shell.querySelector('[data-account-help]').append(page);
+  bindToolbarStreak(shell,request);
+  const dashboard=await request('/api/dashboard','GET');
+  paintTradingShell(shell,dashboard);
+  if(location.hash==='#contact')page.querySelector('#contact').scrollIntoView();
 }

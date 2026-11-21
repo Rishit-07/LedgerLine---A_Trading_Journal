@@ -208,3 +208,5 @@
   .support-rise, .support-faq p { animation: none; }
   .support-faq summary svg { transition: none; }
 }
+.support-page.account-help{display:block;min-height:0;padding:0;overflow:visible}
+.account-help .support-content{max-width:none;width:100%}
