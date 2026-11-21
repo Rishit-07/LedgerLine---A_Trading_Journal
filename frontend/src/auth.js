@@ -293,7 +293,7 @@ function requestAccount(user) {
 async function enterVerified(page, user, next) {
   const account = await requestAccount(user).catch(() => null);
   const invite = next.startsWith('/dashboard?') ? streakInviteCode(next.slice('/dashboard'.length)) : '';
-  const destination = account?.onboardingCompleted === false ? streakInvitePath('/onboarding', invite) : next;
+  const destination = account?.onboardingCompleted === false ? (next==='/billing'?'/onboarding?next=billing':streakInvitePath('/onboarding', invite)) : next;
   showWelcome(page, { displayName: account?.displayName || user.displayName }, destination);
 }
 
@@ -317,7 +317,7 @@ export async function renderAccountPage(path, landing, appPages) {
   }
 
   const invite = ['/dashboard', '/onboarding'].includes(path) ? streakInviteCode(location.search) : '';
-  const dashboardDestination = streakInvitePath('/dashboard', invite);
+  const dashboardDestination = path==='/onboarding'&&new URLSearchParams(location.search).get('next')==='billing'?'/billing':streakInvitePath('/dashboard', invite);
   if (user?.emailVerified !== true) {
     const next = invite ? dashboardDestination : path === '/dashboard' && location.hash === '#streak' ? '/dashboard#streak' : path;
     location.replace(signInPath(next));
@@ -341,7 +341,7 @@ export async function renderAccountPage(path, landing, appPages) {
     return;
   }
   if (!account.onboardingCompleted) {
-    location.replace(streakInvitePath('/onboarding', invite));
+    location.replace(path==='/billing'?'/onboarding?next=billing':streakInvitePath('/onboarding', invite));
     return;
   }
 
@@ -356,13 +356,14 @@ export async function renderAccountPage(path, landing, appPages) {
     }
     path='/'+section;
   }
-  if (['/history','/plan','/replay','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach','/calendar'].includes(path)) {
+  if (['/billing','/history','/plan','/mentor-verification','/mentor-review','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach','/calendar'].includes(path)) {
     const { renderWorkspace } = await import('./pages/workspace.js');
-    await renderWorkspace(landing, { path, request, name:account.displayName || user.displayName,
+    await renderWorkspace(landing, { path, request, uid:user.uid, name:account.displayName || user.displayName,
       photoUrl:user.photoURL, signOut:() => signOut(auth) });
     addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
     return;
   }
+
   if (['/journal', '/profile', '/badges', '/settings'].includes(path)) {
     const { renderStreakPage } = await import('./pages/streak-pages.js');
     await renderStreakPage(landing, { path, request, name: account.displayName || user.displayName, photoUrl:user.photoURL, signOut: () => signOut(auth) });

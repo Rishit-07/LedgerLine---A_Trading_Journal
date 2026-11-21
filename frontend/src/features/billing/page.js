@@ -1,0 +1,1 @@
+export const billing={title:'Billing',description:'Your plan, how you pay, and your invoices.',content:'',endpoint:'/api/billing/checkout',bind(){}};
