@@ -1,7 +1,7 @@
 import { readJson, send } from './http.js';
 
 const biases = new Set(['Bullish', 'Neutral', 'Bearish']);
-const today = "(now() AT TIME ZONE 'Asia/Kolkata')::date";
+
 const fields = "bias, levels, locked_at IS NOT NULL AS locked";
 
 export function createPlanHandler(pool, authenticate) {
@@ -9,6 +9,8 @@ export function createPlanHandler(pool, authenticate) {
     const claims = await authenticate(request, response);
     if (!claims) return;
     const { uid } = claims;
+    const tomorrow=new URL(request.url,'http://localhost').searchParams.get('day')==='tomorrow';
+    const today=tomorrow?"((now() AT TIME ZONE (SELECT timezone FROM user_profile WHERE user_id=$1))::date+1)":"(now() AT TIME ZONE 'Asia/Kolkata')::date";
     try {
       if (request.method === 'GET') {
         const { rows } = await pool.query(`SELECT ${fields} FROM plans WHERE user_id=$1 AND date=${today}`, [uid]);

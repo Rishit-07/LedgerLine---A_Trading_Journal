@@ -75,7 +75,7 @@ function renderPending(title, message, retry = false) {
 const renderLoadError = () => renderPending('Page unavailable', 'Reload the page to try again.');
 
 const communityDestination=communityRedirect(new URL(location.href));
-if(path==='/ai-reports'){location.replace('/reports'+location.search+location.hash);} else if(communityDestination) {
+if(path==='/settings/billing'){location.replace('/settings#billing');} else if(path==='/ai-reports'){location.replace('/reports'+location.search+location.hash);} else if(communityDestination) {
   location.replace(communityDestination);
 } else if (path === '/') {
   openingReveal();

@@ -1,3 +1,4 @@
+import {billingApi} from './report-billing.js';
 import {reportApi} from './reports.js';
 import { createServer } from 'node:http';
 import { initializeApp } from 'firebase-admin/app';
@@ -109,7 +110,11 @@ const streak = createStreakApi(pool, authenticateRequest, streaks, { remindersAv
 const saveTrade = createTradeHandler(streaks, authenticateRequest);
 const workspace = createWorkspaceApi(pool, authenticateRequest);
 const reports=reportApi(pool,authenticateRequest);
+const billing=billingApi(pool,authenticateRequest);
 const routes = new Map([
+  ['/api/billing/checkout',{methods:['POST','GET'],handler:billing}],
+  ['/api/billing/status',{methods:['GET'],handler:billing}],
+  ['/api/billing/webhook',{methods:['POST'],handler:billing}],
   ['/api/reports',{methods:['GET'],handler:reports}],
   ['/api/ai/report',{methods:['POST','DELETE'],handler:reports}],
   ['/api/reports/preferences',{methods:['GET','PUT'],handler:reports}],

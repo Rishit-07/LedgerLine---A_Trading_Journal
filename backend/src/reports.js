@@ -2,7 +2,8 @@ import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {configuredCoach,complete} from './coach.js';
 import {send,readJson} from './http.js';
-import {can,plans} from '../../src/config/plans.ts';
+import {createRequire} from 'node:module';
+const {can,plans}=createRequire(import.meta.url)('../../src/config/plans.ts');
 
 const statsSQL=readFileSync(new URL('./report-stats.sql',import.meta.url),'utf8');
 const error=(status,message)=>Object.assign(new Error(message),{status});
@@ -19,14 +20,20 @@ export function checkQuota(access){
 }
 export const insufficient=n=>n.trades<10 || n.days<3;
 
-function reportFacts(stats,kind,topic){
+function reportFacts(stats,kind,topic,selectedMistake){
  const facts=[];
  function add(metric,value,ids){if(Number.isFinite(value))facts.push({metric,value,ids});}
  if(kind==='plan'){
    if(!stats.tomorrow)throw error(422,'There is no saved plan for tomorrow.');
    for(const [key,value] of Object.entries(stats.tomorrow))add(key,value,[]);
  }else if(kind==='patterns'||kind==='experiment'){
-   for(const [i,m] of stats.mistakes.entries())if(m.n>=(kind==='patterns'?3:2))add('recurring_mistake_'+(i+1),m.n,m.trade_ids);
+   for(const [i,m] of stats.mistakes.entries()){
+     if(kind==='experiment'&&selectedMistake&&selectedMistake!==m.kind)continue;
+     if(m.n<(kind==='patterns'?3:2))continue;
+     add('recurring_mistake_'+(i+1),m.n,m.trade_ids);
+     const standard=['Moved stop','Chased entry','Oversized','Early exit'].find(k=>k.toLowerCase()===m.kind.toLowerCase());
+     facts.at(-1).description=standard??'Repeated journal habit';
+   }
    if(!facts.length)throw error(422,'More repeated observations are needed to identify a pattern.');
  }else{
    add('process_score',stats.numbers.score,stats.ids);add('rule_checks_kept',stats.numbers.kept,stats.ids);
@@ -55,7 +62,7 @@ export function validateReport(raw,facts){
 
 export async function generateReport({kind,facts,topic},config,ask=complete){
  const instructions='Write a private trading process review in English. Only explain supplied facts. Never give buy/sell/hold advice, market predictions, or praise or blame returns. Output JSON only, exactly {summary,observations:[{text,metric,value,trade_ids}],focus}. Copy metric, numeric value and trade_ids exactly from evidence. Do not use digits, numbers written as words, percentages, or quantities in prose. Use each relevant metric once. For full, write substantial paragraphs on discipline, omissions, comparison and an experiment. For plan check use questions. For summary keep it short. For experiments propose a concrete journal habit. For patterns discuss sample limitations. For ask answer only the requested metric.';
- const prompt={kind,topic,evidence:facts.map((f,i)=>({metric:f.metric,value:f.value,trade_ids:f.ids.length?['e'+i]:[]}))};
+ const prompt={kind,topic,evidence:facts.map((f,i)=>({metric:f.metric,description:f.description,value:f.value,trade_ids:f.ids.length?['e'+i]:[]}))};
  for(let attempt=0;attempt<2;attempt++){
    const raw=await ask(config,instructions,[{role:'user',content:JSON.stringify(prompt)}],fetch,kind==='full'?2600:900);
    try{return validateReport(raw,facts);}catch{prompt.correction='Fix the JSON and copy evidence values and citation tokens exactly. No numbers in prose.';}
@@ -63,7 +70,7 @@ export async function generateReport({kind,facts,topic},config,ask=complete){
  throw error(502,'The review did not match your journal. No review credit was used.');
 }
 
-export function reportApi(pool,authenticate){
+export function reportApi(pool,authenticate,{provider=configuredCoach(process.env),generate=generateReport}={}){
  return async(req,res)=>{
    const claims=await authenticate(req,res);if(!claims)return;
    const uid=claims.uid,url=new URL(req.url,'http://localhost');
@@ -102,14 +109,14 @@ export function reportApi(pool,authenticate){
       else{
         const topic=kind==='ask'?({'How consistently did I follow my rules?':'rules','How many trades broke a rule?':'mistakes','How often did I journal?':'journal','What was my process score?':'score'})[body.question]:undefined;
         if(kind==='ask'&&!topic)throw error(422,'Choose a journal question grounded in your records.');
-        const facts=reportFacts(stats,kind,topic);
+        const facts=reportFacts(stats,kind,topic,body.mistake);
         if(!facts.length)throw error(422,'There is no evidence for this question yet.');
         const hash=createHash('sha256').update(JSON.stringify([kind,topic,period,stats.start_day,facts])).digest('hex');
         if(!body.regenerate)result=await first('SELECT * FROM ai_reports WHERE user_id=$1 AND input_hash=$2 ORDER BY created_at DESC LIMIT 1',[uid,hash]);
         if(!result){
           checkQuota(access);
-          const config=configuredCoach(process.env);if(!config)throw error(503,'AI report generation is awaiting a provider connection.');
-          const output=await generateReport({kind,topic,facts},config);
+          const config=provider;if(!config)throw error(503,'AI report generation is awaiting a provider connection.');
+          const output=await generate({kind,topic,facts},config);
           result=await first('INSERT INTO ai_reports(user_id,period,kind,input_hash,output,model) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id,period,kind,output,created_at',[uid,period,kind,hash,output,config.model]);
           await client.query('INSERT INTO ai_review_usage(user_id,free) VALUES($1,$2)',[uid,!can(access.plan,'aiReview')]);
           if(kind==='experiment'){

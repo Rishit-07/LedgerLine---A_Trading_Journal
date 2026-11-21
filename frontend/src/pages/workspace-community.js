@@ -85,7 +85,7 @@ export const plan={
       form.elements.mood.value=current?.levels?.mood ?? '';
       form.querySelector('fieldset').disabled=locked;
       select(page,'[data-plan-state]').textContent=locked?'Locked':'Draft';
-      select(page,'[data-plan-date]').textContent=formatDate(data.today)+' · IST';
+      select(page,'[data-plan-date]').textContent=(new URLSearchParams(location.search).get('day')==='tomorrow'?'Tomorrow':formatDate(data.today)+' · IST');
       renderStep();drawSummary();
     }
     function go(index){step=index;renderStep();}
@@ -129,7 +129,10 @@ export const plan={
       const note=trades.find((trade)=>trade.note)?.note;if(note)recap.append(node('p','Your note: '+note,'dash-muted'));
       const link=node('a','Replay yesterday’s trade','n-btn n-out dash-button'); link.href='/replay?tradeId='+encodeURIComponent(trades[0].id);recap.append(link);
     }else recap.append(message('No trades closed yesterday.'));
-    const {plan:current}=await request('/api/plan','GET');
+    const tomorrow=new URLSearchParams(location.search).get('day')==='tomorrow';
+    const planEndpoint='/api/plan'+(tomorrow?'?day=tomorrow':'');
+    if(tomorrow)page.querySelector('h1').textContent='Tomorrow’s pre-market plan';
+    const {plan:current}=await request(planEndpoint,'GET');
     render(current);form.hidden=false;
     void request('/api/calendar/day?'+new URLSearchParams({date:data.today,view:'market'}),'GET').then(({marketHours})=>{
       if(!['published','live'].includes(marketHours?.status))return;
@@ -152,7 +155,7 @@ export const plan={
         const {bias,levels,notes,mood}=values;
         const setups=values.setups?.split(/\n/).map((value)=>value.trim()).filter(Boolean);
         const details=action==='unlock'?{action}:{action,bias,levels,notes,options:{setups,maxLoss:Number(values.maxLoss),maxTrades:Number(values.maxTrades),mood}};
-        const {plan:updated}=await request('/api/plan','PUT',details);render(updated);
+        const {plan:updated}=await request(planEndpoint,'PUT',details);render(updated);
         return {save:'Plan saved.',lock:'Plan locked for today.',unlock:'Plan unlocked.'}[action];
       });
     });

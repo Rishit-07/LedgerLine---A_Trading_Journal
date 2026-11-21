@@ -47,7 +47,7 @@ export async function bindAccountSettings(page,request) {
   selectSection();
   page.querySelector('[data-change-theme]').onclick=()=>page.querySelector('[data-page-theme]').click();
   const consent=page.querySelector('[data-report-consent]'),message=page.querySelector('[data-consent-status]');
-  page.querySelector('[data-view-pro]').onclick=async()=>{const {upgradeGate}=await import('../features/reports/upgrade.js');upgradeGate('aiReview');};
+  page.querySelector('[data-view-pro]').onclick=async()=>{const {upgradeGate}=await import('../features/reports/upgrade.js');upgradeGate('aiReview',request);};
   try {
     const prefs=await request('/api/reports/preferences','GET');
     consent.checked=prefs.enabled;consent.disabled=false;

@@ -3,7 +3,7 @@ WITH profile AS (
 ), bounds AS (
  SELECT *,date_trunc($2,today::timestamp)::date start_day FROM profile
 ), facts AS (
- SELECT t.id,(t.opened_at AT TIME ZONE b.timezone)::date day,b.max_trades_per_day,
+ SELECT t.id,(t.opened_at AT TIME ZONE b.timezone)::date AS day,b.max_trades_per_day,
  c.checks,c.kept,c.risk,
  t.reviewed_at IS NOT NULL OR EXISTS(SELECT 1 FROM journal_entries j WHERE j.user_id=$1 AND j.trade_id=t.id AND (trim(j.note)<>'' OR j.mood IS NOT NULL OR cardinality(tags)>0)) journaled
  FROM trades t CROSS JOIN bounds b CROSS JOIN LATERAL (
@@ -34,3 +34,4 @@ SELECT start_day::text, today::text,
  coalesce((SELECT array_agg(id::text ORDER BY id) FROM facts WHERE day>=start_day AND checks>kept),'{}') broken,
  (SELECT jsonb_build_object('daily_limit',(levels?'maxLoss')::int,'risk_defined',EXISTS(SELECT 1 FROM jsonb_array_elements(rules_snapshot) z WHERE z->>'text' ILIKE '%risk%')::int,'conditional',(coalesce(levels->>'notes','') ~* 'if.+then')::int) FROM plans WHERE user_id=$1 AND date=today+1) tomorrow,
  coalesce((SELECT current FROM streak_state WHERE user_id=$1),0) streak FROM bounds;
+
