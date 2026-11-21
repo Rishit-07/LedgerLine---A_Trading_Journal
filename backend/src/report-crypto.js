@@ -1,21 +1,28 @@
 import {createHmac,timingSafeEqual} from 'node:crypto';
+import {grant,invoice} from './billing-ledger.js';
 import {readJson,send} from './http.js';
 
-export function cryptoConfig(env,term){
- const price=Number(term==='monthly'?env.PRO_MONTHLY_PRICE_PAISE:env.PRO_YEARLY_PRICE_PAISE);
+export function cryptoConfig(env,term,plan='pro'){
+ const price=Number(env[plan.toUpperCase()+'_'+term.toUpperCase()+'_PRICE_PAISE']);
  return env.NOWPAYMENTS_API_KEY && env.NOWPAYMENTS_IPN_SECRET && /^https:\/\//.test(env.PUBLIC_APP_URL??'')&&Number.isSafeInteger(price)&&price>0?price:null;
 }
-export async function createCrypto(pool,uid,term,env,fetcher){
- const price=cryptoConfig(env,term);
- if(!price)throw Error('Crypto is unavailable');
- const {rows:[order]}=await pool.query("INSERT INTO report_checkouts(user_id,term,plan_ref,price_paise) VALUES($1,$2,'crypto-pro',$3) RETURNING id",[uid,term,price]);
- const base=new URL(env.PUBLIC_APP_URL).origin;
- const response=await fetcher('https://api.nowpayments.io/v1/invoice',{method:'POST',headers:{'x-api-key':env.NOWPAYMENTS_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({price_amount:price/100,price_currency:'inr',order_id:order.id,order_description:'Ledgerline Pro prepaid '+term,is_fixed_rate:true,ipn_callback_url:base+'/api/billing/crypto/webhook',success_url:base+'/reports?checkout='+order.id,cancel_url:base+'/reports'}),signal:AbortSignal.timeout(12000)});
- if(!response.ok)throw Error('Invoice unavailable');
- const invoice=await response.json(),url=new URL(invoice.invoice_url);
- if(url.protocol!=='https:'||!['nowpayments.io','www.nowpayments.io'].includes(url.hostname)||!invoice.id)throw Error('Invalid invoice');
- await pool.query('UPDATE report_checkouts SET provider_ref=$2 WHERE id=$1',[order.id,String(invoice.id)]);
- return {id:order.id,url:url.href};
+export async function createCrypto(pool,uid,term,env,fetcher,options={}){
+ const {plan='pro',coin='USDC',network='Polygon',months=term==='yearly'?12:1,email}=options;
+ const currencies={USDC:{Polygon:'usdcmatic',Base:'usdcbase'},USDT:{Polygon:'usdtmatic',Tron:'usdttrc20'}};
+ const currency=currencies[coin]?.[network];
+ if(!currency||![1,3,12].includes(months))throw Error('Unsupported currency or period');
+ const unit=cryptoConfig(env,months===12?'yearly':'monthly',plan);
+ if(!unit)throw Error('No configured merchant price');
+ const price=unit*(months===3?3:1);
+ const {rows:[order]}=await pool.query("INSERT INTO report_checkouts(user_id,term,plan,method,months,plan_ref,price_paise,recipient) VALUES($1,$2,$3,'Crypto',$4,'crypto-'+$3,$5,$6) RETURNING id",[uid,term,plan,months,price,email]);
+ const response=await fetcher('https://api.nowpayments.io/v1/payment',{method:'POST',headers:{'x-api-key':env.NOWPAYMENTS_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({price_amount:price/100,price_currency:'inr',pay_currency:currency,order_id:order.id,is_fixed_rate:true,ipn_callback_url:new URL('/api/billing/crypto/webhook',env.PUBLIC_APP_URL).href}),signal:AbortSignal.timeout(12000)});
+ if(!response.ok)throw Error('Quote unavailable');
+ const result=await response.json();
+ if(!result.payment_id||!result.pay_address||!(Number(result.pay_amount)>0)||result.pay_currency!==currency)throw Error('Invalid quote');
+ const expiry=Math.min(Date.now()+900000,Date.parse(result.expiration_estimate_date)||Infinity);
+ const quote={address:result.pay_address,amount:String(result.pay_amount),coin,network,currency,expiresAt:new Date(expiry).toISOString()};
+ await pool.query('UPDATE report_checkouts SET provider_ref=$2,quote=$3 WHERE id=$1',[order.id,String(result.payment_id),quote]);
+ return {id:order.id,quote};
 }
 function sorted(value){
  if(Array.isArray(value))return value.map(sorted);
@@ -32,20 +39,23 @@ export async function cryptoWebhook(req,res,pool,env){
  const db=await pool.connect();
  try{
   await db.query('BEGIN');
-  const {rows:[order]}=await db.query("SELECT * FROM report_checkouts WHERE id::text=$1 AND provider_ref=$2 AND plan_ref='crypto-pro' FOR UPDATE",[data.order_id,String(data.invoice_id)]);
+  const {rows:[order]}=await db.query("SELECT * FROM report_checkouts WHERE id::text=$1 AND provider_ref=$2 AND method='Crypto' FOR UPDATE",[data.order_id,String(data.invoice_id||data.payment_id)]);
   if(order&&!order.paid_until){
     let state=({waiting:'waiting',confirming:'confirming',confirmed:'confirming',sending:'confirming',partially_paid:'underpaid',expired:'expired',failed:'failed',finished:'paid'})[data.payment_status];
     if(state==='paid'){
-      const matches=data.price_currency?.toLowerCase()==='inr'&&Math.round(Number(data.price_amount)*100)===Number(order.price_paise);
+      const matches=(!order.quote||data.pay_currency===order.quote.currency)&&data.price_currency?.toLowerCase()==='inr'&&Math.round(Number(data.price_amount)*100)===Number(order.price_paise);
       const amounts=[Number(data.pay_amount),Number(data.actually_paid)];
       if(!matches||!amounts.every(n=>Number.isFinite(n)&&n>0))throw Error('Unmatched payment amount');
       if(amounts[1]<amounts[0])state='underpaid';
       else{
        await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,21))',[order.user_id]);
-       const {rows:[sub]}=await db.query(`INSERT INTO report_subscriptions(user_id,plan,valid_until) VALUES($1,'pro',now()+$2::interval)
-        ON CONFLICT(user_id) DO UPDATE SET valid_until=greatest(now(),report_subscriptions.valid_until)+$2::interval RETURNING valid_until`,[order.user_id,order.term==='monthly'?'1 month':'1 year']);
+       const months=order.months??(order.term==='monthly'?1:12);
+       const {rows:[sub]}=await db.query("SELECT greatest(now(),(SELECT valid_until FROM report_subscriptions WHERE user_id=$1)) + make_interval(months=>$2) valid_until",[order.user_id,months]);
+       await grant(db,order,sub.valid_until);
        await db.query('UPDATE report_checkouts SET paid_until=$2 WHERE id=$1',[order.id,sub.valid_until]);
-       if(amounts[1]>amounts[0])state='overpaid';
+       const credit=Math.max(0,amounts[1]-amounts[0]);
+       await invoice(db,order,String(data.payin_hash||data.payment_id),Number(order.price_paise),credit);
+       if(credit>0)state='overpaid';
       }
     }
     if(state)await db.query('UPDATE report_checkouts SET payment_state=$2 WHERE id=$1',[order.id,state]);
