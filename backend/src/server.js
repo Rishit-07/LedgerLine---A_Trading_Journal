@@ -108,6 +108,14 @@ const streak = createStreakApi(pool, authenticateRequest, streaks, { remindersAv
 const saveTrade = createTradeHandler(streaks, authenticateRequest);
 const workspace = createWorkspaceApi(pool, authenticateRequest);
 const routes = new Map([
+  ['/api/group-link',{methods:['GET'],handler:async(req,res)=>{
+    if(!await authenticateRequest(req,res))return;
+    const id=new URL(req.url,'http://localhost').searchParams.get('id');
+    try {
+      const {rows}=await pool.query('SELECT kind FROM community_before_split.backup_clubs WHERE id::text=$1',[id]);
+      send(res,200,{destination:rows.length?(rows[0].kind==='space'?'/spaces/':'/clubs/')+id:'/clubs'});
+    }catch{send(res,503,{error:'Group link unavailable.'});}
+  }}],
   ['/api/clubs', {methods:['GET','POST'],handler:groupHandler(pool,authenticateRequest,'club')}],
   ['/api/spaces', {methods:['GET','POST'],handler:groupHandler(pool,authenticateRequest,'space')}],
   ['/api/account', { methods: ['PUT'], handler: loadAccount }],

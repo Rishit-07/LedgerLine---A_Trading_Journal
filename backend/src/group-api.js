@@ -16,7 +16,8 @@ export function groupHandler(pool,authenticate,kind) {
       db=await pool.connect();
       await db.query('BEGIN');
       const store=groupStore(async(sql,params)=>(await db.query(sql,params)).rows,kind);
-      const data=input?await store.change(claims.uid,input):await store.groups(claims.uid);
+      const id=new URL(request.url,'http://localhost').searchParams.get('id');
+      const data=input?await store.change(claims.uid,input):await store.groups(claims.uid,id);
       await db.query('COMMIT');
       send(response,200,data);
     } catch(error){

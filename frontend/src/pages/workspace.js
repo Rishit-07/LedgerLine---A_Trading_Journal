@@ -25,11 +25,12 @@ export async function renderWorkspace(landing, { path, request, name, photoUrl, 
   content.forEach((element)=>{element.hidden=true;});
   status.textContent='Loading your workspace…';
   try {
-    const reload=()=>request(endpoint,'GET');
+    const roomId=screen.endpoint && location.pathname.split('/')[2];
+    const reload=()=>request(roomId?endpoint+'?'+new URLSearchParams({id:roomId}):endpoint,'GET');
     const save=(details)=>request(endpoint,'POST',details);
     const data=await reload();
     if (page.querySelector('[data-workspace-streak]')) {
-      paintTradingShell(page, {}, data.account.streak);
+      paintTradingShell(page, {}, data.account?.streak);
       void request('/api/dashboard','GET').then((dashboard)=>paintTradingShell(page,dashboard)).catch(()=>{});
     }
     content.forEach((element)=>{if(element.tagName!=='DIALOG')element.hidden=false;else element.removeAttribute('hidden');});

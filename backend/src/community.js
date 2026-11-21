@@ -30,13 +30,15 @@ export function groupStore(query,kind){
   function deny(reason){
     throw Object.assign(new Error(reason==='not_verified'?'Verify your mentor account first.':'Unlock the Mentor plan first.'),{status:403,reason});
   }
-  async function groups(uid) {
+  async function groups(uid,selectedId=null) {
     const clubs = await query(`SELECT c.id::text,c.name,c.location,c.description,c.owner_id=$1 AS owner,
       c.join_mode AS "joinMode",c.visibility, ${kind==='space'?'NOT '+entitled('c.owner_id'):'false'} AS "readOnly", CASE WHEN c.owner_id=$1 THEN c.invite_code END AS code,
       EXISTS(SELECT 1 FROM ${kind}_requests r WHERE r.${fk}=c.id AND r.user_id=$1) AS pending,
       m.stats_opt_in AS "statsOptIn",m.user_id IS NOT NULL AS joined,(SELECT count(*)::int FROM ${kind}_members WHERE ${fk}=c.id) AS members
       FROM ${table} c LEFT JOIN ${kind}_members m ON m.${fk}=c.id AND m.user_id=$1
-      WHERE (m.user_id IS NOT NULL OR (c.visibility='public' AND $2='club')) ORDER BY (m.user_id IS NOT NULL) DESC,c.created_at DESC,c.id`,[uid,kind]);
+      WHERE m.user_id IS NOT NULL OR ($2='club' AND (c.visibility='public' OR c.id=$3 OR EXISTS
+        (SELECT 1 FROM club_requests pending WHERE pending.club_id=c.id AND pending.user_id=$1)))
+      ORDER BY (c.id=$3) DESC NULLS LAST,(m.user_id IS NOT NULL) DESC,c.created_at DESC,c.id`,[uid,kind,uuid.test(selectedId??'')?selectedId:null]);
     const topics = await query(`SELECT t.id::text,t.${fk}::text AS "groupId",t.kind,t.body,t.created_at AS "createdAt",p.display_name AS author,
       EXISTS(SELECT 1 FROM ${kind}_checkins WHERE topic_id=t.id AND user_id=$1) AS checked,
       (SELECT count(*)::int FROM ${kind}_checkins k JOIN ${kind}_members cm ON cm.${fk}=c.id AND cm.user_id=k.user_id WHERE k.topic_id=t.id) AS completions,
@@ -60,7 +62,7 @@ export function groupStore(query,kind){
     let id=input.id;
     const label = kind==='space'?'space':'club';
     if(kind==='space' && ['verify','unlock'].includes(action)){
-      if(action==='verify')await query("INSERT INTO mentor_verifications(user_id,status) VALUES($1,'pending') ON CONFLICT(user_id) DO NOTHING",[uid]);
+      if(action==='verify')await query("INSERT INTO mentor_verifications(user_id,status) VALUES($1,'pending') ON CONFLICT(user_id) DO UPDATE SET status='pending' WHERE mentor_verifications.status='rejected'",[uid]);
       else {
         if((await mentorState(uid)).verification!=='approved')deny('not_verified');
         await query('INSERT INTO mentor_plan_requests(user_id) VALUES($1) ON CONFLICT DO NOTHING',[uid]);

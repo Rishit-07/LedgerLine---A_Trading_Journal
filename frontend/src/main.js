@@ -1,4 +1,5 @@
 import {openingReveal} from './components/file-actions.js';
+import {communityRedirect,roomPath} from './features/community/routes.js';
 import '@fontsource-variable/schibsted-grotesk';
 import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
@@ -73,7 +74,10 @@ function renderPending(title, message, retry = false) {
 
 const renderLoadError = () => renderPending('Page unavailable', 'Reload the page to try again.');
 
-if (path === '/') {
+const communityDestination=communityRedirect(new URL(location.href));
+if(communityDestination) {
+  location.replace(communityDestination);
+} else if (path === '/') {
   openingReveal();
   animatePageEntry(landing);
   bindPublicAccount(landing);
@@ -120,7 +124,7 @@ if (path === '/') {
 } else if (path === '/streak/invite') {
   landing.hidden = true;
   import('./pages/streak-invite-page.js').then(({ renderStreakInvite }) => renderStreakInvite(landing)).catch(renderLoadError);
-} else if (path === '/auth' || path === '/onboarding' || Object.hasOwn(appPages, path)) {
+} else if (path === '/auth' || path === '/onboarding' || Object.hasOwn(appPages, path) || roomPath(path)) {
   landing.hidden = true;
   import('./auth.js')
     .then(({ renderAccountPage }) => renderAccountPage(path, landing, appPages))

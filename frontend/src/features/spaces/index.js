@@ -1,4 +1,4 @@
-import { groupRoom } from '../community/room.js';
+import { houseRules, roomMarkup, bindRoom } from '../community/room.js';
 import { button, submit } from '../../pages/workspace-ui.js';
 
 const createPanel = `<section class="n-out ws-card community-create" data-create hidden><h2>Create a space</h2><div data-mentor-steps>Verify → Unlock plan → Create</div><div data-mentor-gate></div>
@@ -6,8 +6,24 @@ const createPanel = `<section class="n-out ws-card community-create" data-create
   <label>About<textarea name="description" required maxlength="400" rows="3"></textarea></label>
   <label>City or region (optional)<input name="location" maxlength="60"></label>
   <button class="n-btn n-acc dash-button">Create space</button></form><button type="button" class="n-btn n-out dash-button" data-close-create>Back</button></section>`;
-export const spaces=groupRoom({isSpace:true,endpoint:'/api/spaces',createPanel,bindCreate({page,form,status,data,update,created}){
+export const spaces={
+  title:'Mentor spaces',
+  description:'Lead a space or join one.',
+  endpoint:'/api/spaces',
+  content:houseRules+`<section class="n-out ws-card community-hero"><div><small>Mentorship</small>
+      <h2>Work on your process together.</h2><p>Set a goal, check in and discuss what you learned.</p></div>
+      <button type="button" class="n-btn n-acc dash-button" data-start>Create a space</button></section>`+roomMarkup('space')+createPanel+'<p role="status" data-club-status></p>',
+  bind(page,context){
+    bindRoom(page,context,{
+      label:'space',plural:'spaces',title:'Mentor spaces',hostLabel:'Mentor',goals:'Goals',
+      views:["My spaces","Goals","Members","Forum","Announcements","Create"],
+      memberControls({group,about,action}){
+        if(!group.owner)about.append(action(group.statsOptIn?'Stop sharing my process stats':'Share my process stats with my mentor',{action:'consent',id:group.id,enabled:!group.statsOptIn},'Sharing preference saved.'));
+      },
+      bindCreate({page,form,status,data,update,created}){
   const gate=page.querySelector('[data-mentor-gate]');
+  const steps=page.querySelector('[data-mentor-steps]');
+  page.querySelector('.community-hero').firstElementChild.append(steps);
   form.onsubmit=e=>submit(e,status,async values=>{await update({...values,action:'create'});created();return 'Created '+values.name+'.';});
   function refresh(){
     const {verification,entitled,requested}=data.mentor;
@@ -25,4 +41,7 @@ export const spaces=groupRoom({isSpace:true,endpoint:'/api/spaces',createPanel,b
     gate.append(control);
   }
   return refresh;
-}});
+}
+    });
+  }
+};

@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import pg from 'pg';
 import sharp from 'sharp';
+import { groupHandler } from '../src/group-api.js';
 import { createWorkspaceApi } from '../src/workspace.js';
 import { createCalendarHandlers } from '../src/calendar.js';
 
@@ -35,7 +36,10 @@ test('workspace uses real records, enforces ownership and only publishes selecte
       if(req.uid)return {uid:req.uid};
       res.writeHead(401);res.end('{}');
     });
-    const work=(page,user=owner,body)=>call(api.workspace,user,'/?page='+page,body);
+    const testPool={connect:async()=>({release(){},query:(sql,params)=>db.query(({BEGIN:'SAVEPOINT group_test',COMMIT:'RELEASE SAVEPOINT group_test',ROLLBACK:'ROLLBACK TO SAVEPOINT group_test'})[sql]??sql,params)})};
+    const work=(page,user=owner,body)=>['spaces','clubs'].includes(page)
+      ?call(groupHandler(testPool,req=>({uid:req.uid}),page.slice(0,-1)),user,'/api/'+page,body)
+      :call(api.workspace,user,'/?page='+page,body);
     for(const page of ['history','replay','mistake','sizing','forecast','reports','portfolio','clubs','coach','plan','calendar']){
       assert.equal((await work(page)).status,200,page);
     }
@@ -104,20 +108,39 @@ test('workspace uses real records, enforces ownership and only publishes selecte
     await db.query('UPDATE forecasts SET due_on=due_on-1 WHERE user_id=$1',[owner]);
     assert.equal((await work('forecast',other,{action:'resolve',id:forecast.id,outcome:true})).status,409);
     assert.equal((await work('forecast',owner,{action:'resolve',id:forecast.id,outcome:true})).status,200);
-    const club=(await work('clubs',owner,{action:'create',name:'Replay review '+randomUUID().slice(0,6),description:'Review trades together.',location:''})).body.clubs.find((club)=>club.owner);
+    const club=(await work('clubs',owner,{action:'create',name:'Replay review '+randomUUID().slice(0,6),description:'Review trades together.',location:''})).body.groups.find((club)=>club.owner);
     assert.equal(club.members,1);
-    assert.equal((await work('clubs',other,{action:'join',id:club.id})).body.clubs.find(({id})=>id===club.id).members,2);
-    const space=(await work('spaces',owner,{action:'create',name:'Study group',description:'Review checklists',location:''})).body.clubs.find(g=>g.owner);
+    const privateClub=(await work('clubs',owner,{action:'create',name:'Request-only test',description:'Review',location:'',joinMode:'request',visibility:'private'})).body.groups.find(g=>g.name==='Request-only test');
+    assert.equal((await work('clubs',other)).body.groups.some(g=>g.id===privateClub.id),false);
+    await work('clubs',other,{action:'join',id:privateClub.id});
+    assert.equal((await work('clubs',owner)).body.requests.some(r=>r.groupId===privateClub.id && r.member===other),true);
+    await work('clubs',owner,{action:'approve',id:privateClub.id,member:other});
+    assert.equal((await work('clubs',other)).body.groups.find(g=>g.id===privateClub.id).joined,true);
+    assert.equal((await work('clubs',other,{action:'join',id:club.id})).body.groups.find(({id})=>id===club.id).members,2);
+    const draftSpace={action:'create',name:'Study group',description:'Review checklists',location:''};
+    const denied=await work('spaces',owner,draftSpace);
+    assert.equal(denied.status,403);assert.equal(denied.body.reason,'not_verified');
+    await db.query("INSERT INTO mentor_verifications VALUES($1,'approved')",[owner]);
+    const unpaid=await work('spaces',owner,draftSpace);
+    assert.equal(unpaid.status,403);assert.equal(unpaid.body.reason,'needs_plan');
+    await db.query("INSERT INTO mentor_entitlements(user_id,active) VALUES($1,true)",[owner]);
+    const space=(await work('spaces',owner,draftSpace)).body.groups.find(g=>g.owner);
     const groupWrite=(uid,action,payload={})=>work('spaces',uid,{id:space.id,action,...payload});
     assert.equal((await work('clubs',other,{action:'join',id:space.id})).status,403);
     await groupWrite(owner,'goal',{body:'Review entries'});
     assert.equal((await work('spaces',other)).body.topics.some(t=>t.groupId===space.id),false);
-    await groupWrite(other,'join');
+    assert.equal((await groupWrite(other,'join')).status,403);
+    assert.equal((await groupWrite(other,'join',{code:space.code})).status,200);
     assert.equal((await groupWrite(other,'goal',{body:'Another goal'})).status,403);
     const goal=(await work('spaces',other)).body.topics.find(t=>t.groupId===space.id);
     assert.equal((await groupWrite(other,'check',{topicId:goal.id})).body.topics.find(t=>t.id===goal.id).completions,1);
     const topic=(await groupWrite(other,'discussion',{body:'How was your review?'})).body.topics.find(t=>t.kind==='discussion'&&t.groupId===space.id);
     assert.equal((await groupWrite(owner,'reply',{topicId:topic.id,body:'Done'})).body.topics.find(t=>t.id===topic.id).replies[0].body,'Done');
+    await groupWrite(other,'consent',{enabled:true});
+    assert.equal((await work('spaces',other)).body.groups.find(g=>g.id===space.id).statsOptIn,true);
+    await db.query('UPDATE mentor_entitlements SET active=false WHERE user_id=$1',[owner]);
+    assert.equal((await groupWrite(owner,'discussion',{body:'Locked'})).status,403);
+    assert.equal((await groupWrite(other,'consent',{enabled:false})).status,200);
     await groupWrite(other,'leave');
     assert.equal((await groupWrite(other,'reply',{topicId:topic.id,body:'Outside'})).status,403);
     const draft={visibility:'private',design:'marginalia',headline:'Study the process',displayName:'Public Alias',about:'My methods',

@@ -16,6 +16,7 @@ import { animateSignInChart } from './pages/sign-in-chart.js';
 import { renderEmailVerification } from './pages/email-verification.js';
 import signInMarkup from './pages/sign-in.html?raw';
 import { showWelcome } from './pages/welcome.js';
+import { roomPath } from './features/community/routes.js';
 import '@fontsource/instrument-serif/latin-400.css';
 import '@fontsource/instrument-serif/latin-400-italic.css';
 import './pages/sign-in-design.css';
@@ -307,7 +308,7 @@ export async function renderAccountPage(path, landing, appPages) {
     const parameters = new URLSearchParams(location.search);
     const destination = parameters.get('next');
     const invite = destination?.startsWith('/dashboard?') ? streakInviteCode(destination.slice('/dashboard'.length)) : '';
-    const next = Object.hasOwn(appPages, destination) || destination === '/dashboard#streak'
+    const next = Object.hasOwn(appPages, destination) || roomPath(destination) || destination === '/dashboard#streak'
       ? destination : streakInvitePath('/dashboard', invite);
     if (user?.emailVerified === true) location.replace(next);
     else if (user) verifyEmail(landing, user, next, false);
@@ -346,6 +347,15 @@ export async function renderAccountPage(path, landing, appPages) {
 
 
   const request = (route, method, body) => authenticatedRequest(user, route, method, body);
+  if(roomPath(path)){
+    const [,section,id]=path.split('/');
+    if(section==='community'){
+      const {destination}=await request('/api/group-link?id='+id,'GET');
+      location.replace(destination);
+      return;
+    }
+    path='/'+section;
+  }
   if (['/history','/plan','/replay','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach','/calendar'].includes(path)) {
     const { renderWorkspace } = await import('./pages/workspace.js');
     await renderWorkspace(landing, { path, request, name:account.displayName || user.displayName,
