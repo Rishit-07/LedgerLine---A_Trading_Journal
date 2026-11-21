@@ -1,0 +1,28 @@
+-- Restores the cutover snapshot. Post-cutover records remain available in community_after_split.
+BEGIN;
+CREATE SCHEMA community_after_split;
+ALTER TABLE public.clubs SET SCHEMA community_after_split;
+ALTER TABLE public.spaces SET SCHEMA community_after_split;
+ALTER TABLE public.club_members SET SCHEMA community_after_split;
+ALTER TABLE public.club_requests SET SCHEMA community_after_split;
+ALTER TABLE public.club_posts SET SCHEMA community_after_split;
+ALTER TABLE public.club_replies SET SCHEMA community_after_split;
+ALTER TABLE public.club_checkins SET SCHEMA community_after_split;
+ALTER TABLE public.space_members SET SCHEMA community_after_split;
+ALTER TABLE public.space_requests SET SCHEMA community_after_split;
+ALTER TABLE public.space_posts SET SCHEMA community_after_split;
+ALTER TABLE public.space_replies SET SCHEMA community_after_split;
+ALTER TABLE public.space_checkins SET SCHEMA community_after_split;
+ALTER TABLE public.space_announcements SET SCHEMA community_after_split;
+ALTER TABLE public.space_assignments SET SCHEMA community_after_split;
+ALTER TABLE public.mentor_verifications SET SCHEMA community_after_split;
+ALTER TABLE public.mentor_entitlements SET SCHEMA community_after_split;
+ALTER TABLE public.mentor_plan_requests SET SCHEMA community_after_split;
+ALTER TABLE community_before_split.clubs SET SCHEMA public;
+ALTER TABLE community_before_split.club_members SET SCHEMA public;
+ALTER TABLE community_before_split.community_topics SET SCHEMA public;
+ALTER TABLE community_before_split.community_replies SET SCHEMA public;
+ALTER TABLE community_before_split.community_checkins SET SCHEMA public;
+DELETE FROM ledgerline_schema_migrations WHERE name='015_split_community.sql';
+ALTER SCHEMA community_before_split RENAME TO community_restored_backup;
+COMMIT;
