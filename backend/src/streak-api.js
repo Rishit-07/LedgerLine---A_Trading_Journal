@@ -64,16 +64,55 @@ export function createStreakApi(pool, authenticate, store, { remindersAvailable 
     journal: endpoint(async ({ uid }, body, query) => {
       const before = query.get('before');
       if (before !== null) requiredId(before);
-      const { rows } = await pool.query(`
-        SELECT id::text, symbol, market, side, setup, opened_at AS "openedAt", reviewed_at IS NOT NULL AS reviewed
-        FROM trades WHERE user_id=$1 AND ($2::bigint IS NULL OR id < $2) ORDER BY id DESC LIMIT 21
-      `, [uid, before]);
+      const selection = query.get('tradeId');
+      if (selection !== null) requiredId(selection);
+      const columns = `
+        SELECT t.id::text, t.symbol, t.market, t.side, t.setup, t.opened_at AS "openedAt", t.closed_at AS "closedAt", t.reviewed_at IS NOT NULL AS reviewed,
+          t.r_multiple::float AS result, t.stop::float,t.target::float,t.entry::float,t.exit::float,t.qty::float,
+          (SELECT mood FROM journal_entries WHERE user_id=$1 AND trade_id=t.id AND mood IS NOT NULL
+             ORDER BY (tags @> ARRAY['review']::text[]) DESC,id DESC LIMIT 1) AS mood,
+          coalesce((SELECT note FROM journal_entries WHERE user_id=$1 AND trade_id=t.id AND tags @> ARRAY['review']::text[]),'') AS note,
+          coalesce((SELECT json_agg(json_build_object('text',r.text,'kept',c.kept) ORDER BY r.position)
+            FROM trade_checks c JOIN rules r ON r.user_id=c.user_id AND r.id=c.rule_id WHERE c.user_id=$1 AND c.trade_id=t.id),'[]') AS checks
+        FROM trades t WHERE t.user_id=$1
+      `;
+      const { rows } = await pool.query(columns + 'AND ($2::bigint IS NULL OR t.id < $2) ORDER BY t.id DESC LIMIT 21', [uid, before]);
       const { rows: restDays } = before ? { rows: [] } : await pool.query(`
         SELECT date::text AS day, note FROM journal_entries
         WHERE user_id=$1 AND is_rest_day ORDER BY date DESC LIMIT 20
       `, [uid]);
-      return { trades: rows.slice(0, 20), next: rows.length === 21 ? rows[19].id : null, restDays };
+      const trades = rows.slice(0,20);
+      if (selection && !before && !trades.some(({id})=>id===selection)) {
+        const { rows: [trade] } = await pool.query(columns + 'AND t.id=$2', [uid, selection]);
+        if (trade) trades.push(trade);
+      }
+      return { trades, next: rows.length === 21 ? rows[19].id : null, restDays };
     }),
+    journalNote: endpoint(async ({uid}, {tradeId,note}) => {
+      if (typeof note !== 'string' || note.length>1000) throw new StreakError(400,'Keep the review note under 1,000 characters.');
+      const { rows } = await pool.query(`INSERT INTO journal_entries (user_id,trade_id,date,note,tags)
+        SELECT user_id,id,(opened_at AT TIME ZONE 'Asia/Kolkata')::date,$3,ARRAY['review'] FROM trades WHERE user_id=$1 AND id=$2
+        ON CONFLICT (user_id,trade_id) WHERE tags @> ARRAY['review']::text[] DO UPDATE SET note=excluded.note RETURNING note`,
+      [uid,requiredId(tradeId),note.trim()]);
+      if (!rows.length) throw new StreakError(404,'Trade unavailable.');
+      return rows[0];
+    },true),
+    inboxReview: endpoint(({uid},{tradeId,setup,mood}) => {
+      if ((setup !== undefined && (typeof setup !== 'string' || setup.length > 100)) ||
+        (mood !== undefined && !['Calm','Rushed','Fearful','Confident'].includes(mood))) {
+        throw new StreakError(400,'Choose valid review details.');
+      }
+      return mutate(uid,async (db,profile,now)=>{
+        const id=requiredId(tradeId);
+        const {rowCount}=await db.query(`UPDATE trades SET reviewed_at=coalesce(reviewed_at,$3),setup=coalesce($4,setup)
+          WHERE user_id=$1 AND id=$2`,[uid,id,now,setup?.trim() || null]);
+        if(!rowCount)throw new StreakError(404,'Trade unavailable.');
+        if(mood)await db.query(`INSERT INTO journal_entries (user_id,trade_id,date,note,mood,tags)
+          SELECT user_id,id,(opened_at AT TIME ZONE $3)::date,'',$4,ARRAY['review'] FROM trades WHERE user_id=$1 AND id=$2
+          ON CONFLICT (user_id,trade_id) WHERE tags @> ARRAY['review']::text[] DO UPDATE SET mood=excluded.mood`,
+        [uid,id,profile.timezone,mood]);
+      });
+    },true),
     friends: endpoint(async ({ uid }) => {
       const { rows } = await pool.query(`
         SELECT f.id::text, f.status, f.user_id=$1 AS outgoing, p.display_name AS name,
@@ -84,17 +123,31 @@ export function createStreakApi(pool, authenticate, store, { remindersAvailable 
       `, [uid]);
       return { friends: rows };
     }),
+    invitePreview: async (request, response) => {
+      const code = new URL(request.url, 'http://localhost').searchParams.get('code');
+      if (!uuid.test(code ?? '')) return send(response, 404, { error: 'This invitation is unavailable.' });
+      try {
+        const { rows: [inviter] } = await pool.query(`
+          SELECT display_name AS name FROM user_profile
+          WHERE streak_invite_code=$1 AND onboarded_at IS NOT NULL
+        `, [code]);
+        if (!inviter) return send(response, 404, { error: 'This invitation is unavailable.' });
+        return send(response, 200, { name: inviter.name || 'A Ledgerline member' });
+      } catch {
+        return send(response, 503, { error: 'The invitation could not load.' });
+      }
+    },
     invite: endpoint(async ({ uid }, { code }) => {
       if (typeof code !== 'string' || !uuid.test(code.trim())) throw new StreakError(400, 'Enter a valid friend code.');
-      const { rowCount } = await pool.query(`
+      const { rows: [friend] } = await pool.query(`
         INSERT INTO streak_friends (user_id, friend_user_id, status)
         SELECT a.user_id, b.user_id, 'pending' FROM user_profile a CROSS JOIN user_profile b
         WHERE a.user_id=$1 AND b.streak_invite_code=$2 AND a.user_id<>b.user_id
           AND a.onboarded_at IS NOT NULL AND b.onboarded_at IS NOT NULL
-        ON CONFLICT DO NOTHING
+        ON CONFLICT DO NOTHING RETURNING id::text
       `, [uid, code.trim()]);
-      if (!rowCount) throw new StreakError(409, 'Friend not found, already invited, or already connected.');
-      return { ok: true };
+      if (!friend) throw new StreakError(409, 'Friend not found, already invited, or already connected.');
+      return { ok: true, id: friend.id };
     }, true),
     accept: endpoint(({ uid }, { id }) => friendStatus(uid, id, true), true),
     end: endpoint(({ uid }, { id }) => friendStatus(uid, id, false), true),

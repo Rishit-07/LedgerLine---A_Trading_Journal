@@ -62,7 +62,74 @@ const bea = cachedSource(async () => {
   return [...events.values()];
 }, 30 * minute);
 
+function officialNews(url, source, country) {
+  const host = new URL(url).hostname.replace(/^www\./, '');
+  return cachedSource(async () => {
+    const response = await fetch(url, { signal: AbortSignal.timeout(6_000), redirect: 'error' });
+    if (!response.ok) throw new Error('News feed unavailable');
+    const xml = await response.text();
+    if (!/<rss\b/i.test(xml)) throw new Error('Unexpected news feed');
+    const read = (item, tag) => (item.match(new RegExp('<' + tag + '>([\\s\\S]*?)</' + tag + '>', 'i'))?.[1] ?? '')
+      .replace(/^\s*<!\[CDATA\[([\s\S]*?)\]\]>\s*$/, '$1')
+      .replace(/&(amp|quot|apos|lt|gt|#\d+|#x[0-9a-f]+);/gi, (entity, key) => {
+        if (key[0] !== '#') return { amp: '&', quot: '"', apos: "'", lt: '<', gt: '>' }[key.toLowerCase()];
+        const code = key[1].toLowerCase() === 'x' ? parseInt(key.slice(2), 16) : Number(key.slice(1));
+        return code <= 0x10ffff ? String.fromCodePoint(code) : entity;
+      }).trim();
+    return [...xml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)].slice(0, 100).flatMap(([, item]) => {
+      const title = read(item, 'title');
+      const at = time(read(item, 'pubDate'));
+      const article = read(item, 'link');
+      const link = article ? URL.parse(article, url) : null;
+      if (!title || !at || link?.protocol !== 'https:' || link.hostname.replace(/^www\./, '') !== host) return [];
+      return [{ title, at, url: link.href, source, country, kind: 'news' }];
+    });
+  });
+}
+
+const rbiNews = officialNews('https://www.rbi.org.in/pressreleases_rss.xml', 'Reserve Bank of India', 'India');
+const fedNews = officialNews('https://www.federalreserve.gov/feeds/press_monetary.xml', 'Federal Reserve', 'United States');
+
 const notConfigured = () => ({ status: 'not-configured', data: [] });
+
+async function publishedHolidays(pool, first, last) {
+  const { rows } = await pool.query(`
+    SELECT day::text AS date, closed, exchange, opens_at::text AS opens, closes_at::text AS closes
+    FROM exchange_holidays WHERE day BETWEEN $1 AND $2 ORDER BY day, exchange
+  `, [first, last]);
+  return rows;
+}
+
+const sessionTime = (day, at) => new Date(day + 'T' + at + '+05:30').toISOString();
+
+function publishedSession(day, { exchange, opens = '09:15', closes = '15:30' }) {
+  return { exchange: exchange + ' equities', opensAt: sessionTime(day, opens), closesAt: sessionTime(day, closes) };
+}
+
+async function publishedHours(pool, day) {
+  const { rows } = await pool.query(`
+    SELECT exchange, bool_or(day=$1::date) AS exception, bool_or(closed) FILTER (WHERE day=$1::date) AS closed,
+      (max(opens_at) FILTER (WHERE day=$1::date))::text AS opens,
+      (max(closes_at) FILTER (WHERE day=$1::date))::text AS closes
+    FROM exchange_holidays
+    WHERE day >= date_trunc('year',$1::date) AND day < date_trunc('year',$1::date) + interval '1 year'
+    GROUP BY exchange
+  `, [day]);
+  if (!rows.length) return null;
+  const weekday = new Date(day).getUTCDay();
+  const weekend = weekday === 0 || weekday === 6;
+  const data = rows.flatMap((entry) => {
+    if (entry.exception) return !entry.closed && entry.opens && entry.closes ? [publishedSession(day, entry)] : [];
+    return weekend ? [] : [publishedSession(day, { exchange: entry.exchange })];
+  });
+  return { status: 'published', data, specialHoursUnlisted: rows.some((entry) => entry.exception && !entry.closed &&
+    (!entry.opens || !entry.closes)) };
+}
+
+function selectedMarkets(query) {
+  const markets=query.getAll('market');
+  return markets.length ? markets : null;
+}
 
 export function createCalendarHandlers(pool, authenticate) {
   const economicKey = process.env.TRADING_ECONOMICS_KEY;
@@ -141,7 +208,8 @@ export function createCalendarHandlers(pool, authenticate) {
     month: async (request, response) => {
       const claims = await authenticate(request, response);
       if (!claims) return;
-      const month = new URL(request.url, 'http://localhost').searchParams.get('month');
+      const query = new URL(request.url, 'http://localhost').searchParams;
+      const month = query.get('month');
       const first = month + '-01';
       if (!validDay(first) || first < '0001-01-01' || first > today()) {
         return send(response, 400, { error: 'Choose a valid calendar month.' });
@@ -160,21 +228,46 @@ export function createCalendarHandlers(pool, authenticate) {
               SELECT count(*)::int AS checks, (count(*) FILTER (WHERE c.kept))::int AS kept
               FROM trade_checks c WHERE c.user_id = t.user_id AND c.trade_id = t.id
             ) rules
-            WHERE t.user_id = $1 AND t.closed_at >= b.start_time AND t.closed_at < b.end_time
+            WHERE t.user_id = $1 AND ($3::text[] IS NULL OR t.market=ANY($3)) AND t.closed_at >= b.start_time AND t.closed_at < b.end_time
           ),
-          daily AS (
+          exits AS (
             SELECT day::text AS date, count(*)::int AS count, sum(result)::float AS result,
               (count(*) FILTER (WHERE result > 0))::int AS wins, sum(checks) AS checks, sum(kept) AS kept
             FROM closed GROUP BY day
+          ), entries AS (
+            SELECT (opened_at AT TIME ZONE 'Asia/Kolkata')::date::text AS date, count(*)::int AS opened
+            FROM trades CROSS JOIN bounds WHERE user_id=$1 AND ($3::text[] IS NULL OR market=ANY($3)) AND opened_at>=start_time AND opened_at<end_time GROUP BY 1
+          ), daily AS (
+            SELECT date, coalesce(count,0) AS count, coalesce(opened,0) AS opened, result,wins,checks,kept
+            FROM exits FULL JOIN entries USING(date)
           )
           SELECT coalesce((SELECT json_agg(daily ORDER BY date) FROM daily), '[]') AS days,
+            ARRAY(SELECT DISTINCT date::text FROM journal_entries
+              WHERE user_id=$1 AND is_rest_day AND date >= $2::date AND date < $2::date + interval '1 month') AS "restDays",
             (SELECT count(*)::int FROM daily) AS "tradingDays",
             (SELECT symbol FROM closed GROUP BY symbol ORDER BY count(*) DESC, symbol LIMIT 1) AS "mostTraded",
             count(*)::int AS "tradeCount", sum(result)::float AS "netR", avg(result)::float AS "averageR",
             (count(*) FILTER (WHERE result > 0) * 100.0 / nullif(count(*), 0))::float AS "winRate",
             (sum(kept) * 100.0 / nullif(sum(checks), 0))::float AS adherence
           FROM closed
-        `, [claims.uid, first]);
+        `, [claims.uid, first, selectedMarkets(query)]);
+        if (query.get('includeNews') === '1' && summary.tradeCount && month === today().slice(0, 7)) {
+          const economicFeed = await economic(today());
+          const releases = (economicFeed.status === 'live' ? economicFeed : await bea()).data;
+          const times = releases.filter((event)=>event.impact===3 && event.at).map(({at})=>at);
+          if (times.length) {
+            const { rows: [news] } = await pool.query(`
+              SELECT avg(t.r_multiple)::float AS average, count(*)::int AS samples
+              FROM trades t WHERE t.user_id=$1 AND t.closed_at IS NOT NULL
+                AND (t.closed_at AT TIME ZONE 'Asia/Kolkata')::date >= $2::date
+                AND (t.closed_at AT TIME ZONE 'Asia/Kolkata')::date < $2::date + interval '1 month'
+                AND ($4::text[] IS NULL OR t.market=ANY($4))
+                  AND EXISTS (SELECT 1 FROM unnest($3::timestamptz[]) AS event(at)
+                  WHERE t.opened_at BETWEEN event.at - interval '30 minutes' AND event.at + interval '30 minutes')
+            `, [claims.uid, first, times, selectedMarkets(query)]);
+            summary.newsWindow = news;
+          }
+        }
         send(response, 200, summary);
       } catch (error) {
         console.error('Could not load the trading month (' + (error.code ?? 'unknown error') + ').');
@@ -184,13 +277,19 @@ export function createCalendarHandlers(pool, authenticate) {
     calendar: async (request, response) => {
       if (!await authenticate(request, response)) return;
       const day = today();
-      const [primary, earningsFeed, dividendFeed, catalystFeed, holidayFeed, expiryFeed, fallback] = await Promise.all([
-        economic(day), earnings(day), dividends(day), catalysts(day), holidays(), expiries(), bea(),
+      const [primary, earningsFeed, dividendFeed, catalystFeed, holidayFeed, expiryFeed, fallback, rbi, fed] = await Promise.all([
+        economic(day), earnings(day), dividends(day), catalysts(day), holidays(), expiries(), bea(), rbiNews(), fedNews(),
       ]);
       const publicFeed = primary.status === 'live' ? { status: 'standby', data: [] } : fallback;
-      const feeds = { economic: primary, bea: publicFeed, earnings: earningsFeed, dividends: dividendFeed, catalysts: catalystFeed, holidays: holidayFeed, expiries: expiryFeed };
       const first = shift(day, -34);
       const last = shift(day, 14);
+      const exchangeFeed = holidayFeed.status === 'live' ? holidayFeed : await publishedHolidays(pool, first, last)
+        .then((records) => records.length ? { status: 'published', data: records.map((record) => ({
+          date: record.date, kind: 'holiday', title: record.exchange + (record.closed ? ' trading holiday' : ' special session'),
+          source: record.exchange + ' published calendar',
+          sessions: !record.closed && record.opens && record.closes ? [publishedSession(record.date, record)] : [],
+        })) } : holidayFeed).catch(() => holidayFeed);
+      const feeds = { economic: primary, bea: publicFeed, earnings: earningsFeed, dividends: dividendFeed, catalysts: catalystFeed, holidays: exchangeFeed, expiries: expiryFeed, rbi, fed };
       const events = Object.values(feeds).flatMap((feed) => feed.data).filter((event) => {
         const key = event.date ?? ist.format(new Date(event.at));
         return key >= first && key <= last;
@@ -210,7 +309,12 @@ export function createCalendarHandlers(pool, authenticate) {
         return send(response, 400, { error: 'Choose a day in the calendar range.' });
       }
       try {
-        const data = market ? { marketHours: await hours(day) } : await loadJournal(pool, claims.uid, day);
+        let data;
+        if (market) {
+          const brokerHours = await hours(day);
+          const marketHours = brokerHours.status === 'live' ? brokerHours : await publishedHours(pool, day) ?? brokerHours;
+          data = { marketHours };
+        } else data = await loadJournal(pool, claims.uid, day, selectedMarkets(query));
         send(response, 200, data);
       } catch (error) {
         console.error('Could not load the trading day (' + (error.code ?? 'unknown error') + ').');
@@ -224,7 +328,7 @@ function session(item) {
   return { exchange: item.exchange, opensAt: time(item.start_time), closesAt: time(item.end_time) };
 }
 
-async function loadJournal(pool, uid, day) {
+async function loadJournal(pool, uid, day, markets) {
   const [trades, notes] = await Promise.all([
     pool.query(`
       WITH session_day AS (
@@ -233,18 +337,19 @@ async function loadJournal(pool, uid, day) {
       )
       SELECT t.id::text, t.symbol, t.market, t.side, t.setup, t.qty::float, t.entry::float, t.exit::float,
         t.stop::float, t.target::float, t.r_multiple::float AS result,
+        (SELECT count(*)::int FROM trade_checks c WHERE c.user_id=t.user_id AND c.trade_id=t.id AND NOT c.kept) AS breaks,
         t.opened_at AS "openedAt", t.closed_at AS "closedAt"
-      FROM trades t CROSS JOIN session_day d WHERE t.user_id = $1 AND (
+      FROM trades t CROSS JOIN session_day d WHERE t.user_id = $1 AND ($3::text[] IS NULL OR t.market=ANY($3)) AND (
         (t.opened_at >= d.start_time AND t.opened_at < d.end_time) OR
         (t.closed_at >= d.start_time AND t.closed_at < d.end_time)
       )
       ORDER BY coalesce(t.closed_at, t.opened_at) DESC, t.id DESC
-    `, [uid, day]),
+    `, [uid, day, markets]),
     pool.query(`
-      SELECT j.note, j.mood, j.tags, t.symbol FROM journal_entries j
+      SELECT j.note, j.mood, j.tags, j.is_rest_day AS "isRestDay", t.symbol FROM journal_entries j
       LEFT JOIN trades t ON t.user_id = j.user_id AND t.id = j.trade_id
-      WHERE j.user_id = $1 AND j.date = $2::date ORDER BY j.id
-    `, [uid, day]),
+      WHERE j.user_id = $1 AND j.date = $2::date AND (j.trade_id IS NULL OR $3::text[] IS NULL OR t.market=ANY($3)) ORDER BY j.id
+    `, [uid, day, markets]),
   ]);
   return { trades: trades.rows, notes: notes.rows };
 }

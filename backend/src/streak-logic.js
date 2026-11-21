@@ -51,8 +51,8 @@ export function calculateStreak({ today, activity, isClosed = () => false }) {
   for (let day = first; day && day <= today; day = shiftDay(day, 1)) {
     const entries = actual.get(day);
     let kind = entries?.kind;
-    if (!kind && current && isClosed(day)) kind = 'rest';
     if (!kind && day === today) break;
+    if (!kind && current && isClosed(day)) kind = 'rest';
     if (!kind && current && lastKind !== 'freeze' && freezes) {
       kind = 'freeze';
       freezes--;
@@ -86,6 +86,11 @@ export function calculateStreak({ today, activity, isClosed = () => false }) {
   return {
     current, best, daysToBest: best - current, freezes, level: Math.floor(xp / 100) + 1, xp,
     week: Array.from({ length: 7 }, (_, index) => counted.has(shiftDay(monday, index))),
+    weekReasons: Array.from({ length: 7 }, (_, index) => {
+      const day = shiftDay(monday, index);
+      return actual.get(day)?.kind ?? (counted.get(day) === 'rest' ? 'marketClosed' : counted.get(day)) ?? null;
+    }),
+    marketClosedToday: !todayActivity && Boolean(current) && isClosed(today),
     todayCounted: Boolean(kindToday), nextFreezeIn: 7 - current % 7,
     todayIndex: (new Date(today).getUTCDay() + 6) % 7,
     kindToday, skippedToday: Boolean(todayActivity && todayActivity.kept < todayActivity.checks),

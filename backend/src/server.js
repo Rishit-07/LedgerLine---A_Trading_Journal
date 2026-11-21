@@ -4,6 +4,8 @@ import { getAuth } from 'firebase-admin/auth';
 import pg from 'pg';
 import { isEmail, readJson, send } from './http.js';
 import { createDashboardHandler, createTradeHandler } from './dashboard.js';
+import { createPlanHandler } from './plan.js';
+import { createWorkspaceApi } from './workspace.js';
 import { createCalendarHandlers } from './calendar.js';
 import { createOnboardingHandler } from './onboarding.js';
 import { createSupportHandler } from './support.js';
@@ -103,12 +105,16 @@ const calendar = createCalendarHandlers(pool, authenticateRequest);
 const streaks = createStreakStore(pool);
 const streak = createStreakApi(pool, authenticateRequest, streaks, { remindersAvailable: Boolean(mailConfig) });
 const saveTrade = createTradeHandler(streaks, authenticateRequest);
+const workspace = createWorkspaceApi(pool, authenticateRequest);
 const routes = new Map([
   ['/api/account', { methods: ['PUT'], handler: loadAccount }],
   ['/api/newsletter', { methods: ['POST'], handler: subscribe }],
   ['/api/support', { methods: ['POST'], handler: createSupportHandler(mailConfig) }],
   ['/api/onboarding', { methods: ['GET', 'PUT'], handler: createOnboardingHandler(pool, authenticateRequest) }],
   ['/api/dashboard', { methods: ['GET'], handler: createDashboardHandler(pool, authenticateRequest) }],
+  ['/api/plan', { methods: ['GET', 'PUT'], handler: createPlanHandler(pool, authenticateRequest) }],
+  ['/api/workspace', { methods: ['GET', 'POST'], handler: workspace.workspace }],
+  ['/api/portfolio/public', { methods: ['GET'], handler: workspace.publicPortfolio }],
   ['/api/calendar', { methods: ['GET'], handler: calendar.calendar }],
   ['/api/calendar/month', { methods: ['GET'], handler: calendar.month }],
   ['/api/calendar/day', { methods: ['GET'], handler: calendar.day }],
@@ -118,8 +124,11 @@ const routes = new Map([
   ['/api/streak/rest-day', { methods: ['POST'], handler: streak.rest }],
   ['/api/streak/review', { methods: ['POST'], handler: streak.review }],
   ['/api/streak/journal', { methods: ['GET'], handler: streak.journal }],
+  ['/api/streak/journal/note', { methods: ['POST'], handler: streak.journalNote }],
+  ['/api/streak/journal/review', { methods: ['POST'], handler: streak.inboxReview }],
   ...['invite', 'accept', 'end'].map((action) => ['/api/streak/friends/' + action, { methods: ['POST'], handler: streak[action] }]),
   ['/api/streak/friends', { methods: ['GET'], handler: streak.friends }],
+  ['/api/streak/friends/preview', { methods: ['GET'], handler: streak.invitePreview }],
   ['/api/streak/battles', { methods: ['GET', 'POST'], handler: (request, response) =>
     (request.method === 'GET' ? streak.battles : streak.challenge)(request, response) }],
   ['/api/streak/badges/seen', { methods: ['POST'], handler: streak.badgesSeen }],
