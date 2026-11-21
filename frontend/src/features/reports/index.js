@@ -1,5 +1,7 @@
+import {processingCard} from '../../components/billing-ready.js';
 import {button,node,metric,drawLine} from '../../pages/workspace-ui.js';
 import {fileAction} from '../../components/file-actions.js';
+import {confirmationCard} from '../../components/confirmation-motion.js';
 import {upgradeGate} from './upgrade.js';
 import './reports.css';
 
@@ -77,8 +79,9 @@ export const reports={
     }
     paint();
     const order=new URLSearchParams(location.search).get('checkout');
+    if(new URLSearchParams(location.search).get('welcome')==='pro'&&data.pro&&data.enabled){history.replaceState(history.state,'','/reports');await generate('full');}
     if(order){
-      const message=node('p','Confirming payment…');message.setAttribute('role','status');review.prepend(message);
+      const message=processingCard();message.setAttribute('role','status');review.prepend(message);
       try{
         for(let attempt=0;attempt<40&&page.isConnected;attempt++){
           const status=await request('/api/billing/status?id='+encodeURIComponent(order),'GET');
@@ -87,6 +90,7 @@ export const reports={
           }
           if(status.confirmed){
             history.replaceState(history.state,'','/reports');await load();
+            page.querySelector('.report-ai').before(confirmationCard('payment','Your Pro access is ready.'));
             if(data.pro&&data.enabled)await generate('full');return;
           }
           await new Promise(resolve=>setTimeout(resolve,3000));

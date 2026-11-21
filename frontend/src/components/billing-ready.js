@@ -6,7 +6,7 @@ export function billingReady(){
  const scene=document.createElement('div');
  scene.className='billing-ready';
  scene.setAttribute('aria-hidden','true');
- scene.innerHTML='<div class="br-folds"></div><div class="br-card"><div class="br-face ll-card-surface"><span>Ledgerline</span><b class="br-ledger-mark">╂</b><i class="br-chip"></i></div></div>';
+ scene.innerHTML='<div class="br-folds"></div><div class="br-card"><div class="br-face ll-card-surface"><span>Ledgerline</span><img class="br-ledger-mark" src="/ledgerline-icon.svg" alt=""><i class="br-chip"></i></div></div>';
  const folds = scene.querySelector('.br-folds');
  for (let layer = 0; layer < 11; layer++) {
    const sheet = document.createElement('i');

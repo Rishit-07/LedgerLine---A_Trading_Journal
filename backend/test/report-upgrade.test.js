@@ -28,7 +28,7 @@ test('signed captured subscription unlocks a cited report; duplicate delivery an
    assert.equal((await call(api,'/api/ai/report','POST',body)).status,403);
    const checkout=await call(billing,'/api/billing/checkout','POST',{term:'monthly',method:'UPI'});
    assert.equal(checkout.status,201);
-   const event={event:'subscription.charged',payload:{subscription:{entity:{id:uid,plan_id:'plan_test',current_end:Math.floor(Date.now()/1000)+86400}},payment:{entity:{id:payment,status:'captured',currency:'INR'}}}};
+   const event={event:'subscription.charged',payload:{subscription:{entity:{id:uid,plan_id:'plan_test',current_end:Math.floor(Date.now()/1000)+86400}},payment:{entity:{id:payment,status:'captured',currency:'INR',amount:14900}}}};
    const post=signature=>call(billing,'/api/billing/webhook','POST',event,{'x-razorpay-signature':signature});
    assert.equal((await post('')).status,401);
    const signature=createHmac('sha256','test').update(JSON.stringify(event)).digest('hex');

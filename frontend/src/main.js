@@ -1,3 +1,4 @@
+import {legacyBillingRoute} from './features/billing/route.js';
 import {openingReveal} from './components/file-actions.js';
 import {communityRedirect,roomPath} from './features/community/routes.js';
 import '@fontsource-variable/schibsted-grotesk';
@@ -77,7 +78,7 @@ function renderPending(title, message, retry = false) {
 const renderLoadError = () => renderPending('Page unavailable', 'Reload the page to try again.');
 
 const communityDestination=communityRedirect(new URL(location.href));
-if(path==='/settings/billing'||new URLSearchParams(location.search).get('tab')==='billing'){location.replace('/billing');}else if(path==='/motion-preview'){import('./pages/motion-preview.js').then(m=>m.preview(landing)).catch(renderLoadError);}else if(path==='/replay'){location.replace('/history');} else if(path==='/ai-reports'){location.replace('/reports'+location.search+location.hash);} else if(communityDestination) {
+if(legacyBillingRoute(path,location.search)){location.replace('/billing');}else if(path==='/motion-preview'){import('./pages/motion-preview.js').then(m=>m.preview(landing)).catch(renderLoadError);}else if(path==='/replay'){location.replace('/history');} else if(path==='/ai-reports'){location.replace('/reports'+location.search+location.hash);} else if(communityDestination) {
   location.replace(communityDestination);
 } else if (path === '/') {
   openingReveal();

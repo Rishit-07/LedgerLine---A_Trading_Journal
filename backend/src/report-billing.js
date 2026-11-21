@@ -28,11 +28,11 @@ export function billingApi(pool,authenticate,env=process.env,fetcher=fetch){
       await db.query('COMMIT');return send(res,200,{received:true});
     }
     if(event.event!=='subscription.charged')return send(res,200,{received:true});
-    if(!sub?.id||!Number.isSafeInteger(sub.current_end)||payment?.status!=='captured'||payment.currency!=='INR'||!payment.id)return send(res,400,{error:'Incomplete payment event.'});
+    if(!sub?.id||!Number.isSafeInteger(sub.current_end)||payment?.status!=='captured'||payment.currency!=='INR'||!Number.isSafeInteger(payment.amount)||payment.amount<=0||!payment.id)return send(res,400,{error:'Incomplete payment event.'});
     db=await pool.connect();await db.query('BEGIN');
     const {rows:[order]}=await db.query('SELECT * FROM report_checkouts WHERE provider_ref=$1 AND plan_ref=$2 FOR UPDATE',[sub.id,sub.plan_id]);
     if(order && (await db.query('INSERT INTO report_payment_events(id) VALUES($1) ON CONFLICT DO NOTHING RETURNING id',[payment.id])).rowCount){
-      await db.query("UPDATE report_checkouts SET payment_state='paid',grace_until=NULL,paid_until=greatest(paid_until,to_timestamp($2)) WHERE id=$1",[order.id,sub.current_end]);
+      await db.query("UPDATE report_checkouts SET payment_state='paid',grace_until=NULL,reminder_sent=false,paid_until=greatest(paid_until,to_timestamp($2)) WHERE id=$1",[order.id,sub.current_end]);
       await grant(db,order,new Date(sub.current_end*1000));
       if(Number.isSafeInteger(payment.amount)&&payment.amount>0)await invoice(db,order,payment.id,payment.amount);
     }
@@ -58,7 +58,7 @@ export function billingApi(pool,authenticate,env=process.env,fetcher=fetch){
     return send(res,200,{action:order.renewal_action??data.action});
    }
    if(url.pathname.endsWith('/status')){
-    const {rows:[order]}=await pool.query('SELECT plan,method,quote,payment_state,coalesce(paid_until>now(),false) confirmed FROM report_checkouts WHERE id::text=$1 AND user_id=$2',[url.searchParams.get('id'),claims.uid]);
+    const {rows:[order]}=await pool.query('SELECT plan,method,hosted_url,quote,payment_state,coalesce(paid_until>now(),false) confirmed FROM report_checkouts WHERE id::text=$1 AND user_id=$2',[url.searchParams.get('id'),claims.uid]);
     return send(res,order?200:404,order??{error:'Checkout not found.'});
    }
    const available=Boolean(env.RAZORPAY_KEY_ID&&env.RAZORPAY_KEY_SECRET&&env.RAZORPAY_WEBHOOK_SECRET);
@@ -81,7 +81,7 @@ export function billingApi(pool,authenticate,env=process.env,fetcher=fetch){
    if(!subscription.ok)return send(res,502,{error:'Could not open checkout. Please try again.'});
    const sub=await subscription.json();
    if(!sub.short_url?.startsWith('https://')||!sub.id)throw Error('Invalid checkout');
-   const {rows:[order]}=await pool.query('INSERT INTO report_checkouts(user_id,term,plan_ref,provider_ref,plan,method,recipient) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id',[claims.uid,data.term,terms[data.term],sub.id,plan,data.method,claims.email]);
+   const {rows:[order]}=await pool.query('INSERT INTO report_checkouts(user_id,term,plan_ref,provider_ref,plan,method,recipient,hosted_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id',[claims.uid,data.term,terms[data.term],sub.id,plan,data.method,claims.email,sub.short_url]);
    send(res,201,{id:order.id,url:sub.short_url});
   }catch{if(db)await db.query('ROLLBACK').catch(()=>{});send(res,503,{error:'Billing is temporarily unavailable.'});}
   finally{db?.release();}

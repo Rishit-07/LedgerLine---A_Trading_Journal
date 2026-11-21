@@ -24,13 +24,16 @@ export async function grant(db,order,until){
  }
 }
 export async function invoice(db,order,transaction,amount,credit=0){
- await db.query("INSERT INTO billing_invoices(checkout_id,transaction_id,amount_paise,credit,details) SELECT $1,$2,$3,$4,jsonb_build_object('name',p.billing_name,'gstin',p.gstin,'address',p.address,'email',$6::text,'plan',$7::text,'method',$8::text) FROM (VALUES(1)) seed(n) LEFT JOIN billing_profiles p ON p.user_id=$5 ON CONFLICT(transaction_id) DO NOTHING",[order.id,transaction,amount,credit,order.user_id,order.recipient,order.plan,order.method]);
+ const seller={name:process.env.BILLING_LEGAL_NAME,address:process.env.BILLING_LEGAL_ADDRESS,gstin:process.env.BILLING_GSTIN,sac:process.env.BILLING_SAC};
+ const configuredRate=Number(process.env.BILLING_GST_PERCENT);
+ const tax=seller.gstin&&Number.isFinite(configuredRate)&&configuredRate>=0?{rate:configuredRate,base:Math.round(amount/(1+configuredRate/100))}:null;
+ await db.query("INSERT INTO billing_invoices(checkout_id,transaction_id,amount_paise,credit,details) SELECT $1,$2,$3,$4,jsonb_build_object('name',p.billing_name,'gstin',p.gstin,'address',p.address,'email',$6::text,'plan',$7::text,'method',$8::text,'seller',$9::jsonb,'tax',$10::jsonb,'quote', $11::jsonb) FROM (VALUES(1)) seed(n) LEFT JOIN billing_profiles p ON p.user_id=$5 ON CONFLICT(transaction_id) DO NOTHING",[order.id,transaction,amount,credit,order.user_id,order.recipient,order.plan,order.method,seller,tax,order.quote??null]);
 }
 export async function invoicePdf(row){
  const doc=new PDFDocument({margin:56});
  const chunks=[];const result=new Promise((ok,fail)=>{doc.on('data',x=>chunks.push(x));doc.on('end',()=>ok(Buffer.concat(chunks)));doc.on('error',fail);});
  const d=row.details;
- doc.fontSize(24).text('Ledgerline').moveDown().fontSize(16).text('Invoice LL-'+String(row.id).padStart(6,'0')).fontSize(11);
- for(const line of [new Date(row.created_at).toISOString().slice(0,10),d.name,d.email,d.address,d.gstin&&'Customer GSTIN '+d.gstin,d.plan+' subscription',d.method,'Receipt value INR '+(Number(row.amount_paise)/100).toFixed(2),'Transaction '+row.transaction_id])if(line)doc.moveDown(.5).text(String(line));
+ doc.fontSize(24).text(d.seller?.name||'Ledgerline').moveDown().fontSize(16).text('Invoice LL-'+String(row.id).padStart(6,'0')).fontSize(11);
+ for(const line of [new Date(row.created_at).toISOString().slice(0,10),d.seller?.address,d.seller?.gstin&&'Supplier GSTIN '+d.seller.gstin,d.seller?.sac&&'SAC '+d.seller.sac,d.name,d.email,d.address,d.gstin&&'Customer GSTIN '+d.gstin,d.plan+' subscription',d.method,d.tax&&'Taxable value INR '+(d.tax.base/100).toFixed(2),d.tax&&'GST ('+d.tax.rate+'%) INR '+((Number(row.amount_paise)-d.tax.base)/100).toFixed(2),Number(row.credit)>0&&'Excess credited: '+row.credit+' '+(d.quote?.coin??''),'Receipt value INR '+(Number(row.amount_paise)/100).toFixed(2),'Transaction '+row.transaction_id])if(line)doc.moveDown(.5).text(String(line));
  doc.end();return result;
 }

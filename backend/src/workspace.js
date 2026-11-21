@@ -289,6 +289,7 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
           if (!record) throw fail(404,'Closed trade unavailable.');
           if(!record.candles.length) Object.assign(record,await lookupCandles(record));
           else record.candleSource='Imported candles';
+          if(record.candles?.length)await query('INSERT INTO billing_replay_usage(user_id) VALUES($1)',[claims.uid]);
           return send(response,200,record);
         }
         const [account] = await query(profile,[claims.uid]);

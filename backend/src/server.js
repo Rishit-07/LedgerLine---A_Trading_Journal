@@ -1,3 +1,4 @@
+import {startBillingMail} from './billing-mail.js';
 import {billingApi} from './report-billing.js';
 import {billingProfile} from './billing-profile.js';
 import {startMentorMail} from './mentor-mail.js';
@@ -31,6 +32,7 @@ const pool = new pg.Pool({ connectionString, connectionTimeoutMillis: 5000 });
 pool.on('error', () => console.error('An idle database connection failed.'));
 const mailConfig = readMailConfig(process.env);
 startMentorMail(pool,mailConfig);
+startBillingMail(pool,mailConfig);
 const deliverWelcome = startWelcomeDelivery(pool, mailConfig);
 
 async function subscribe(request, response) {
