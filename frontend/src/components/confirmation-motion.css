@@ -1,0 +1,33 @@
+.ll-confirm,.ll-pay-card{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(125deg,#292b52,#323777 52%,#242844);color:#fcfbff;border-radius:20px;box-shadow:inset 0 0 0 1px #ffffff24}
+.ll-confirm{display:flex;align-items:center;gap:14px;padding:14px 22px;margin-block:12px;max-width:34rem}
+.ll-confirm[hidden]{display:none}
+.ll-emblem{width:clamp(72px,12vw,100px);flex:none;perspective:420px;color:#d2ceff}
+.ll-emblem svg{width:100%;display:block;overflow:visible}
+.ll-cube,.ll-document,.ll-seal{transform-origin:center}
+.ll-cube,.ll-document,.ll-scanner{opacity:0}
+.ll-document{fill:#494a83;stroke:#dedbff;stroke-width:2}
+.ll-document path,.ll-document circle{fill:none}
+.ll-scanner{stroke:#fff;stroke-width:2;filter:drop-shadow(0 0 4px #b0afef)}
+.ll-seal circle{fill:#bdc1ff;stroke:#ebeaff;stroke-width:1.4}
+.ll-seal .ll-rim{fill:none;stroke:#767cb6;stroke-dasharray:1 3}
+.ll-tick{stroke:#272951;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1}
+.ll-confirm-copy{display:grid;gap:4px}.ll-confirm-copy small{color:#dbdaff;font-weight:700}.ll-confirm-copy strong{font-size:clamp(18px,2vw,26px);letter-spacing:-.03em}.ll-confirm-copy span{font-size:14px;color:#eeedff}
+.ll-pay-card{margin-block:14px;display:grid;align-content:space-between;padding:18px 22px;aspect-ratio:2.8;max-width:23rem;touch-action:pan-y;user-select:none;background:repeating-radial-gradient(ellipse at 108% 125%,transparent 0 7px,#ffffff13 8px 9px,transparent 10px 15px),linear-gradient(120deg,#222540,#42488c)}
+.ll-pay-card span{font-size:.8rem;font-weight:700}.ll-pay-card strong{font-size:1.6rem;letter-spacing:-.04em}
+.ll-pay-card i{position:absolute;right:1.5rem;top:1.3rem;width:20px;height:20px;border:1px solid #dddcff;border-radius:50%;box-shadow:8px 0 #b3b7e8}
+.ll-receipt{background:linear-gradient(120deg,#193532,#27594c)}.ll-receipt .ll-seal circle{fill:#a3e6c0}.ll-receipt .ll-seal .ll-rim{fill:none;stroke:#5b987d}.ll-receipt .ll-tick{stroke:#193d30}
+@media(prefers-reduced-motion:no-preference){
+ .ll-credential.ll-reveal .ll-cube{animation:ll-turn .76s ease both}
+ .ll-credential.ll-reveal .ll-document{animation:ll-document .92s .54s ease both}
+ .ll-credential.ll-reveal .ll-scanner{animation:ll-scan .65s .67s ease both}
+ .ll-reveal .ll-seal{animation:ll-stamp .54s var(--stamp,1.32s) cubic-bezier(.2,.9,.23,1.22) both}
+ .ll-reveal .ll-tick{animation:ll-sign .38s calc(var(--stamp,1.32s) + .19s) ease-out both}
+ .ll-receipt{--stamp:.08s}
+ .ll-reveal::after{content:'';position:absolute;inset:-50%;pointer-events:none;background:linear-gradient(110deg,transparent 45%,#ffffff20,transparent 55%);animation:ll-glint .9s var(--stamp,1.32s) both}
+}
+@keyframes ll-turn{0%{opacity:0;transform:scale(.65) rotate(-32deg)}35%{opacity:1}80%{opacity:1}100%{opacity:0;transform:rotate(30deg) scale(.85)}}
+@keyframes ll-document{0%,100%{opacity:0;transform:scale(.85)}22%,78%{opacity:1;transform:scale(1)}}
+@keyframes ll-scan{0%{opacity:0}18%,80%{opacity:1}100%{opacity:0;transform:translateY(52px)}}
+@keyframes ll-stamp{from{opacity:0;transform:scale(.35) rotate(-18deg)}to{opacity:1;transform:none}}
+@keyframes ll-sign{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes ll-glint{from{transform:translateX(-80%)}to{transform:translateX(80%)}}
