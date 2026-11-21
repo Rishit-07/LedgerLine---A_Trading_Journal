@@ -1,4 +1,6 @@
 import {billingApi} from './report-billing.js';
+import {billingProfile} from './billing-profile.js';
+import {startMentorMail} from './mentor-mail.js';
 import {mentorVerification} from './mentor-verification.js';
 import {reportApi} from './reports.js';
 import { createServer } from 'node:http';
@@ -28,6 +30,7 @@ const auth = getAuth(initializeApp({ projectId }));
 const pool = new pg.Pool({ connectionString, connectionTimeoutMillis: 5000 });
 pool.on('error', () => console.error('An idle database connection failed.'));
 const mailConfig = readMailConfig(process.env);
+startMentorMail(pool,mailConfig);
 const deliverWelcome = startWelcomeDelivery(pool, mailConfig);
 
 async function subscribe(request, response) {
@@ -113,6 +116,8 @@ const workspace = createWorkspaceApi(pool, authenticateRequest);
 const reports=reportApi(pool,authenticateRequest);
 const billing=billingApi(pool,authenticateRequest);
 const routes = new Map([
+  ...['overview','invoice','manage'].map(key=>['/api/billing/'+key,{methods:[key==='manage'?'POST':'GET'],handler:billing}]),
+  ['/api/billing/profile',{methods:['GET','PUT'],handler:billingProfile(pool,authenticateRequest)}],
   ['/api/billing/checkout',{methods:['POST','GET'],handler:billing}],
   ['/api/billing/status',{methods:['GET'],handler:billing}],
   ['/api/billing/crypto/webhook',{methods:['POST'],handler:billing}],
