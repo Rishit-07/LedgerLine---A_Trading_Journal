@@ -1,4 +1,5 @@
 import './confirmation-motion.css';
+import './card-surface.css';
 
 export function confirmationCard(kind,caption,animate=true){
   const mentor=kind==='mentor';
@@ -20,9 +21,9 @@ export function confirmationCard(kind,caption,animate=true){
 
 export function checkoutCard(){
   const card=document.createElement('div');
-  card.className='ll-pay-card';
+  card.className='ll-pay-card ll-card-surface';
   card.setAttribute('aria-hidden','true');
-  card.innerHTML='<span>Ledgerline</span><i></i><strong></strong>';
+  card.innerHTML='<span>Ledgerline</span><i class="br-chip"></i><strong></strong>';
   return card;
 }
 
