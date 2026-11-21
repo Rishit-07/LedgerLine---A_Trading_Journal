@@ -30,10 +30,11 @@ export function planReadyScreen(plan,features,done){
  const proceed=button('Continue',()=>dialog.close()),replay=button('Replay',play);
  actions.append(proceed,replay);dialog.append(glow,wipe,stage,title,caption,chips,actions);
  document.body.append(dialog);dialog.showModal();
- let timeline,start;
+ let timeline,start,deadline;
  function play(){
-  timeline?.kill();start=performance.now();actions.inert=true;
+  clearTimeout(deadline);timeline?.kill();start=performance.now();actions.inert=true;
   timeline=gsap.timeline({onComplete:()=>{actions.inert=false;proceed.focus({preventScroll:true});}});
+  deadline=setTimeout(()=>timeline.progress(1),3900);
   if(matchMedia('(prefers-reduced-motion: reduce)').matches){timeline.fromTo(dialog,{opacity:0},{opacity:1,duration:.18});return;}
   timeline.fromTo(glow,{opacity:1,scale:.1},{opacity:0,scale:4,duration:.7},0)
    .fromTo(wipe,{clipPath:'circle(0%)',scaleY:1},{clipPath:'circle(100%)',duration:.6},0)
@@ -51,5 +52,5 @@ export function planReadyScreen(plan,features,done){
  }
  dialog.onclick=e=>{if(actions.inert&&performance.now()-start>1000&&!actions.contains(e.target))timeline.progress(1);};
  card.onpointermove=e=>{if(actions.inert||!matchMedia('(hover:hover) and (prefers-reduced-motion:no-preference)').matches)return;const r=card.getBoundingClientRect(),x=(e.clientX-r.left)/r.width;gsap.set(card,{rotationY:(x-.5)*28,rotationX:14-(e.clientY-r.top)/r.height*14});card.style.setProperty('--light',Math.round(x*100)+'%');};
- dialog.addEventListener('close',()=>{timeline?.kill();dialog.remove();done();},{once:true});play();
+ dialog.addEventListener('close',()=>{clearTimeout(deadline);timeline?.kill();dialog.remove();done();},{once:true});play();
 }
