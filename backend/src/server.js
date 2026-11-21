@@ -6,6 +6,7 @@ import { isEmail, readJson, send } from './http.js';
 import { createDashboardHandler, createTradeHandler } from './dashboard.js';
 import { createPlanHandler } from './plan.js';
 import { createWorkspaceApi } from './workspace.js';
+import { groupHandler } from './group-api.js';
 import { createCalendarHandlers } from './calendar.js';
 import { createOnboardingHandler } from './onboarding.js';
 import { createSupportHandler } from './support.js';
@@ -107,6 +108,8 @@ const streak = createStreakApi(pool, authenticateRequest, streaks, { remindersAv
 const saveTrade = createTradeHandler(streaks, authenticateRequest);
 const workspace = createWorkspaceApi(pool, authenticateRequest);
 const routes = new Map([
+  ['/api/clubs', {methods:['GET','POST'],handler:groupHandler(pool,authenticateRequest,'club')}],
+  ['/api/spaces', {methods:['GET','POST'],handler:groupHandler(pool,authenticateRequest,'space')}],
   ['/api/account', { methods: ['PUT'], handler: loadAccount }],
   ['/api/newsletter', { methods: ['POST'], handler: subscribe }],
   ['/api/support', { methods: ['POST'], handler: createSupportHandler(mailConfig) }],

@@ -75,8 +75,6 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
       stats: (await query(portfolioStats, [uid]))[0],
     }),
     people: community.people,
-    clubs: (uid) => community.groups(uid,'club'),
-    spaces: (uid) => community.groups(uid,'space'),
     coach: async (uid) => ({
       tokens:await coachBalance(uid),
       available:Boolean(coachConfig),provider:coachConfig?.provider,
@@ -192,8 +190,6 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
         RETURNING ${portfolioFields}`, [uid,data.headline.trim(),data.design,sections,data.visibility,data.displayName.trim(),data.about.trim()]);
       return { portfolio };
     },
-    clubs: (uid,data) => community.change(uid,'club',data),
-    spaces: (uid,data) => community.change(uid,'space',data),
     coach: async (uid,data) => {
       requireValue(typeof data.chatId === 'string' && uuid.test(data.chatId),'Choose a valid conversation.');
       if (data.action !== undefined) {

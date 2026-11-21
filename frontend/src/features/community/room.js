@@ -18,11 +18,11 @@ function tabs(root, labels, onChange) {
   return activate;
 }
 const houseRules="<div class=\"ws-notice\"><strong>House rules</strong><p>Share how you plan, trade and review. Keep tips, trade calls and paid signals out of the discussion.</p></div>";
-export function groupRoom({isSpace,createPanel,bindCreate}) {
+export function groupRoom({isSpace,endpoint,createPanel,bindCreate}) {
   const label=isSpace?'space':'club',plural=isSpace?'spaces':'clubs',title=isSpace?'Mentor spaces':'Clubs';
   const goals=isSpace?'Goals':'Challenges';
   const discover='Discover',mine='My '+plural;
-  return {title,description:isSpace?'Lead a space or join one.':'Join a club and work on your trading process together.',
+  return {title,endpoint,description:isSpace?'Lead a space or join one.':'Join a club and work on your trading process together.',
     content:houseRules+`<section class="n-out ws-card community-hero"><div><small>${isSpace?'Mentorship':'Communities'}</small>
       <h2>${isSpace?'Work on your process together.':'Find your people. Compete on process.'}</h2><p>${isSpace?'Set a goal, check in and discuss what you learned.':'Find a group near you or join one online.'}</p></div>
       <button type="button" class="n-btn n-acc dash-button" data-start>Create a ${label}</button></section>

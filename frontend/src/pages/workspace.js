@@ -16,7 +16,7 @@ const pages = { history, mistake, reports, sizing, forecast, plan, coach, people
 export async function renderWorkspace(landing, { path, request, name, photoUrl, signOut }) {
   const mode=path.slice(1);
   const screen=pages[mode];
-  const endpoint='/api/workspace?' + new URLSearchParams({page:mode});
+  const endpoint=screen.endpoint ?? '/api/workspace?' + new URLSearchParams({page:mode});
   const page=mountWorkspace(landing,{...screen,mode,name,photoUrl,signOut});
   page.classList.toggle('learn-page',['coach','replay','mistake','reports','sizing','forecast'].includes(mode));
   bindToolbarStreak(page,request);
