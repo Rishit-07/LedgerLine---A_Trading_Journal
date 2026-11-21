@@ -229,7 +229,7 @@ export const replay={
     }
     fillTradeOptions(picker,data.trades);
     if(data.trades.some(({id})=>id===requested))picker.value=requested;
-    else if(data.trades.length)picker.value=data.trades[0].id;
+    else if(!requested && data.trades.length)picker.value=data.trades[0].id;
     picker.disabled=!data.trades.length;
     function pause(){clearInterval(timer);timer=undefined;play.textContent='Play';}
     function resultPanel() {
@@ -309,7 +309,7 @@ export const replay={
       const trade=data.trades.find(({id})=>id===picker.value);
       active=undefined;upload.hidden=annotations.hidden=comparison.hidden=true;
       if(!trade){
-        status.textContent='Your replay starts with a closed trade.';
+        status.textContent=requested && data.trades.length ? 'That trade is unavailable. Choose a closed trade above.' : 'Your replay starts with a closed trade.';
         const link=node('a','Open trade journal','n-btn n-out dash-button');link.href='/journal';status.append(' ',link);
         comparison.hidden=false;
         select(page,'[data-replay-result]').textContent='—';
@@ -369,7 +369,7 @@ export const replay={
       if(file.size>110000)throw new Error('Select a CSV smaller than 110 KB.');
       const tradeId=active, incoming=parseCandles(await file.text());
       const record=await save({tradeId,candles:incoming});
-      if(active===tradeId){pause();candles=record.candles;step=0;selectedExit=undefined;paintTimeline();renderExits();frame();status.textContent='';candleForm.reset();}
+      if(active===tradeId){page.querySelector('.execution-timeline')?.remove();pause();candles=record.candles;step=0;selectedExit=undefined;paintTimeline();renderExits();frame();status.textContent='';candleForm.reset();}
       return 'Candles saved.';
     }));
     lesson.addEventListener('submit',(event)=>{
