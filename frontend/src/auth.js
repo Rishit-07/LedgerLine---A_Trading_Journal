@@ -15,7 +15,7 @@ import { bindTicketMotion } from './pages/ticket-motion.js';
 import { animateSignInChart } from './pages/sign-in-chart.js';
 import { renderEmailVerification } from './pages/email-verification.js';
 import signInMarkup from './pages/sign-in.html?raw';
-import welcomeMarkup from './pages/welcome.html?raw';
+import { showWelcome } from './pages/welcome.js';
 import '@fontsource/instrument-serif/latin-400.css';
 import '@fontsource/instrument-serif/latin-400-italic.css';
 import './pages/sign-in-design.css';
@@ -265,44 +265,6 @@ function renderSignIn(landing, next, startWithSignup = false) {
     void authenticate(() => signInWithPopup(auth, new GoogleAuthProvider()));
   });
   updateMode();
-}
-
-function showWelcome(page, user, next) {
-  const go = () => location.replace(next);
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    go();
-    return;
-  }
-  const stamp = page.querySelector('#auth-stamp');
-  if (stamp) stamp.replaceWith(stamp.content.cloneNode(true));
-  const content = page.querySelector('.au-root') ?? page.firstElementChild;
-  setTimeout(() => {
-    const template = document.createElement('template');
-    template.innerHTML = welcomeMarkup;
-    const overlay = template.content.firstElementChild;
-    overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-labelledby', 'welcome-title');
-    overlay.querySelector('[data-welcome-name]').textContent =
-      user.displayName?.trim().split(/\s+/)[0] || 'trader';
-    const skip = overlay.querySelector('.in-skip');
-    skip.href = next;
-    skip.addEventListener('click', (event) => {
-      event.preventDefault();
-      go();
-    });
-    overlay.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') go();
-      if (event.key === 'Tab') {
-        event.preventDefault();
-        skip.focus();
-      }
-    });
-    content.inert = true;
-    page.append(overlay);
-    skip.focus({ preventScroll: true });
-    setTimeout(go, 7100);
-  }, 650);
 }
 
 export async function authenticatedRequest(user, path, method, body) {
