@@ -275,7 +275,7 @@ export async function authenticatedRequest(user, path, method, body) {
   const response = await fetch(path, {
     method, headers,
     body: body ? JSON.stringify(body) : undefined,
-    signal: AbortSignal.timeout(method === 'POST' && path === '/api/workspace?page=coach' ? 40000 : 10000),
+    signal: AbortSignal.timeout(path === '/api/ai/report' ? 85000 : method === 'POST' && path === '/api/workspace?page=coach' ? 40000 : 10000),
   });
   const data = await response.json();
   if (!response.ok) throw Object.assign(new Error(data.error ?? 'Account unavailable'), { status: response.status });

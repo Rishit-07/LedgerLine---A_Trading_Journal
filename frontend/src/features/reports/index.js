@@ -58,7 +58,7 @@ export const reports={
       }else if(data.remaining===0)review.append(node('p','Monthly AI review limit reached. Your past reviews are available below.'));
       else if(n.trades<10||n.days<3)review.append(node('p','Not enough trades yet. Log 10 trades across at least 3 journal days.'));
       else{
-        const q=node('input');q.maxLength=300;q.placeholder='Ask about your trading process';q.setAttribute('aria-label','Question for your journal');
+        const q=node('select');for(const question of ['How consistently did I follow my rules?','How many trades broke a rule?','How often did I journal?','What was my process score?'])q.append(new Option(question,question));q.setAttribute('aria-label','Question for your journal');
         if(tab==='ask')review.append(q);
         review.append(button(tab==='ask'?'Ask':'Generate '+tabs[tab].toLowerCase(),()=>generate(tab,false,q.value)));
       }

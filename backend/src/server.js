@@ -1,3 +1,4 @@
+import {reportApi} from './reports.js';
 import { createServer } from 'node:http';
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
@@ -107,7 +108,11 @@ const streaks = createStreakStore(pool);
 const streak = createStreakApi(pool, authenticateRequest, streaks, { remindersAvailable: Boolean(mailConfig) });
 const saveTrade = createTradeHandler(streaks, authenticateRequest);
 const workspace = createWorkspaceApi(pool, authenticateRequest);
+const reports=reportApi(pool,authenticateRequest);
 const routes = new Map([
+  ['/api/reports',{methods:['GET'],handler:reports}],
+  ['/api/ai/report',{methods:['POST','DELETE'],handler:reports}],
+  ['/api/reports/preferences',{methods:['GET','PUT'],handler:reports}],
   ['/api/group-link',{methods:['GET'],handler:async(req,res)=>{
     if(!await authenticateRequest(req,res))return;
     const id=new URL(req.url,'http://localhost').searchParams.get('id');

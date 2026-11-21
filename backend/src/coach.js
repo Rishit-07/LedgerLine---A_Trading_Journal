@@ -35,7 +35,7 @@ export async function askCoach(config, question, trades, history, fetcher=fetch,
   return answer.includes('```') ? scopeMessage : answer;
 }
 
-async function complete(config, instructions, input, fetcher, limit=1200, usage) {
+export async function complete(config, instructions, input, fetcher, limit=1200, usage) {
   const openRouter = config.provider === 'OpenRouter';
   const chatEndpoint = openRouter || config.provider === 'Groq';
   const body=chatEndpoint
