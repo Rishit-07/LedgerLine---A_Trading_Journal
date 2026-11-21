@@ -104,6 +104,14 @@ export function renderOnboarding(landing, { initial, email, save, signOut, desti
     back.hidden = step === 1;
     next.textContent = step === 4 ? 'Open dashboard' : 'Continue';
     status.textContent = '';
+    if (step === 2) {
+      const preview=form.querySelector('[data-rule-preview]');
+      preview.replaceChildren(...limits.flatMap(([key,label,,unit])=>{
+        const term=document.createElement('dt'),value=document.createElement('dd');
+        term.textContent=label; value.textContent=values[key]+unit;
+        return [term,value];
+      }));
+    }
     if (step === 4) {
       const summary = form.querySelector('[data-onboarding-summary]');
       const labels = markets.filter((button) => selected.has(button.dataset.market)).map((button) => button.querySelector('strong').textContent);

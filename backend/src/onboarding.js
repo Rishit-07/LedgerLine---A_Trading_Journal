@@ -64,7 +64,11 @@ export function createOnboardingHandler(pool, authenticate) {
         return;
       }
       const { data, error } = await readJson(request, 4096);
-      if (error || !validStep(data)) {
+      const editing = data?.section !== undefined;
+      const validEdit = data?.section === 'account' ? validStep({...data,step:1}) && validStep({...data,step:2})
+        : data?.section === 'rules' ? validStep({...data,step:3}) && data.broker === undefined
+        : data?.section === 'broker' && brokers.has(data.broker);
+      if (error || !(editing ? validEdit : validStep(data))) {
         send(response, error ?? 400, { error: 'Check your answers and try again.' });
         return;
       }
@@ -72,12 +76,21 @@ export function createOnboardingHandler(pool, authenticate) {
       await db.query('BEGIN');
       const { rowCount } = await db.query('SELECT firebase_uid FROM ledgerline_accounts WHERE firebase_uid = $1 FOR UPDATE', [uid]);
       const { rows: [previous] } = await readProfile(db, uid);
-      if (!rowCount || data.step > (previous?.step ?? 1)) {
+      if (!rowCount || (editing ? !previous?.completedAt : data.step > (previous?.step ?? 1))) {
         await db.query('ROLLBACK');
         send(response, 409, { error: 'Finish the earlier steps first.' });
         return;
       }
-      if (!previous?.completedAt) await saveStep(db, uid, data);
+      if (editing && data.section === 'account') {
+        await db.query('UPDATE user_profile SET display_name=$2,markets=$3 WHERE user_id=$1',[uid,data.displayName.trim(),data.markets]);
+      } else if (editing && data.section === 'rules') {
+        await saveStep(db,uid,{...data,step:3});
+      } else if (editing && data.section === 'broker') {
+        await db.query('UPDATE user_profile SET broker=$2 WHERE user_id=$1',[uid,data.broker]);
+        await db.query(`INSERT INTO broker_links(user_id,broker) VALUES($1,$2)
+          ON CONFLICT(user_id) DO UPDATE SET broker=excluded.broker,status='not_connected',linked_at=NULL
+          WHERE broker_links.broker<>excluded.broker`,[uid,data.broker]);
+      } else if (!previous?.completedAt) await saveStep(db, uid, data);
       const { rows: [profile] } = await readProfile(db, uid);
       await db.query('COMMIT');
       send(response, 200, profile);

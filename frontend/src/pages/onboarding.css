@@ -72,3 +72,5 @@
   .onboarding-markets button { padding: 13px; }
 }
 @media (prefers-reduced-motion: reduce) { .onboarding-panels { animation: none; } .onboarding-adjust i { transition: none; } }
+@media(min-width:860px){.onboarding-panels[data-onboarding-panel="2"]{grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);align-items:start}.onboarding-form:has([data-onboarding-panel="2"]:not([hidden])) .onboarding-controls{width:100%}}
+.onboarding-preview h2{margin:0;font-size:20px}.onboarding-preview .onboarding-summary{grid-template-columns:1fr auto}
