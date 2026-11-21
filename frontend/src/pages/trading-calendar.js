@@ -1,3 +1,4 @@
+import {fileAction,startedDownload} from '../components/file-actions.js';
 import { paginate } from './pagination.js';
 const india = 'Asia/Kolkata';
 const date = new Intl.DateTimeFormat('en-IN', { timeZone: 'UTC', dateStyle: 'medium' });
@@ -50,6 +51,7 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
   let mode = 'result';
   const modeControls = [...page.querySelectorAll('[data-calendar-mode]')];
   const exportMonth = one('[data-calendar-export]');
+  fileAction(exportMonth);
 
   function timeFormatter() {
     return new Intl.DateTimeFormat(undefined, {
@@ -228,7 +230,7 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
       [entry.date,entry.opened,entry.count,entry.result,entry.checks,entry.kept])];
     const file = URL.createObjectURL(new Blob([lines.map((line) => line.join(',')).join('\r\n')],{type:'text/csv'}));
     const link = element('a');
-    link.href = file; link.download = 'ledgerline-calendar-' + selectedMonth + '.csv'; link.click();
+    link.href = file; link.download = 'ledgerline-calendar-' + selectedMonth + '.csv'; link.click();startedDownload(exportMonth);
     setTimeout(() => URL.revokeObjectURL(file),1000);
   });
 

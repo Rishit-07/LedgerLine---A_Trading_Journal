@@ -1,3 +1,4 @@
+import {openingReveal} from './components/file-actions.js';
 import '@fontsource-variable/schibsted-grotesk';
 import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
@@ -73,6 +74,7 @@ function renderPending(title, message, retry = false) {
 const renderLoadError = () => renderPending('Page unavailable', 'Reload the page to try again.');
 
 if (path === '/') {
+  openingReveal();
   animatePageEntry(landing);
   bindPublicAccount(landing);
   themeToggle.addEventListener('click', (event) =>

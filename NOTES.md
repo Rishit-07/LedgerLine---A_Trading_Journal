@@ -10,7 +10,7 @@ Profile, Badges, Settings and signed-in Support use their respective layouts. Th
 
 ## Journal replay
 
-Entry and exit playback uses the timestamps and prices in the logged trade. Imported candles take precedence. With a server-side UPSTOX_HISTORY_TOKEN authorized for the intended display, Journal, History and Replay request historical candles from Upstox for matching Indian equity and derivative symbols. Bare symbols resolve against NSE. Prefix with BSE: for BSE. Only complete bars in the holding window are shown. If history is unavailable, the two execution events remain playable. This does not infer the price path between fills.
+The execution summary shows timestamps and prices recorded for each fill. Missing prices can be added from the execution record. Imported candles take precedence. With a server-side UPSTOX_HISTORY_TOKEN authorized for the intended display, Journal, History and Replay request historical candles from Upstox for matching Indian equity and derivative symbols. Bare symbols resolve against NSE. Prefix with BSE: for BSE. Only complete bars in the holding window are shown. If history is unavailable, the execution summary remains visible and the candle import is accessible. Playback is offered only for market candles. This does not infer the price path between fills.
 
 ## Remaining phases
 

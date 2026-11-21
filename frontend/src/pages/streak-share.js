@@ -1,3 +1,4 @@
+import {startedDownload} from '../components/file-actions.js';
 import { bindPublicAccount } from './public-account.js';
 import { bindPageTheme, mountPage } from './shared.js';
 import './streak.css';
@@ -160,6 +161,7 @@ export function bindStreakShare(page, request) {
       return;
     }
     saveImage(file);
+    if(action==='save')startedDownload(dialog.querySelector('[data-share-choice="save"]'));
     message.textContent = action === 'instagram' ? 'Image saved. You can post it from Instagram.' : 'Streak image saved.';
   });
   dialog.addEventListener('close', () => {

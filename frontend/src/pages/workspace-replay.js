@@ -1,3 +1,4 @@
+import {fileCard} from '../components/file-actions.js';
 import { paginate } from './pagination.js';
 import { select, node, button, fillTradeOptions, formatDate, signedR, submit } from './workspace-ui.js';
 
@@ -59,33 +60,43 @@ export function drawCandles(canvas, candles, step, levels = []) {
   }
 }
 
-// The execution log is available even when no exchange history exists for the symbol.
-function executionTimeline(trade, reason, linkToReplay) {
+function executionSummary(trade, reason, linkToReplay,request) {
   const block=node('section','','execution-timeline');
-  const title=node('strong','Execution replay');
-  const when=node('time'),value=node('b'),stage=node('span','','execution-stage');
-  const detail=node('div','','execution-detail');detail.setAttribute('aria-live','polite');detail.append(stage,value,when);
-  const controls=node('div','','execution-controls');
-  const entry=button('Entry',()=>selectEvent(0)),exit=button('Exit',()=>selectEvent(1));
-  const play=button('Play replay',()=>{
-    selectEvent(0);
-    play.disabled=true;
-    timeout=setTimeout(()=>selectEvent(1),1100);
-  });
-  let timeout;
-  function selectEvent(index) {
-    clearTimeout(timeout);play.disabled=false;
-    const price=index ? trade.exit : trade.entry;
-    const at=new Date(index ? trade.closedAt : trade.openedAt);
-    stage.textContent=index?'Position closed':'Position opened';
-    value.textContent=Number.isFinite(price)?String(price):'Price unrecorded';
-    when.dateTime=at.toISOString();when.textContent=new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Kolkata'}).format(at)+' IST';
-    entry.setAttribute('aria-pressed',String(!index));exit.setAttribute('aria-pressed',String(!!index));
+  block.append(node('strong','Recorded executions'));
+  const format=new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Kolkata'});
+  for(const [stage,price,at] of [['Entry',trade.entry,trade.openedAt],['Exit',trade.exit,trade.closedAt]]) {
+    const detail=node('div','','execution-detail');
+    const time=node('time',format.format(new Date(at))+' IST');time.dateTime=new Date(at).toISOString();
+    detail.append(node('span',stage,'execution-stage'),time);
+    if(Number.isFinite(price))detail.append(node('b',String(price)));
+    else {
+      const edit=document.createElement('details');
+      const prompt=node('summary','Add '+stage.toLowerCase()+' price');
+      const form=node('form','','execution-price-form');
+      const input=node('input');input.type='number';input.name='price';input.min='0.00000001';input.step='any';input.required=true;
+      input.placeholder='Execution price';input.setAttribute('aria-label',stage+' execution price');
+      const save=node('button','Save','execution-link'),status=node('small');status.setAttribute('role','status');
+      form.append(input,save,status);
+      form.onsubmit=event=>submit(event,status,async({price})=>{
+        const field=stage.toLowerCase();
+        const saved=await request('/api/workspace?page=replay','POST',{action:'fill-price',tradeId:trade.id,field,price:Number(price)});
+        trade[field]=saved[field];edit.replaceWith(node('b',String(saved[field])));
+        return 'Price saved.';
+      });
+      edit.append(prompt,form);detail.append(edit);
+    }
+    block.append(detail);
   }
-  controls.append(entry,exit,play);
-  if(linkToReplay){const link=node('a','Open Replay →','execution-link');link.href='/replay?'+new URLSearchParams({tradeId:trade.id});controls.append(link);}
-  selectEvent(Number(trade.entry==null && trade.exit!=null));
-  block.append(title,detail,controls,node('small',reason || 'Showing recorded execution events.'));
+  block.append(node('small',reason || 'No historical candles are available for this trade.'));
+  const action=node(linkToReplay ? 'a':'button','Import candle CSV','execution-link');
+  if(linkToReplay)action.href='/replay?'+new URLSearchParams({tradeId:trade.id})+'#candles';
+  else {
+    action.type='button';action.onclick=()=>{
+      const upload=block.closest('.replay-main').querySelector('[data-candle-upload]');
+      upload.open=true;upload.querySelector('.file-outline').focus();
+    };
+  }
+  block.append(action);
   return block;
 }
 
@@ -125,7 +136,7 @@ export function tradeChart(trade, request) {
     .then(({candles,candleStatus,candleSource})=>{
       if(!well.isConnected)return;
       if(!candles?.length){
-        status.replaceWith(executionTimeline(trade,candleStatus,true));
+        status.replaceWith(executionSummary(trade,candleStatus,true,request));
         return;
       }
       const active=new Set(levels.map(({label})=>label));
@@ -150,7 +161,7 @@ export function tradeChart(trade, request) {
       replay.href='/replay?'+new URLSearchParams({tradeId:trade.id});
       status.replaceChildren(node('small',candleSource || 'Recorded candles'),replay);
       status.className='candle-caption';paint();
-    }).catch(()=>{if(well.isConnected)status.replaceWith(executionTimeline(trade,'Candle lookup failed. Reopen the trade to retry.',true));});
+    }).catch(()=>{if(well.isConnected)status.replaceWith(executionSummary(trade,'Candle lookup failed. Reopen the trade to retry.',true,request));});
   return chart;
 }
 
@@ -212,6 +223,7 @@ export const replay={
     const speeds=[...page.querySelectorAll('[data-replay-speed]')];
     const lesson=select(page,'[data-replay-lesson]');
     const candleForm=select(page,'[data-candle-form]');
+    fileCard(candleForm,{label:'Upload price candles',maxBytes:110000});
     const play=select(page,'[data-play-candles]');
     const previous=select(page,'[data-prev-candle]'),next=select(page,'[data-next-candle]');
     let active, candles=[],step=0,timer,version=0, chosenTrade, speed=1, selectedExit;
@@ -336,12 +348,13 @@ export const replay={
         if(!record.rules.length)rules.append(node('p','No rule checks were recorded for this trade.'));
         paginate(rules,'Entry rules',6,trade.id);
         status.textContent=candles.length ? (record.candleSource || 'Recorded candles') : '';
-        if(!candles.length)status.after(executionTimeline(trade,record.candleStatus,false));
+        if(!candles.length)status.after(executionSummary(trade,record.candleStatus,false,request));
         const notes=select(page,'[data-replay-notes]');
         notes.replaceChildren(node('p',trade.note || 'No journal note was recorded for this trade.','n-in ws-list-card'));
         upload.hidden=annotations.hidden=comparison.hidden=false;
+        if(location.hash==='#candles'){upload.open=true;upload.querySelector('.file-outline').focus();}
         paintTimeline();renderExits();frame();
-      }catch(error){if(current===version){status.textContent=error.message;status.after(executionTimeline(trade,'Showing the executions saved in your journal.',false));}}
+      }catch(error){if(current===version){status.textContent=error.message;status.after(node('small','Your entries are still available in the journal.'));}}
     }
     function move(delta){pause();selectedExit=undefined;step=Math.max(0,Math.min(candles.length-1,step+delta));frame();}
     function togglePlay(){

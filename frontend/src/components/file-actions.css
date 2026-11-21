@@ -1,0 +1,17 @@
+.brand-opening{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;background:var(--bg);pointer-events:none;transition:opacity .2s ease}
+.brand-opening.is-leaving{opacity:0}.brand-reveal-tile{position:relative;width:clamp(130px,18vw,205px);aspect-ratio:1;display:grid;place-items:center}
+.brand-reveal-tile img{width:54%;border-radius:24%;box-shadow:var(--surface-raised)}.brand-reveal-tile canvas{position:absolute;inset:0;width:100%;height:100%}
+.upload-card{position:relative;display:grid;gap:14px;padding:18px;min-width:0;border:1px solid var(--track);border-radius:20px;color:var(--ink);background:var(--bg)}
+.upload-card-head,.upload-selected{display:flex;gap:12px;align-items:center}.upload-brand{display:grid;place-items:center;width:44px;height:44px;background:var(--track);border-radius:50%}
+.upload-drop{display:grid;justify-items:center;gap:9px;text-align:center;padding:22px 12px;border:2px dashed var(--dn);border-radius:14px;cursor:pointer;transition:background .2s,border-color .2s}.upload-drop.drag-over,.upload-drop:hover{border-color:var(--acc);background:var(--glow)}
+.upload-drop svg,.file-action svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round}.upload-drop small{color:var(--sub)}
+.upload-card .upload-native{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;padding:0}
+.file-outline,.upload-selected button,.n-root .file-action{display:inline-flex;gap:8px;align-items:center;justify-content:center;background:var(--bg);color:var(--ink);border:1px solid var(--track);border-radius:12px;padding:9px 14px;font:650 13px var(--font-sans);cursor:pointer;box-shadow:0 2px 5px color-mix(in srgb,var(--ink) 8%,transparent);transition:border-color .16s,transform .16s}
+.file-outline:hover,.n-root .file-action:hover{border-color:var(--acc);transform:translateY(-1px)}.upload-selected{justify-content:space-between}.upload-selected span{overflow-wrap:anywhere}.upload-card .upload-selected[hidden],.upload-error:empty{display:none}.upload-error{color:var(--down)}.upload-card progress{width:100%;accent-color:var(--acc)}
+.n-root a.lp-get-started{display:inline-flex;align-items:center;justify-content:center;gap:.65em;background:var(--bg);color:var(--acc);border:1px solid currentColor;border-radius:14px;font-weight:700;box-shadow:0 2px 6px color-mix(in srgb,var(--ink) 8%,transparent)}
+.n-root a.lp-get-started:is(:hover,:focus-visible){background:var(--acc);color:var(--on-indigo);border-color:var(--acc)}
+.lp-get-started svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;transition:transform .18s ease}.lp-get-started:hover svg,.lp-get-started:focus-visible svg{transform:translateX(3px)}
+@media(prefers-reduced-motion:reduce){.brand-opening{display:none}.upload-drop,.file-outline,.file-action,.lp-get-started svg{transition:none!important}}
+.execution-timeline>.execution-link{justify-self:start}.execution-detail>time{grid-column:2}.execution-detail>b{grid-row:2}.upload-card-head img{display:block}.lp-get-started [data-account-label]{pointer-events:none}
+.upload-brand{position:relative;overflow:hidden}.upload-brand canvas{position:absolute;inset:0;width:100%;height:100%}
+@media(prefers-reduced-motion:no-preference){.brand-reveal-tile img{animation:brand-appear .42s ease-out both}@keyframes brand-appear{from{opacity:0;transform:scale(.87)}to{opacity:1;transform:scale(1)}}}

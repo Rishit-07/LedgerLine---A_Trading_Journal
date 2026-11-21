@@ -1,3 +1,4 @@
+import {fileCard,fileAction,startedDownload} from '../components/file-actions.js';
 import { paginate } from './pagination.js';
 import { node, select, button, stat, metric, message, number, formatDate, signedR, rate, markets, fillTradeOptions, submit, closedSummary, drawLine } from './workspace-ui.js';
 import { readTradeCsv } from './trade-csv.js';
@@ -180,13 +181,16 @@ export const history = {
     for(const control of filters)control.addEventListener('click',()=>{resultFilter=control.dataset.historyResult;position=0;paint();});
     const importDialog=select(page,'[data-import-dialog]');
     const importForm=select(page,'[data-import-form]');
+    const importProgress=fileCard(importForm,{label:'Upload trade history',maxBytes:120000});
+    fileAction(exportButton);
     select(page,'[data-trades-import]').addEventListener('click',()=>importDialog.showModal());
     if(location.hash==='#import') importDialog.showModal();
     importForm.addEventListener('submit',(event)=>submit(event,select(page,'[data-import-status]'),async({file})=>{
       const records=await readTradeCsv(file);
       let done=0;
       try{
-        for(const trade of records){await request('/api/trades','POST',trade);done++;}
+        importProgress(0,records.length);
+        for(const trade of records){await request('/api/trades','POST',trade);importProgress(++done,records.length);}
       }catch(error){
         if(done){Object.assign(data,await reload());position=0;paint();}
         throw new Error(`${done} of ${records.length} trades imported. ${error.message} You can retry the same file.`);
@@ -203,7 +207,7 @@ export const history = {
       const csv=[['Date','Symbol','Market','Side','Setup','Result R'],...current.map((t)=>[t.openedAt,t.symbol,t.market,t.side,t.setup,t.result])]
         .map((row)=>row.map(escape).join(',')).join('\r\n');
       const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
-      const link=node('a'); link.href=url; link.download='ledgerline-trade-history.csv'; link.click();
+      const link=node('a'); link.href=url; link.download='ledgerline-trade-history.csv'; link.click(); startedDownload(exportButton);
       setTimeout(()=>URL.revokeObjectURL(url),1000);
     });
     paint();
@@ -346,7 +350,8 @@ export const reports = {
     }
     controls.forEach((control)=>control.addEventListener('click',()=>{period=control.dataset.period;render();}));
     input.addEventListener('change',render);
-    select(page,'[data-report-print]').addEventListener('click',()=>window.print());
+    const printButton=select(page,'[data-report-print]');fileAction(printButton);
+    printButton.addEventListener('click',()=>{startedDownload(printButton);window.print();});
     render();
   }
 };
