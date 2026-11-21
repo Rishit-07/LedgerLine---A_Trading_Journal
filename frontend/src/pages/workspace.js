@@ -1,7 +1,9 @@
 import { mountWorkspace, paintTradingShell, bindToolbarStreak } from './workspace-shell.js';
 import { history, mistake, reports } from './workspace-analysis.js';
 import { sizing, forecast } from './workspace-tools.js';
-import { people, spaces, clubs } from './community.js';
+import { people } from './community.js';
+import { spaces } from '../features/spaces/index.js';
+import { clubs } from '../features/clubs/index.js';
 import { plan } from './workspace-community.js';
 import { coach } from './coach-page.js';
 import { portfolio } from './workspace-portfolio.js';
