@@ -1,5 +1,6 @@
 import { mountWorkspace, paintTradingShell, bindToolbarStreak } from './workspace-shell.js';
-import { history, mistake, reports } from './workspace-analysis.js';
+import { history, mistake } from './workspace-analysis.js';
+import { reports } from '../features/reports/index.js';
 import { sizing, forecast } from './workspace-tools.js';
 import { people } from './community.js';
 import { spaces } from '../features/spaces/index.js';

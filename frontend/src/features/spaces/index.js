@@ -1,11 +1,11 @@
 import { houseRules, roomMarkup, bindRoom } from '../community/room.js';
 import { button, submit } from '../../pages/workspace-ui.js';
 
-const createPanel = `<section class="n-out ws-card community-create" data-create hidden><h2>Create a space</h2><div data-mentor-steps>Verify → Unlock plan → Create</div><div data-mentor-gate></div>
+const createPanel = `<section class="n-out ws-card community-create" data-create hidden><header class="ws-section-head"><h2>Create a space</h2><button type="button" class="n-btn n-out dash-button" data-close-create>Back</button></header><div class="mentor-create-steps" data-mentor-steps>Verify → Unlock plan → Create</div><div data-mentor-gate></div>
   <form class="ws-form" data-club-form><label>Space name<input name="name" required maxlength="60"></label>
   <label>About<textarea name="description" required maxlength="400" rows="3"></textarea></label>
   <label>City or region (optional)<input name="location" maxlength="60"></label>
-  <button class="n-btn n-acc dash-button">Create space</button></form><button type="button" class="n-btn n-out dash-button" data-close-create>Back</button></section>`;
+  <button class="n-btn n-acc dash-button">Create space</button></form></section>`;
 export const spaces={
   title:'Mentor spaces',
   description:'Lead a space or join one.',
@@ -23,7 +23,7 @@ export const spaces={
       bindCreate({page,form,status,data,update,created}){
   const gate=page.querySelector('[data-mentor-gate]');
   const steps=page.querySelector('[data-mentor-steps]');
-  page.querySelector('.community-hero').firstElementChild.append(steps);
+  steps.after(gate);
   form.onsubmit=e=>submit(e,status,async values=>{await update({...values,action:'create'});created();return 'Created '+values.name+'.';});
   function refresh(){
     const {verification,entitled,requested}=data.mentor;

@@ -70,6 +70,9 @@ const journal = `
         <div class="ws-stack" data-journal-activity></div>
         <button type="button" class="n-btn n-out streak-btn" data-more-trades hidden>Load older trades</button>
       </section>
+      <section class="n-out ws-card"><h2>R by setup</h2><p>Average R in the trade log</p><div class="ws-stack" data-journal-setup></div></section>
+      <section class="n-out ws-card"><h2>R by mood</h2><p>Average R by recorded feeling</p><div class="ws-stack" data-journal-mood></div></section>
+      <section class="n-out ws-card"><h2>Time held vs result</h2><p>Average R by hold duration</p><div data-journal-hold></div></section>
       </div>
       <div class="journal-column">
       <section class="n-out streak-tile journal-detail" aria-labelledby="journal-trade-title">
@@ -79,9 +82,6 @@ const journal = `
           <button class="n-btn n-out streak-btn">Save note</button></form>
         <div class="ws-actions" data-journal-actions></div>
       </section>
-      <section class="n-out ws-card"><h2>R by setup</h2><p>Average R in the trade log</p><div class="ws-stack" data-journal-setup></div></section>
-      <section class="n-out ws-card"><h2>R by mood</h2><p>Average R by recorded feeling</p><div class="ws-stack" data-journal-mood></div></section>
-      <section class="n-out ws-card"><h2>Time held vs result</h2><p>Average R by hold duration</p><div data-journal-hold></div></section>
       </div>
       </div>
       </section>
