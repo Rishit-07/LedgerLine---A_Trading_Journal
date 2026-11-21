@@ -84,7 +84,7 @@ function executionTimeline(trade, reason, linkToReplay) {
   }
   controls.append(entry,exit,play);
   if(linkToReplay){const link=node('a','Open Replay →','execution-link');link.href='/replay?'+new URLSearchParams({tradeId:trade.id});controls.append(link);}
-  selectEvent(0);
+  selectEvent(Number(trade.entry==null && trade.exit!=null));
   block.append(title,detail,controls,node('small',reason || 'Showing recorded execution events.'));
   return block;
 }
@@ -198,7 +198,7 @@ export const replay={
       <section class="n-out ws-card"><h2>What I saw then</h2><p>Notes recorded for this trade.</p><div class="ws-stack" data-replay-notes></div></section>
     </aside>
   </div>`,
-  bind(page,{data,request,save}){
+  async bind(page,{data,request,save}){
     const picker=select(page,'[data-replay-trade]');
     const status=select(page,'[data-replay-status]');
     const canvas=select(page,'[data-replay-chart]');
@@ -216,8 +216,18 @@ export const replay={
     const previous=select(page,'[data-prev-candle]'),next=select(page,'[data-next-candle]');
     let active, candles=[],step=0,timer,version=0, chosenTrade, speed=1, selectedExit;
     const time=new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',timeStyle:'short'});
-    fillTradeOptions(picker,data.trades);
     const requested = new URLSearchParams(location.search).get('tradeId');
+    let linkedRecord;
+    if(requested && /^[1-9]\d*$/.test(requested) && !data.trades.some(trade=>trade.id===requested)) {
+      try {
+        linkedRecord=await request('/api/workspace?'+new URLSearchParams({page:'replay',tradeId:requested}),'GET');
+        data.trades=[linkedRecord,...data.trades];
+      } catch(error) {
+        status.textContent=error.message;
+        if(error.status!==404)return;
+      }
+    }
+    fillTradeOptions(picker,data.trades);
     if(data.trades.some(({id})=>id===requested))picker.value=requested;
     else if(data.trades.length)picker.value=data.trades[0].id;
     picker.disabled=!data.trades.length;
@@ -313,7 +323,8 @@ export const replay={
       const closed=select(page,'[data-replay-closed]');closed.hidden=false;closed.textContent='Closed '+signedR(trade.result);
       status.textContent='Loading trade…';
       try{
-        const record=await request('/api/workspace?'+new URLSearchParams({page:'replay',tradeId:trade.id}),'GET');
+        const record=linkedRecord?.id===trade.id ? linkedRecord : await request('/api/workspace?'+new URLSearchParams({page:'replay',tradeId:trade.id}),'GET');
+        linkedRecord=undefined;
         if(current!==version)return;
         active=trade.id;candles=record.candles;lesson.elements.lesson.value=record.lesson;
         const rules=select(page,'[data-replay-rules]');

@@ -266,7 +266,8 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
         if (page === 'replay' && params.has('tradeId')) {
           const id = params.get('tradeId');
           requireValue(tradeId.test(id),'Choose a valid trade.');
-          const [record] = await query(`SELECT t.symbol,t.market,t.opened_at AS "openedAt",t.closed_at AS "closedAt",coalesce(r.candles,'[]'::jsonb) AS candles, coalesce(r.lesson,'') AS lesson,
+          const [record] = await query(`SELECT t.id::text,t.symbol,t.market,t.side,t.setup,t.entry::float,t.stop::float,t.exit::float,t.target::float,
+            t.r_multiple::float AS result,t.opened_at AS "openedAt",t.closed_at AS "closedAt",coalesce(r.candles,'[]'::jsonb) AS candles, coalesce(r.lesson,'') AS lesson,
             coalesce((SELECT json_agg(json_build_object('text',rules.text,'kept',c.kept) ORDER BY rules.position)
             FROM trade_checks c JOIN rules ON rules.user_id=c.user_id AND rules.id=c.rule_id WHERE c.user_id=$1 AND c.trade_id=$2),'[]') AS rules
             FROM trades t LEFT JOIN trade_replays r ON r.user_id=t.user_id AND r.trade_id=t.id
