@@ -1,4 +1,5 @@
 import {billingApi} from './report-billing.js';
+import {mentorVerification} from './mentor-verification.js';
 import {reportApi} from './reports.js';
 import { createServer } from 'node:http';
 import { initializeApp } from 'firebase-admin/app';
@@ -127,6 +128,8 @@ const routes = new Map([
       send(res,200,{destination:rows.length?(rows[0].kind==='space'?'/spaces/':'/clubs/')+id:'/clubs'});
     }catch{send(res,503,{error:'Group link unavailable.'});}
   }}],
+  ['/api/mentor-verification',{methods:['GET','POST'],handler:mentorVerification(pool,authenticateRequest,auth)}],
+  ['/api/mentor-review',{methods:['GET','POST'],handler:mentorVerification(pool,authenticateRequest,auth,true)}],
   ['/api/clubs', {methods:['GET','POST'],handler:groupHandler(pool,authenticateRequest,'club')}],
   ['/api/spaces', {methods:['GET','POST'],handler:groupHandler(pool,authenticateRequest,'space')}],
   ['/api/account', { methods: ['PUT'], handler: loadAccount }],
