@@ -20,9 +20,19 @@ export function communityApi(query) {
 export function groupStore(query,kind){
   if(!['club','space'].includes(kind))throw Error('Invalid group type');
   const table=kind+'s',fk=kind+'_id';
+  const entitled = owner => `EXISTS(SELECT 1 FROM mentor_entitlements e JOIN mentor_verifications v USING(user_id)
+    WHERE e.user_id=${owner} AND v.status='approved' AND e.active AND (e.expires_at IS NULL OR e.expires_at>now()))`;
+  async function mentorState(uid){
+    const [state]=await query(`SELECT (SELECT status FROM mentor_verifications WHERE user_id=$1) AS verification,
+      ${entitled('$1')} AS entitled, EXISTS(SELECT 1 FROM mentor_plan_requests WHERE user_id=$1) AS requested`,[uid]);
+    return state;
+  }
+  function deny(reason){
+    throw Object.assign(new Error(reason==='not_verified'?'Verify your mentor account first.':'Unlock the Mentor plan first.'),{status:403,reason});
+  }
   async function groups(uid) {
     const clubs = await query(`SELECT c.id::text,c.name,c.location,c.description,c.owner_id=$1 AS owner,
-      c.join_mode AS "joinMode",c.visibility, CASE WHEN c.owner_id=$1 THEN c.invite_code END AS code,
+      c.join_mode AS "joinMode",c.visibility, ${kind==='space'?'NOT '+entitled('c.owner_id'):'false'} AS "readOnly", CASE WHEN c.owner_id=$1 THEN c.invite_code END AS code,
       EXISTS(SELECT 1 FROM ${kind}_requests r WHERE r.${fk}=c.id AND r.user_id=$1) AS pending,
       m.stats_opt_in AS "statsOptIn",m.user_id IS NOT NULL AS joined,(SELECT count(*)::int FROM ${kind}_members WHERE ${fk}=c.id) AS members
       FROM ${table} c LEFT JOIN ${kind}_members m ON m.${fk}=c.id AND m.user_id=$1
@@ -35,36 +45,75 @@ export function groupStore(query,kind){
       FROM ${kind}_posts t JOIN ${table} c ON c.id=t.${fk} JOIN ${kind}_members m ON m.${fk}=c.id AND m.user_id=$1
       JOIN user_profile p ON p.user_id=t.author_id ORDER BY t.id DESC`,[uid]);
     const members=await query(`SELECT cm.${fk}::text AS "groupId",p.display_name AS name,cm.joined_at AS "joinedAt",
+      CASE WHEN ${kind==='space'?'cm.stats_opt_in AND c.owner_id=$1':'false'} THEN
+        (SELECT round(100.0*count(*) FILTER(WHERE kept)/nullif(count(*),0)) FROM trade_checks WHERE user_id=cm.user_id) END AS adherence,
       c.owner_id=cm.user_id AS host FROM ${kind}_members cm JOIN ${table} c ON c.id=cm.${fk}
       JOIN user_profile p ON p.user_id=cm.user_id WHERE EXISTS
       (SELECT 1 FROM ${kind}_members self WHERE self.${fk}=c.id AND self.user_id=$1)
       ORDER BY (c.owner_id=cm.user_id) DESC,cm.joined_at`,[uid]);
-    return {clubs,topics,members};
+    const requests=await query(`SELECT r.user_id AS member,r.${fk}::text AS "groupId",p.display_name AS name FROM ${kind}_requests r
+      JOIN ${table} g ON g.id=r.${fk} JOIN user_profile p ON p.user_id=r.user_id WHERE g.owner_id=$1`,[uid]);
+    return {groups:clubs,topics,members,requests,...(kind==='space'?{mentor:await mentorState(uid)}:{})};
   }
   async function change(uid, input) {
-    const {action,id,body,topicId} = input;
+    const {action,body,topicId} = input;
+    let id=input.id;
     const label = kind==='space'?'space':'club';
+    if(kind==='space' && ['verify','unlock'].includes(action)){
+      if(action==='verify')await query("INSERT INTO mentor_verifications(user_id,status) VALUES($1,'pending') ON CONFLICT(user_id) DO NOTHING",[uid]);
+      else {
+        if((await mentorState(uid)).verification!=='approved')deny('not_verified');
+        await query('INSERT INTO mentor_plan_requests(user_id) VALUES($1) ON CONFLICT DO NOTHING',[uid]);
+      }
+      return groups(uid);
+    }
     if (action==='create') {
+      if(kind==='space'){
+        const state=await mentorState(uid);
+        if(state.verification!=='approved')deny('not_verified');
+        if(!state.entitled)deny('needs_plan');
+      }
       requireField(validText(input.name,60) && validText(input.description,400) && typeof input.location==='string' && input.location.length<=60,'Enter a name and description.');
       const joinMode=kind==='space'?'invite':input.joinMode??'open', visibility=kind==='space'?'private':input.visibility??'public';
       requireField(['open','invite','request'].includes(joinMode)&&['public','private'].includes(visibility),'Choose valid joining and visibility settings.');
       await query(`WITH created AS (INSERT INTO ${table}(owner_id,name,description,location,join_mode,visibility) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id)
         INSERT INTO ${kind}_members(user_id,${fk}) SELECT $1,id FROM created`,[uid,input.name.trim(),input.description.trim(),input.location.trim(),joinMode,visibility]);
     } else {
+      if(action==='join' && input.code){
+        requireField(uuid.test(input.code),'Enter a valid invite code.');
+        id=(await query(`SELECT id FROM ${table} WHERE invite_code=$1`,[input.code]))[0]?.id;
+      }
       requireField(uuid.test(id),'Choose a '+label+'.');
+      const [group]=await query(`SELECT owner_id,join_mode,invite_code, ${kind==='space'?entitled('owner_id'):'true'} AS writable FROM ${table} WHERE id=$1 FOR UPDATE`,[id]);
+      requireField(group,'Group unavailable.',403);
+      if(!group.writable && !['leave','consent'].includes(action))deny('needs_plan');
       let rows;
-      if(action==='join') {
+      if(action==='consent' && kind==='space'){
+        requireField(typeof input.enabled==='boolean','Choose a sharing preference.');
+        rows=await query('UPDATE space_members SET stats_opt_in=$3 WHERE user_id=$1 AND space_id=$2 RETURNING space_id',[uid,id,input.enabled]);
+      }else if(['approve','decline'].includes(action)){
+        requireField(group.owner_id===uid,'Only the host can manage requests.',403);
+        rows=await query(`DELETE FROM ${kind}_requests WHERE ${fk}=$1 AND user_id=$2 RETURNING user_id`,[id,input.member]);
+        if(rows.length && action==='approve')await query(`INSERT INTO ${kind}_members(user_id,${fk}) VALUES($1,$2) ON CONFLICT DO NOTHING`,[input.member,id]);
+      }else if(action==='join' && group.join_mode==='request' && input.code!==group.invite_code){
+        await query(`INSERT INTO ${kind}_requests(user_id,${fk}) VALUES($1,$2) ON CONFLICT DO NOTHING`,[uid,id]);
+        return groups(uid);
+      }else if(action==='join') {
+        requireField(group.join_mode!=='invite'||input.code===group.invite_code,'An invite code is required.',403);
+        await query(`DELETE FROM ${kind}_requests WHERE user_id=$1 AND ${fk}=$2`,[uid,id]);
         rows=await query(`INSERT INTO ${kind}_members(user_id,${fk}) SELECT $1,id FROM ${table} WHERE id=$2 AND $3='${kind}'
           ON CONFLICT(user_id,${fk}) DO UPDATE SET user_id=excluded.user_id RETURNING ${fk}`,[uid,id,kind]);
       } else if(action==='leave') {
         rows=await query(`DELETE FROM ${kind}_members m USING ${table} c WHERE m.user_id=$1 AND m.${fk}=c.id AND c.id=$2 AND $3='${kind}' AND c.owner_id<>$1 RETURNING c.id`,[uid,id,kind]);
       } else {
-        requireField(['discussion','goal','reply','check','uncheck'].includes(action),'Unknown community action.');
+        requireField(['discussion','goal','reply','check','uncheck',...(kind==='space'?['announcement']:[])].includes(action),'Unknown community action.');
         const member=`FROM ${table} c JOIN ${kind}_members m ON m.${fk}=c.id AND m.user_id=$1 WHERE c.id=$2 AND $3='${kind}'`;
-        if(action==='discussion'||action==='goal') {
+        if(['discussion','goal','announcement'].includes(action)) {
           requireField(validText(body,600),'Enter up to 600 characters.');
           rows=await query(`INSERT INTO ${kind}_posts(author_id,${fk},kind,body) SELECT $1,c.id,$4,$5 ${member}
-            AND ($4<>'goal' OR c.owner_id=$1) RETURNING id`,[uid,id,kind,action,body.trim()]);
+            AND ($4='discussion' OR c.owner_id=$1) RETURNING id`,[uid,id,kind,action,body.trim()]);
+          if(kind==='space' && rows.length && action!=='discussion')
+            await query(`INSERT INTO ${action==='goal'?'space_assignments':'space_announcements'}(post_id) VALUES($1)`,[rows[0].id]);
         } else {
           requireField(/^[1-9]\d{0,17}$/.test(topicId),'Choose a discussion or goal.');
           const topic=`FROM ${kind}_posts t WHERE t.id=$4 AND t.${fk} IN (SELECT c.id ${member})`;
