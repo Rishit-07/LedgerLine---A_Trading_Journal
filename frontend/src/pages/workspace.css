@@ -107,6 +107,13 @@
 .workspace-profile .dash-avatar { width:42px; height:42px; }
 .workspace-profile .dash-avatar img { width:100%; height:100%; }
 .journal-workspace { display:grid; gap:17px; }
+.journal-mode-switch { display:inline-flex; justify-self:start; gap:4px; padding:4px; border-radius:16px; }
+.journal-mode-switch a { color:var(--sub); text-decoration:none; border-radius:12px; }
+.journal-mode-switch a[aria-current] { color:var(--acc); }
+.journal-review-panel,.journal-entry-panel { display:grid; gap:17px; align-items:start; min-width:0; }
+.journal-entry-panel { grid-template-columns:minmax(0,2fr) minmax(190px,1fr); }
+.journal-workspace [data-journal-section][hidden] { display:none; }
+@media(max-width:800px){.journal-entry-panel { grid-template-columns:minmax(0,1fr); }}
 .journal-deck { margin:-15px 0 16px; }
 .journal-review-status { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
 .journal-review-status h2 { margin:0; }

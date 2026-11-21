@@ -18,23 +18,11 @@ const moods = ['Calm','Rushed','Fearful','Confident'];
 
 const journal = `
     <div class="journal-workspace">
-      <section class="n-out ws-card journal-inbox"><div class="ws-section-head journal-review-status">
-        <div><h2 data-journal-review-text>Needs review</h2><p>Review each trade’s setup and feeling, then mark it reviewed.</p></div>
-        <a class="n-btn n-out dash-button" href="/dashboard#streak">Journal streak</a></div><div class="ws-stack" data-journal-inbox></div></section>
-      <div class="ws-metric-grid journal-metrics" data-journal-metrics></div>
-      <div class="journal-split">
-      <div class="journal-column">
-      <section class="n-out streak-tile" aria-labelledby="streak-activity-title">
-        <h2 id="streak-activity-title">Trade log</h2>
-        <div class="ws-actions journal-filters" aria-label="Filter trades">
-          <button type="button" class="n-btn n-out streak-btn" data-journal-filter="all">All</button>
-          <button type="button" class="n-btn n-out streak-btn" data-journal-filter="wins">Wins</button>
-          <button type="button" class="n-btn n-out streak-btn" data-journal-filter="losses">Losses</button>
-          <button type="button" class="n-btn n-out streak-btn" data-journal-filter="breaks">Rule breaks</button>
-        </div>
-        <div class="ws-stack" data-journal-activity></div>
-        <button type="button" class="n-btn n-out streak-btn" data-more-trades hidden>Load older trades</button>
-      </section>
+      <nav class="n-in journal-mode-switch" aria-label="Journal sections">
+        <a class="n-btn dash-button" href="#log">Log a trade</a>
+        <a class="n-btn dash-button" href="#review">Review trades</a>
+      </nav>
+      <section class="journal-entry-panel" data-journal-section="log" aria-label="Log a trade">
       <section class="n-out ws-card journal-new"><h2>New trade</h2>
         <form class="ws-form" data-journal-log>
           <fieldset class="n-in journal-segments"><legend class="ws-visually-hidden">Trade side</legend>
@@ -63,6 +51,25 @@ const journal = `
       <section class="n-out streak-tile" aria-labelledby="streak-rest-title"><h2 id="streak-rest-title">Rest day</h2>
         <form data-rest-form><label>Note <small>(optional)</small><textarea class="n-in" name="note" maxlength="1000" rows="2"></textarea></label>
         <button class="n-btn n-out streak-btn">I sat out today</button></form><div data-rest-days></div></section>
+      </section>
+      <section class="journal-review-panel" data-journal-section="review" aria-label="Review trades" hidden>
+      <section class="n-out ws-card journal-inbox"><div class="ws-section-head journal-review-status">
+        <div><h2 data-journal-review-text>Needs review</h2><p>Review each trade’s setup and feeling, then mark it reviewed.</p></div>
+        <a class="n-btn n-out dash-button" href="/dashboard#streak">Journal streak</a></div><div class="ws-stack" data-journal-inbox></div></section>
+      <div class="ws-metric-grid journal-metrics" data-journal-metrics></div>
+      <div class="journal-split">
+      <div class="journal-column">
+      <section class="n-out streak-tile" aria-labelledby="streak-activity-title">
+        <h2 id="streak-activity-title">Trade log</h2>
+        <div class="ws-actions journal-filters" aria-label="Filter trades">
+          <button type="button" class="n-btn n-out streak-btn" data-journal-filter="all">All</button>
+          <button type="button" class="n-btn n-out streak-btn" data-journal-filter="wins">Wins</button>
+          <button type="button" class="n-btn n-out streak-btn" data-journal-filter="losses">Losses</button>
+          <button type="button" class="n-btn n-out streak-btn" data-journal-filter="breaks">Rule breaks</button>
+        </div>
+        <div class="ws-stack" data-journal-activity></div>
+        <button type="button" class="n-btn n-out streak-btn" data-more-trades hidden>Load older trades</button>
+      </section>
       </div>
       <div class="journal-column">
       <section class="n-out streak-tile journal-detail" aria-labelledby="journal-trade-title">
@@ -77,6 +84,7 @@ const journal = `
       <section class="n-out ws-card"><h2>Time held vs result</h2><p>Average R by hold duration</p><div data-journal-hold></div></section>
       </div>
       </div>
+      </section>
       <p class="streak-message" role="status" data-journal-status></p>
     </div>`;
 
@@ -169,6 +177,21 @@ export async function renderStreakPage(landing, { path, request, name, photoUrl,
 }
 
 async function bindJournal(page, request, showBadge) {
+  const links=page.querySelectorAll('.journal-mode-switch a');
+  function showSection(){
+    const hasTrade=new URLSearchParams(location.search).has('tradeId');
+    const review=location.hash==='#review' || (hasTrade && location.hash!=='#log');
+    const active=review?'review':'log';
+    for(const panel of page.querySelectorAll('[data-journal-section]')) panel.hidden=panel.dataset.journalSection!==active;
+    for(const link of links){
+      const current=link.hash==='#'+active;
+      link.classList.toggle('n-out',current);
+      if(current) link.setAttribute('aria-current','location');
+      else link.removeAttribute('aria-current');
+    }
+  }
+  showSection();
+  window.addEventListener('hashchange',showSection);
   const journalStatus = page.querySelector('[data-journal-status]');
   const tradeList = page.querySelector('[data-journal-activity]');
   const restDays = page.querySelector('[data-rest-days]');
@@ -366,7 +389,7 @@ async function bindJournal(page, request, showBadge) {
     onSaved,
   });
   bindJournalLog(page, dashboard, request, onSaved);
-  if (location.hash === '#log' && !page.querySelector('dialog[open]')) page.querySelector('[data-log-trade]').click();
+
   more.addEventListener('click', () => run(more, journalStatus, () => loadJournal(true)));
   filterControls.forEach((control)=>control.addEventListener('click',()=>{filter=control.dataset.journalFilter;drawJournal();}));
   bindSubmit(noteForm,journalStatus,async(values)=>{

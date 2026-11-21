@@ -3,6 +3,7 @@ import { paginate } from './pagination.js';
 import { node, select, button, stat, metric, message, number, formatDate, signedR, rate, markets, fillTradeOptions, submit, closedSummary, drawLine } from './workspace-ui.js';
 import { readTradeCsv } from './trade-csv.js';
 import { tradeChart } from './workspace-replay.js';
+import { tradeScreenshots } from '../components/trade-screenshots.js';
 import { openCloseTrade } from './close-trade.js';
 
 const sessionDate = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',dateStyle:'short'});
@@ -82,7 +83,7 @@ export const history = {
       const caption=node('div');
       caption.append(node('h2',trade.symbol),node('p',[markets[trade.market],trade.side,trade.setup,formatDate(trade.openedAt)].filter(Boolean).join(' · ')));
       heading.append(caption,node('strong',trade.result===null?'Open':signedR(trade.result),'n-in history-total '+(trade.result>0?'is-win':trade.result<0?'is-loss':'')));
-      chartColumn.append(heading,tradeChart(trade,request));
+      chartColumn.append(heading,tradeScreenshots(trade,request),tradeChart(trade,request));
       const rail=node('aside','','history-review-rail');
       const metrics=node('div','','trade-detail-metrics');
       metrics.append(...[['Side',trade.side],['Result',trade.result===null?'Open':signedR(trade.result)],
