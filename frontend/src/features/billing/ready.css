@@ -6,3 +6,4 @@
 .br-ledger-mark{position:absolute;bottom:12%;left:8%;width:10%;border-radius:24%;box-shadow:0 1px 4px #20143f66}.billing-intro .br-continue{bottom:5%;right:auto;left:50%;transform:translateX(-50%);width:min(240px,72vw);background:#f6f3ff;color:#28213c;border:0;font-weight:650}.billing-intro button[hidden]{display:none}
 @media(prefers-reduced-motion:no-preference){.plan-ready::before{animation:ready-rotate 48s linear infinite}@keyframes ready-rotate{to{transform:rotate(360deg)}}}
 @media(prefers-reduced-motion:reduce){.billing-intro *{animation:none!important}}
+.pr-confetti{position:absolute;width:min(160%,90vw);height:auto;pointer-events:none}.pr-check{display:inline-block;width:10px;height:6px;border:solid #85e2b2;border-width:0 0 2px 2px;transform:rotate(-45deg);vertical-align:3px;margin-right:6px}

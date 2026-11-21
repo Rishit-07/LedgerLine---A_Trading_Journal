@@ -12,9 +12,21 @@ export function planReadyScreen(plan,features,done){
  card.append(node('small','Ledgerline'),node('strong',name),node('i','','pr-shine'));
  const title=node('h2');for(const word of ['You','are','on',name])title.append(node('span',word+' '));
  const caption=node('p','Your workspace is ready.'),chips=node('div','','pr-chips'),actions=node('div','','pr-actions');
- for(const feature of features)chips.append(node('span','✓ '+feature));
- const dots=Array.from({length:32},(_,i)=>{const item=node('i','','pr-candle');item.style.background=['#ff49bf','#8894ff','#ffd692'][i%3];return item;});
- stage.append(...waves,card,...dots);
+ for(const feature of features){
+  const chip=node('span',feature),tick=node('i','','pr-check');tick.setAttribute('aria-hidden','true');chip.prepend(tick);chips.append(chip);
+ }
+ const confetti=node('canvas','','pr-confetti');confetti.width=680;confetti.height=440;
+ const ctx=confetti.getContext('2d'),burst={progress:0};
+ function drawBurst(){
+  const t=burst.progress;ctx.clearRect(0,0,680,440);ctx.globalAlpha=1-t;
+  for(let i=0;i<42;i++){
+   const angle=i*2.39996,distance=75+(i%9)*27;
+   ctx.save();ctx.translate(340+Math.cos(angle)*distance*t,220+Math.sin(angle)*distance*t+65*t*t);
+   ctx.rotate(t*i*.6);ctx.fillStyle=['#ff49bf','#8894ff','#ffd692','#81e8ca'][i%4];ctx.fillRect(-3,-6,6,12);
+   if(i%3===0)ctx.fillRect(-.8,-11,1.6,22);ctx.restore();
+  }
+ }
+ stage.append(...waves,card,confetti);
  const proceed=button('Continue',()=>dialog.close()),replay=button('Replay',play);
  actions.append(proceed,replay);dialog.append(glow,wipe,stage,title,caption,chips,actions);
  document.body.append(dialog);dialog.showModal();
@@ -30,10 +42,11 @@ export function planReadyScreen(plan,features,done){
    .to(card,{scale:1,duration:.35},1.73)
    .fromTo(waves,{scale:.3,opacity:.7},{scale:2,opacity:0,duration:.8,stagger:.09},1.65)
    .fromTo(card.lastChild,{xPercent:-160},{xPercent:180,duration:.7},1.75)
-   .fromTo(dots,{x:0,y:0,opacity:1},{x:i=>Math.cos(i*2.4)*145,y:i=>Math.sin(i*2.4)*100,rotation:i=>i*20,opacity:0,duration:.85},1.75)
+   .fromTo(burst,{progress:0},{progress:1,duration:.85,onUpdate:drawBurst},1.75)
    .fromTo(title.children,{y:15,opacity:0},{y:0,opacity:1,stagger:.07,duration:.32},2.05)
    .fromTo(caption,{opacity:0},{opacity:1,duration:.3},2.48)
    .fromTo(chips.children,{scale:.75,opacity:0},{scale:1,opacity:1,stagger:.07,ease:'back.out(2)',duration:.38},2.72)
+   .fromTo(chips.querySelectorAll('.pr-check'),{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0% 0 0)',duration:.22,stagger:.07},2.92)
    .fromTo(actions,{y:14,opacity:0},{y:0,opacity:1,duration:.34},3.48);
  }
  dialog.onclick=e=>{if(actions.inert&&performance.now()-start>1000&&!actions.contains(e.target))timeline.progress(1);};
