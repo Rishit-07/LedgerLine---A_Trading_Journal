@@ -1,3 +1,4 @@
+import { paginate } from './pagination.js';
 const india = 'Asia/Kolkata';
 const date = new Intl.DateTimeFormat('en-IN', { timeZone: 'UTC', dateStyle: 'medium' });
 const monthLabel = new Intl.DateTimeFormat('en-IN', { timeZone: 'UTC', month: 'long', year: 'numeric' });
@@ -18,7 +19,7 @@ function element(tag, content = '', className = '') {
   return node;
 }
 
-export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loadCalendarDay, renderTrades }) {
+export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loadCalendarDay, renderTrades, onDaySelected, onMonthRendered }) {
   const one = (selector) => page.querySelector(selector);
   const grid = one('[data-dash-calendar]');
   const dialog = one('[data-calendar-dialog]');
@@ -34,6 +35,7 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
   const monthStatus = one('[data-month-status]');
   let currentDay;
   let selectedMonth;
+  let selectedDay;
   let summary;
   let monthRequest = 0;
   let marketView = false;
@@ -45,6 +47,9 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
   let dayRequest = 0;
   let lastFetch = 0;
   let pending;
+  let mode = 'result';
+  const modeControls = [...page.querySelectorAll('[data-calendar-mode]')];
+  const exportMonth = one('[data-calendar-export]');
 
   function timeFormatter() {
     return new Intl.DateTimeFormat(undefined, {
@@ -58,7 +63,20 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
     one('[data-calendar-month]').textContent = monthLabel.format(start);
     previousMonth.disabled = selectedMonth === '0001-01';
     nextMonth.disabled = selectedMonth >= currentDay.slice(0, 7);
-    const metrics = [
+    if (exportMonth) exportMonth.disabled = !summary;
+    modeControls.forEach((control) => control.setAttribute('aria-pressed', String(control.dataset.calendarMode === mode)));
+    const metricsContainer = one('[data-calendar-metrics]');
+    const workspaceMetrics = metricsContainer.hasAttribute('data-workspace-calendar-metrics');
+    const dayResults = (summary?.days ?? []).map(({result})=>result).filter((value)=>value!=null);
+    const countBreaks = (summary?.days ?? []).reduce((total,day)=>total+((day.checks??0)-(day.kept??0)),0);
+    const metrics = workspaceMetrics ? [
+      ['Net R',result(summary?.netR),resultClass(summary?.netR)],['Trading days',summary?.tradingDays ?? '—'],
+      ['Win days',percent(dayResults.length?100*dayResults.filter((value)=>value>0).length/dayResults.length:null)],
+      ['Best day',result(dayResults.length?Math.max(...dayResults):null),resultClass(dayResults.length?Math.max(...dayResults):null)],
+      ['Worst day',result(dayResults.length?Math.min(...dayResults):null),resultClass(dayResults.length?Math.min(...dayResults):null)],
+      ['Rule breaks',summary?countBreaks:'—',countBreaks?'is-loss':''],
+      ['News window',summary?.newsWindow?.samples ? result(summary.newsWindow.average)+' avg' : '—',resultClass(summary?.newsWindow?.average)],
+    ] : [
       ['Closed trades', summary?.tradeCount ?? '—'],
       ['Trading days', summary?.tradingDays ?? '—'],
       ['Avg. realized R', result(summary?.averageR)],
@@ -66,9 +84,10 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
       ['Win rate', percent(summary?.winRate)],
       ['Month P&L', result(summary?.netR), resultClass(summary?.netR)],
     ];
-    one('[data-calendar-metrics]').replaceChildren(...metrics.map(([label, value, state]) => {
-      const tile = element('div', '', 'dash-month-metric');
+    metricsContainer.replaceChildren(...metrics.map(([label, value, state]) => {
+      const tile = element('div', '', workspaceMetrics?'n-out ws-stat ws-metric':'dash-month-metric');
       tile.append(element('span', label), element('strong', value, state));
+      if(label==='News window') tile.title='Average R of closed trades entered within 30 minutes of a high-impact release in the connected calendar.';
       return tile;
     }));
 
@@ -77,6 +96,7 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
     next.setUTCMonth(next.getUTCMonth() + 1);
     const last = new Date(next.getTime() - 86_400_000).getUTCDate();
     const daily = new Map((summary?.days ?? []).map((entry) => [entry.date, entry]));
+    const restDays = new Set(summary?.restDays);
     const weeks = [];
     const weekStats = [];
     for (let offset = 0; offset < blankBefore + last; offset += 7) {
@@ -106,22 +126,40 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
           checks += entry.checks ?? 0;
           kept += entry.kept ?? 0;
         }
-        const button = element('button', '', 'dash-calendar-day ' + resultClass(total));
+        const adherence = entry?.checks ? 100*entry.kept/entry.checks : null;
+        const state = mode === 'process' ? adherence === null ? '' : adherence === 100 ? 'is-win' : 'is-loss' : resultClass(total);
+        const button = element('button', '', 'dash-calendar-day ' + state);
+        if (onDaySelected) button.setAttribute('aria-pressed', String(key === selectedDay));
         button.type = 'button';
         button.dataset.day = key;
-        button.disabled = key > currentDay;
-        const activity = !summary ? '' : count ? ' · ' + result(total) + ' · ' + tradeCount(count) : ' · No closed trades';
+        button.disabled = !onDaySelected && key > currentDay;
+        const value = mode === 'process' ? percent(adherence) : result(total);
+        const opened = entry?.opened ?? 0;
+        const activity = !summary ? '' : (count ? ' · ' + value + ' · ' + count + ' closed' : '') +
+          (opened ? ' · ' + opened + ' opened' : '') + (!count && !opened ? ' · No trades' : '');
         button.title = date.format(new Date(key)) + activity;
         button.setAttribute('aria-label', button.title);
         if (key === currentDay) button.setAttribute('aria-current', 'date');
         button.append(element('span', day, 'dash-date-number'));
-        if (count) button.append(element('strong', result(total)), element('small', tradeCount(count)));
+        if (count) button.append(element('strong', value), element('small', tradeCount(count)));
+        if (opened) button.append(element('small', opened + ' opened', 'dash-entry-marker'));
+        if (onDaySelected && entry?.checks > entry?.kept) {
+          button.append(element('span', '', 'calendar-rule-marker'));
+          button.title += ' · Rules broken';
+        }
+        if (onDaySelected && restDays.has(key)) {
+          button.append(element('span', '', 'calendar-rest-marker'));
+          button.title += ' · Rest day';
+        }
         cell.append(button);
       }
       const weekTotal = summary ? weekResult / 10_000 : null;
       const weekly = element('td', '', 'dash-week-cell');
-      const tile = element('div', '', 'dash-calendar-week ' + resultClass(weekCount ? weekTotal : null));
-      tile.append(element('strong', result(weekTotal)));
+      const processRate = checks ? 100 * kept / checks : null;
+      const weekClass = mode === 'process' ? processRate === null ? '' : processRate === 100 ? 'is-win' : 'is-loss'
+        : resultClass(weekCount ? weekTotal : null);
+      const tile = element('div', '', 'dash-calendar-week ' + weekClass);
+      tile.append(element('strong', mode === 'process' ? percent(processRate) : result(weekTotal)));
       if (summary) tile.append(element('small', tradeCount(weekCount)));
       weekly.append(tile);
       row.append(weekly);
@@ -131,6 +169,7 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
       ]);
     }
     grid.replaceChildren(...weeks);
+    onMonthRendered?.();
     one('[data-calendar-rollups]').hidden = !summary?.tradeCount;
     one('[data-calendar-rollup-list]').replaceChildren(...[
       ['Month total', summary?.winRate, summary?.adherence], ...weekStats,
@@ -172,6 +211,26 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
     stepMonth(1);
     if (nextMonth.disabled) previousMonth.focus();
   });
+  modeControls.forEach((control) => control.addEventListener('click', () => {
+    if (!selectedMonth) return;
+    mode = control.dataset.calendarMode;
+    renderMonth();
+  }));
+  one('[data-calendar-today]')?.addEventListener('click', async () => {
+    if (!currentDay) return;
+    const month = currentDay.slice(0,7);
+    if (month !== selectedMonth) await selectMonth(month);
+    one('[data-day][aria-current=date]')?.click();
+  });
+  exportMonth?.addEventListener('click', () => {
+    if (!summary) return;
+    const lines = [['Date','Opened','Closed','Result R','Rules checked','Rules kept'], ...summary.days.map((entry) =>
+      [entry.date,entry.opened,entry.count,entry.result,entry.checks,entry.kept])];
+    const file = URL.createObjectURL(new Blob([lines.map((line) => line.join(',')).join('\r\n')],{type:'text/csv'}));
+    const link = element('a');
+    link.href = file; link.download = 'ledgerline-calendar-' + selectedMonth + '.csv'; link.click();
+    setTimeout(() => URL.revokeObjectURL(file),1000);
+  });
 
   function renderJournal() {
     journal.replaceChildren();
@@ -199,6 +258,10 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
       journal.append(element('p', result(net) + ' realized · ' + tradeCount(closed.length) + ' closed', 'dash-muted'));
     }
     journal.append(trades);
+    if(trades.querySelector('ul'))paginate(trades.querySelector('ul'),'Daily trades');
+    const report = element('a','Open day report','n-btn n-out dash-button');
+    report.href = '/reports?' + new URLSearchParams({date:dayInput.value});
+    journal.append(report);
     if (dayData.notes.length) {
       const notes = element('ul', '', 'dash-agenda-list');
       for (const note of dayData.notes) {
@@ -210,6 +273,7 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
         notes.append(row);
       }
       journal.append(element('h3', 'Journal notes'), notes);
+      paginate(notes,'Journal notes');
     }
   }
 
@@ -237,14 +301,17 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
     upcomingButton.setAttribute('aria-pressed', String(upcoming));
     if (!upcoming) {
       const hours = dayData?.marketHours;
-      if (hours?.status === 'live') {
+      if (hours?.status === 'live' || hours?.status === 'published') {
         const list = element('ul', '', 'dash-agenda-list');
         for (const { exchange, opensAt, closesAt } of hours.data) {
           list.append(element('li', exchange + ' · ' + formatTime.format(new Date(opensAt)) + ' – ' + formatTime.format(new Date(closesAt)), 'n-in'));
         }
-        agenda.append(element('h4', 'Exchange hours'), hours.data.length ? list : element('p', 'Upstox lists no sessions for this day.', 'dash-muted'));
+        agenda.append(element('h4', hours.status === 'published' ? 'Scheduled exchange hours' : 'Exchange hours'));
+        if (hours.data.length) agenda.append(list);
+        else if (!hours.specialHoursUnlisted) agenda.append(element('p', 'No trading sessions listed for this date.', 'dash-muted'));
+        if (hours.specialHoursUnlisted) agenda.append(element('p', 'A special session is listed without published hours in this calendar.', 'dash-muted'));
       } else if (hours) {
-        agenda.append(element('p', hours.status === 'not-configured' ? 'Exchange-hours feed is awaiting connection.' : 'Exchange hours are temporarily unavailable.', 'dash-muted'));
+        agenda.append(element('p', hours.status === 'not-configured' ? 'Live exchange hours are not connected.' : 'Exchange hours are temporarily unavailable.', 'dash-muted'));
       }
     }
     if (!feed) {
@@ -253,20 +320,32 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
     }
     if (feedFailed) agenda.append(element('p', 'Refresh failed. Showing the last available feed.', 'dash-muted'));
     const scope = upcoming ? (event) => eventDay(event) >= currentDay : (event) => eventDay(event) === dayInput.value;
-    const events = feed.events.filter((event) => scope(event) && (event.kind !== 'economic' || impact.value === 'all' || event.impact === Number(impact.value)))
+    const events = feed.events.filter((event) => event.kind !== 'news' && scope(event) && (event.kind !== 'economic' || impact.value === 'all' || event.impact === Number(impact.value)))
       .sort((a, b) => eventDay(a).localeCompare(eventDay(b)) || (a.at ?? '').localeCompare(b.at ?? ''));
     const list = element('ul', '', 'dash-agenda-list');
     list.append(...events.map((event) => eventRow(event, formatTime)));
-    agenda.append(events.length ? list : element('p', 'No matching events in connected feeds.', 'dash-muted'));
+    const { rbi, fed, ...agendaSources } = feed.sources;
+    const live = Object.values(agendaSources).some(({ status }) => ['live', 'published'].includes(status));
+    const limited = Object.values(feed.sources).some(({ status }) => ['not-configured', 'unavailable'].includes(status));
+    const empty = !live ? 'No market event feeds are available right now.'
+      : limited ? 'No matching events in the available feeds. Coverage is limited.'
+        : 'No matching events for this selection.';
+    agenda.append(events.length ? list : element('p', empty, 'dash-muted'));
+    if(events.length)paginate(list,'Market events');
     const sources = { economic: 'Global economic calendar', bea: 'U.S. BEA release schedule', earnings: 'Earnings',
       dividends: 'Dividends', catalysts: 'Company and sector news', holidays: 'Exchange holidays', expiries: 'Contract expiries' };
-    const updates = Object.entries(feed.sources).flatMap(([key, source]) => {
+    const updates = Object.entries(agendaSources).flatMap(([key, source]) => {
       if (source.status === 'standby') return [];
-      const state = source.status === 'live' ? 'updated ' + formatTime.format(new Date(source.updatedAt))
-        : source.status === 'not-configured' ? 'awaiting connection' : 'temporarily unavailable';
+      const state = { live: () => 'updated ' + formatTime.format(new Date(source.updatedAt)),
+        published: () => 'published exchange schedule', 'not-configured': () => 'not connected' }[source.status]?.() ?? 'temporarily unavailable';
       return [sources[key] + ' · ' + state];
     });
-    agenda.append(element('p', updates.join(' | '), 'dash-calendar-sources dash-muted'));
+    const coverage = element('details', '', 'dash-calendar-sources dash-muted');
+    coverage.append(element('summary', limited ? 'Data sources · Limited coverage' : 'Data sources'));
+    const sourceList = element('ul');
+    sourceList.append(...updates.map((update) => element('li', update)));
+    coverage.append(sourceList);
+    agenda.append(coverage);
   }
 
   function refreshFeed() {
@@ -317,6 +396,13 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
   grid.addEventListener('click', (event) => {
     const button = event.target.closest('[data-day]');
     if (!button || button.disabled) return;
+    if (onDaySelected) {
+      selectedDay = button.dataset.day;
+      grid.querySelector('[aria-pressed="true"]')?.setAttribute('aria-pressed', 'false');
+      button.setAttribute('aria-pressed', 'true');
+      onDaySelected(selectedDay);
+      return;
+    }
     marketView = false;
     one('[data-calendar-controls]').hidden = true;
     one('[data-calendar-agenda-section]').hidden = true;
@@ -347,6 +433,10 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
 
   return (data) => {
     currentDay = data.day;
+    if (onDaySelected && !selectedDay) {
+      selectedDay = currentDay;
+      onDaySelected(selectedDay);
+    }
     const month = selectedMonth ?? currentDay.slice(0, 7);
     void selectMonth(month, Boolean(selectedMonth));
   };

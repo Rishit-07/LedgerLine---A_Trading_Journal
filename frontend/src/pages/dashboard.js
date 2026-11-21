@@ -1,8 +1,13 @@
+import { streakChip, paintStreakChip } from './streak-chip.js';
+import { openCloseTrade } from './close-trade.js';
+import { paginate } from './pagination.js';
 import { bindQuickTrade } from './quick-trade.js';
 import { badgeMarkup, bindBadgeUnlock } from './streak-view.js';
 import { bindStreakDialog, streakPanelMarkup } from './streak-panel.js';
 import { streakInviteCode } from '../streak-invite.js';
 import { bindTradingCalendar } from './trading-calendar.js';
+import { bindDashboardPlan } from './dashboard-plan.js';
+import { bindWorkspaceAccount } from './workspace-shell.js';
 import pageMarkup from './dashboard.html?raw';
 import { bindPageTheme, mountPage } from './shared.js';
 import '@fontsource/instrument-serif/latin-400.css';
@@ -31,7 +36,16 @@ function tradeList(container, trades, empty, showDate = false) {
       details.append(text('small', `Stop ${trade.stop ?? '—'} · Target ${trade.target ?? '—'}`));
     }
     if (showDate) details.append(text('small', date.format(new Date(trade.closedDay ?? trade.openedDay))));
-    row.append(details, text('strong', trade.result === null ? 'Open' : r(trade.result), trade.result < 0 ? 'is-loss' : trade.result > 0 ? 'is-win' : ''));
+    const view = text('a',trade.symbol);
+    view.href = '/history?' + new URLSearchParams({tradeId:trade.id});
+    details.querySelector('strong').replaceChildren(view);
+    row.append(details);
+    if (trade.result === null) {
+      const close = text('button','Close trade','n-btn n-out dash-button');
+      close.type = 'button';
+      close.addEventListener('click',()=>close.dispatchEvent(new CustomEvent('close-position',{bubbles:true,detail:trade})));
+      row.append(close);
+    } else row.append(text('strong',r(trade.result),trade.result < 0 ? 'is-loss' : trade.result > 0 ? 'is-win' : ''));
     list.append(row);
   }
   container.replaceChildren(list);
@@ -79,6 +93,14 @@ function fillDashboard(page, data, name) {
   set('[data-month-result]', r(data.monthlyBooked));
   set('[data-month-note]', data.monthlyBooked === null ? 'No closed trades this month.' : 'Realized result from your closed trades.');
   set('[data-adherence]', pct(data.rulesFollowed));
+  const score = data.traderScore;
+  set('[data-trader-score]', score?.value ?? '—');
+  set('[data-score-detail]', score?.value == null ? 'Log a trade to see your score'
+    : score.coverage < 100 ? `Of 100 · ${score.coverage}% of weights available` : 'Of 100 · Last 42 days');
+  const scoreRing = one('[data-trader-score]');
+  scoreRing.style.setProperty('--score-fill', (score?.value ?? 0) + '%');
+  if (score?.value != null) scoreRing.setAttribute('aria-label', 'Trader Score ' + score.value + ' out of 100');
+  else scoreRing.removeAttribute('aria-label');
   const lossBudget = `${number.format(data.dailyLoss)}R of ${data.dailyLossLimit}R used`;
   set('[data-loss-budget]', lossBudget);
   one('[data-loss-meter]').max = data.dailyLossLimit;
@@ -86,8 +108,6 @@ function fillDashboard(page, data, name) {
   const hitLimit = data.dailyLoss >= data.dailyLossLimit;
   page.classList.toggle('dash-loss-limit-hit', hitLimit);
   set('[data-risk-note]', hitLimit ? 'Daily loss limit reached.' : 'Daily loss budget available.');
-  set('[data-plan-text]', data.plan ? (data.plan.locked ? 'Plan locked' : 'Plan in progress') : 'No plan for today yet.');
-  set('[data-plan-bias]', data.plan?.bias ? ' · ' + data.plan.bias : '');
 
   one('[data-dash-kpis]').replaceChildren(...[
     ['Win rate', pct(data.winRate), 'Last 7 days'],
@@ -102,6 +122,22 @@ function fillDashboard(page, data, name) {
   }));
 
   const openedToday = data.today.filter((trade) => trade.openedDay === data.day).length;
+  const activity = Array.from({length:7},(_,index)=>{
+    const day = new Date(data.day);
+    day.setUTCDate(day.getUTCDate()-6+index);
+    const key = day.toISOString().slice(0,10);
+    return {day,count:(data.recentTrades ?? data.today).filter(trade=>trade.openedDay===key).length};
+  });
+  const maxCount = Math.max(1,...activity.map(item=>item.count));
+  one('[data-entry-chart]').replaceChildren(...activity.map(({day,count})=>{
+    const column=text('li','');
+    const bar=text('i','');
+    bar.style.height=(count/maxCount*38)+'px';
+    column.title=date.format(day)+' · '+count+' opened';
+    column.setAttribute('aria-label',column.title);
+    column.append(text('strong',count),bar,text('small',day.toLocaleDateString('en-IN',{weekday:'short',timeZone:'UTC'})));
+    return column;
+  }));
   const risk = one('[data-risk-list]');
   risk.replaceChildren();
   for (const [label, value] of [['Risk per trade', pct(data.riskPerTrade)], ['Daily loss limit', lossBudget], ['Opened today / daily max', openedToday + ' / ' + data.maxTrades]]) {
@@ -116,7 +152,7 @@ function fillDashboard(page, data, name) {
 
 }
 
-export function renderDashboard(landing, { initial, load, name, save, signOut, request, loadCalendar, loadCalendarMonth, loadCalendarDay }) {
+export function renderDashboard(landing, { initial, load, name, photoUrl, save, signOut, request, loadCalendar, loadCalendarMonth, loadCalendarDay }) {
   document.title = 'Dashboard — Ledgerline';
   const page = mountPage(landing, pageMarkup);
   page.insertAdjacentHTML('beforeend', streakPanelMarkup + badgeMarkup);
@@ -130,11 +166,13 @@ export function renderDashboard(landing, { initial, load, name, save, signOut, r
 
   if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
   let data = initial;
+  const paintPlan = bindDashboardPlan(page, request, () => data, (plan) => { data = { ...data, plan }; });
   const recent = tradePager(page.querySelector('[data-recent-list]'), page.querySelector('[data-recent-pager]'), 'No recent trades logged.', true);
   const open = tradePager(page.querySelector('[data-open-list]'), page.querySelector('[data-open-pager]'), 'No open positions logged.', false);
   const calendar = bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loadCalendarDay, renderTrades: tradeList });
   function renderData() {
     fillDashboard(page, data, name);
+    paintPlan();
     recent(data.recentTrades ?? data.today, true);
     open(data.open);
     calendar(data);
@@ -156,6 +194,7 @@ export function renderDashboard(landing, { initial, load, name, save, signOut, r
       list.append(row);
     }
     breakdown.replaceChildren(list);
+    paginate(list,'Performance breakdown',6);
   }
   breakdownTabs.forEach((button) => button.addEventListener('click', () => {
     selectedBreakdown = button.dataset.breakdown;
@@ -163,31 +202,33 @@ export function renderDashboard(landing, { initial, load, name, save, signOut, r
   }));
   fillBreakdown();
   const status = page.querySelector('[data-dash-status]');
+  page.addEventListener('close-position',event=>openCloseTrade(page,event.detail,request,async()=>{
+    data=await load(); renderData(); fillBreakdown(); status.textContent='Trade closed.';
+    page.querySelector('[data-calendar-dialog]')?.close();
+  }));
+  bindWorkspaceAccount(page, { name:initial.displayName || name, photoUrl, signOut, status });
+  page.querySelector('.dash-toolbar .dash-actions').insertAdjacentHTML('afterbegin',streakChip);
+  paintStreakChip(page,initial.streak);
   const badge = page.querySelector('[data-open-streak]');
   const showBadge = request ? bindBadgeUnlock(page, request) : () => {};
   let streak;
   const streakDialog = request ? bindStreakDialog(page, { request, getState: () => streak, onState: applyStreak }) : null;
   function applyStreak(next) {
     streak = next;
+    paintStreakChip(page,streak.current);
     badge.querySelector('[data-streak]').textContent = streak.current + (streak.current === 1 ? ' day' : ' days');
     if (streakDialog?.dialog.open) streakDialog.paintState(streak);
     showBadge(streak);
   }
   if (streakDialog) {
     badge.addEventListener('click', () => streakDialog.open());
+    page.querySelector('[data-workspace-streak]').addEventListener('click',event=>{event.preventDefault();streakDialog.open();});
     const invite = streakInviteCode(location.search);
     if (invite || location.hash === '#streak') streakDialog.open(invite);
     else void request('/api/streak', 'GET').then((initialStreak) => {
       if (!streak) applyStreak(initialStreak);
     }).catch(() => { if (!streak) badge.querySelector('[data-streak]').textContent = 'View'; });
   }
-  const signOutButton = page.querySelector('[data-sign-out]');
-  signOutButton.addEventListener('click', async () => {
-    signOutButton.disabled = true;
-    try { await signOut(); location.replace('/'); }
-    catch { status.textContent = 'Unable to sign out. Try again.'; signOutButton.disabled = false; }
-  });
-
   bindQuickTrade(page, {
     save, marketNames, getDashboard: () => ({ ...data, streakTimezone: streak?.timezone ?? data.streakTimezone }),
     onSaved: async (saved) => {
@@ -198,10 +239,12 @@ export function renderDashboard(landing, { initial, load, name, save, signOut, r
     },
   });
 
+  if (location.hash === '#log-trade') page.querySelector('[data-log-trade]').click();
+
   const jump = page.querySelector('[data-search-dialog]');
   const search = jump.querySelector('input');
   const results = jump.querySelector('[data-search-results]');
-  const links = [...page.querySelectorAll('.dash-navigation a')];
+  const links = [...page.querySelectorAll('.dash-navigation a, .dash-account-popover a')];
   function filterLinks() {
     const term = search.value.trim().toLowerCase();
     const matches = links.filter((link) => link.textContent.toLowerCase().includes(term));

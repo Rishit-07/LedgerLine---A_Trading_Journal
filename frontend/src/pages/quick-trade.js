@@ -53,6 +53,8 @@ export function bindQuickTrade(page, { save, getDashboard, marketNames, onSaved 
     resultField.hidden = fields.closed.disabled || !fields.closed.checked;
     fields.result.disabled = resultField.hidden;
     fields.result.required = !resultField.hidden;
+    const symbols=new Set((getDashboard().recentTrades ?? []).filter(t=>t.market===fields.market.value).map(t=>t.symbol));
+    form.querySelector('#ql-symbols').replaceChildren(...Array.from(symbols,symbol=>new Option(symbol)));
     form.querySelector('[data-trade-market]').textContent = marketNames[fields.market.value] ?? '';
   }
 
@@ -230,7 +232,7 @@ export function bindQuickTrade(page, { save, getDashboard, marketNames, onSaved 
   });
 }
 
-function showReceipt(receipt, trade, rules, saved) {
+export function showReceipt(receipt, trade, rules, saved) {
   const detail = receipt.querySelector('[data-receipt-details]');
   const rows = [
     ['Instrument', trade.symbol.toUpperCase()], ['Side', trade.side === 'long' ? 'Long' : 'Short'],
