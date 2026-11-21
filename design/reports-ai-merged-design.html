@@ -1,0 +1,95 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ledgerline · Reports with AI and the upgrade flow</title><style>
+:root{--bg:#f1efe8;--ink:#1d2030;--mut:#5b5f70;--acc:#5b6ee1;--hi:#fff;--lo:#cfcbbd;--ok:#17724a;--warn:#b86a00;--line:rgba(29,32,48,.1);--r:20px}
+:root[data-theme=dark]{--bg:#161827;--ink:#ecebf5;--mut:#9a9db5;--acc:#8d9bff;--hi:#20233a;--lo:#0c0d17;--ok:#5fd29a;--warn:#ffb454;--line:rgba(255,255,255,.08)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:500 15px/1.5 Inter,system-ui,sans-serif;transition:background .3s}
+.top{display:flex;gap:10px;align-items:center;padding:14px 20px;flex-wrap:wrap;position:sticky;top:0;background:var(--bg);z-index:5;border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:8px;font-size:19px;letter-spacing:-.02em;margin-right:8px}.logo b{color:var(--acc);font-weight:800}.logo span{font-weight:400}
+.tabs{display:flex;gap:8px;overflow:auto;flex:1;padding:4px}
+.tab,.btn{font-family:inherit;font-weight:700;font-size:13px;line-height:1;border:0;border-radius:14px;padding:12px 16px;background:var(--bg);color:var(--ink);cursor:pointer;box-shadow:4px 4px 10px var(--lo),-4px -4px 10px var(--hi);white-space:nowrap;text-decoration:none;transition:transform .15s}
+.tab:hover,.btn:hover{transform:translateY(-1px)}
+.tab[aria-selected=true]{box-shadow:inset 3px 3px 7px var(--lo),inset -3px -3px 7px var(--hi);color:var(--acc)}
+.btn.p{background:var(--acc);color:#fff}.btn.sm{padding:9px 13px}.btn[disabled]{opacity:.45;cursor:not-allowed}
+main{max-width:1060px;margin:0 auto;padding:26px 20px 80px}
+h2{font:400 34px/1.1 "Instrument Serif",Georgia,serif;margin:0 0 6px}h3{margin:0 0 6px;font-size:17px}
+.sub{color:var(--mut);margin:0 0 22px;max-width:640px}
+.card{background:var(--bg);border-radius:var(--r);padding:22px;box-shadow:8px 8px 18px var(--lo),-8px -8px 18px var(--hi)}
+.in{box-shadow:inset 4px 4px 9px var(--lo),inset -4px -4px 9px var(--hi);border-radius:14px;padding:12px 14px}
+.grid{display:grid;gap:20px;align-items:start}.g3{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.pill{display:inline-block;font-weight:700;font-size:11px;line-height:1;padding:6px 10px;border-radius:99px;background:rgba(91,110,225,.14);color:var(--acc);letter-spacing:.04em;text-transform:uppercase}
+.pill.ok{background:rgba(23,114,74,.15);color:var(--ok)}.pill.w{background:rgba(184,106,0,.15);color:var(--warn)}
+.price{font-weight:800;font-size:38px;line-height:1;letter-spacing:-.03em;margin:10px 0 2px}.price small{font-weight:500;font-size:14px;color:var(--mut)}
+ul.f{list-style:none;padding:0;margin:14px 0 18px;display:grid;gap:8px;font-size:14px}ul.f li:before{content:"✓";color:var(--acc);font-weight:800;margin-right:8px}ul.f li.x{color:var(--mut)}ul.f li.x:before{content:"–";color:var(--mut)}
+.seg{display:inline-flex;border-radius:14px;padding:4px;box-shadow:inset 3px 3px 7px var(--lo),inset -3px -3px 7px var(--hi)}
+.seg button{border:0;background:none;font-family:inherit;font-weight:700;font-size:13px;color:var(--mut);padding:9px 14px;border-radius:10px;cursor:pointer}.seg button[aria-pressed=true]{background:var(--acc);color:#fff}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}
+.steps{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 20px}.st{flex:1;min-width:150px;padding:14px;border-radius:16px;font-weight:700;font-size:13px;box-shadow:inset 3px 3px 7px var(--lo),inset -3px -3px 7px var(--hi);color:var(--mut)}
+.st.done{color:var(--ok)}.st.cur{color:var(--acc);box-shadow:6px 6px 14px var(--lo),-6px -6px 14px var(--hi)}
+.note{font-size:12.5px;color:var(--mut)}.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;word-break:break-all}
+.qr{width:170px;height:170px;background:#fff;border-radius:12px;padding:10px}
+.modal{position:fixed;inset:0;background:rgba(10,12,24,.5);display:none;align-items:center;justify-content:center;z-index:9;padding:20px}.modal.on{display:flex}
+.modal .card{max-width:760px;width:100%;max-height:92vh;overflow:auto}.x{float:right}
+label{font-weight:700;font-size:13px;display:block;margin:12px 0 6px}input,select{width:100%;font:inherit;color:var(--ink);background:none;border:0;outline:0}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;margin:8px 0}
+.lock{filter:grayscale(.4);opacity:.7;pointer-events:none}
+.bar{height:8px;border-radius:8px;box-shadow:inset 2px 2px 4px var(--lo),inset -2px -2px 4px var(--hi);overflow:hidden}.bar i{display:block;height:100%;background:var(--acc);border-radius:8px}
+.fade{animation:up .45s cubic-bezier(.2,.9,.3,1) both}@keyframes up{from{opacity:0;transform:translateY(12px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+
+.lockwrap{position:relative}.blur{filter:blur(6px);opacity:.55;pointer-events:none;user-select:none}
+.gate{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px}
+.gate .card{max-width:420px;text-align:center}
+.score{font:800 54px/1 Inter,sans-serif;letter-spacing:-.04em;color:var(--acc)}
+.ai{border-left:4px solid var(--acc)}.sp{display:inline-block;width:16px;height:16px;border:3px solid var(--lo);border-top-color:var(--acc);border-radius:50%;animation:rot .8s linear infinite;vertical-align:-3px}@keyframes rot{to{transform:rotate(360deg)}}
+.lnk{color:var(--acc);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.flow{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 20px}
+</style></head><body>
+<div class="top"><div class="logo"><svg width="26" height="26" viewBox="0 0 32 32" fill="none"><path d="M3 20H29" stroke="#5b6ee1" stroke-width="2.6" stroke-linecap="round"/><rect x="12.5" y="8" width="7" height="16" rx="2" fill="#5b6ee1"/><path d="M16 3V8M16 24V29" stroke="#5b6ee1" stroke-width="2.6" stroke-linecap="round"/></svg><span><b>Ledger</b><span>line</span></span></div>
+<div class="tabs"><span class="note">Preview the account state:</span><div class="seg" id="st"></div></div><button class="btn sm" id="th">☾</button></div>
+<main id="v"></main><div class="modal" id="md"><div class="card" id="mc"></div></div>
+<script>
+const $=s=>document.querySelector(s),root=document.documentElement;
+const S={plan:'free',tab:'report',per:'week',modal:null,pay:'upi',yr:true,gen:false,used:0};
+const ST=[['free','Free'],['pro','Pro'],['limit','Pro, limit reached'],['off','AI turned off']];
+const TABS=[['report','Full report'],['patterns','Patterns'],['plan','Plan check'],['exp','Experiments'],['ask','Ask your journal']];
+const pro=()=>S.plan=='pro'||S.plan=='limit';
+function numbers(){return`<div class="grid g3" style="margin-bottom:20px"><div class="card"><div class="note">Process score</div><div class="score">82</div><div class="note">+6 vs last ${S.per}</div></div><div class="card"><div class="note">Rules followed</div><div class="score">91%</div><div class="note">38 of 42 checks</div></div><div class="card"><div class="note">Journal days / streak</div><div class="score">6 / 14</div><div class="note">Streak safe</div></div></div>
+<div class="card" style="margin-bottom:22px"><h3>Score trend <span class="note">(sample)</span></h3><svg viewBox="0 0 600 120" style="width:100%"><path d="M10 90 L100 70 L190 84 L290 50 L380 62 L480 34 L590 40" fill="none" stroke="var(--acc)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><p class="note">Top mistakes: moved stop (3), oversized (2), skipped plan (1)</p></div>`}
+const full=()=>`<div class="card ai"><span class="pill">AI-written · sample · can be wrong</span><h3 style="margin-top:12px">Your week in process</h3>
+<p><b>What went well.</b> You followed your rules on 38 of 42 checks and wrote a review on 6 of 7 days. Your pre-market plan was complete on every day you traded.</p>
+<p><b>Where rules slipped.</b> Three of the four breaks were "moved stop", and all three came after a losing trade earlier the same day (<span class="lnk">Tue 11:42</span>, <span class="lnk">Wed 13:05</span>, <span class="lnk">Thu 12:20</span>).</p>
+<p><b>Pattern.</b> Rule-following drops from 96% before 1pm to 78% after 1pm.</p>
+<p><b>Compared with last week.</b> Score +6, rules followed +4 points, mistakes down from 9 to 6.</p>
+<p><b>Suggested experiment.</b> For next week, after any loss, wait 10 minutes and re-read your stop rule before the next entry.</p>
+<p class="note">Numbers checked against your data. Describes process only, not markets or returns.</p></div>`;
+const pats=()=>`<div class="grid g2"><div class="card ai"><span class="pill">Pattern</span><h3 style="margin-top:10px">Moved stop after a loss</h3><p class="note">3× more likely after a losing trade the same day (n=12, sample).</p><span class="lnk">See the 3 trades</span></div><div class="card ai"><span class="pill">Pattern</span><h3 style="margin-top:10px">Late-session drift</h3><p class="note">Rules followed 96% before 1pm, 78% after.</p><span class="lnk">See the heat map</span></div></div>`;
+const plan=()=>`<div class="card ai"><span class="pill">Plan check · sample</span><h3 style="margin-top:10px">Tomorrow's plan</h3><div class="row"><span>Risk per trade defined</span><b style="color:var(--ok)">Yes</b></div><div class="row"><span>Daily loss limit written</span><b style="color:var(--ok)">Yes</b></div><div class="row"><span>If-then for a loss streak</span><b style="color:var(--warn)">Missing</b></div><p class="note">Question for you: what will you do after your second loss in a row?</p></div>`;
+const exp=()=>`<div class="card ai"><span class="pill">Experiment · sample</span><h3 style="margin-top:10px">Pause 10 minutes after a loss</h3><div class="bar"><i style="width:40%"></i></div><p class="note">Day 3 of 7 · moved-stop count so far: 0 (last week: 3)</p></div>`;
+const ask=()=>`<div class="card ai"><span class="pill">Ask your journal · sample</span><div class="in" style="margin:12px 0"><input placeholder="e.g. When did I last hit my daily limit?"></div><p><b>14 Nov.</b> You hit your daily limit at 12:20. You wrote: "I kept trading to get it back." <span class="lnk">Open that day</span></p><p class="note">Answers only from your own records.</p></div>`;
+const body={report:full,patterns:pats,plan:plan,exp:exp,ask:ask};
+function aiArea(){
+ if(S.plan=='off')return`<div class="card"><h3>AI features are off</h3><p class="note">Turn them on in Settings to generate reviews. Your numbers above work without AI.</p><button class="btn p">Open Settings</button></div>`;
+ if(S.plan=='free'){return`<div class="lockwrap"><div class="blur">${full()}</div><div class="gate"><div class="card"><span class="pill ok">Pro</span><h3 style="margin-top:10px">Full AI review, patterns and more</h3><p class="note">Free includes one short AI summary a week. Pro adds the full report, pattern finder, plan check, experiments and ask your journal.</p><button class="btn p" data-m="pro">See Pro</button> <button class="btn" data-short="1">Use my free summary</button></div></div></div>`}
+ if(S.plan=='limit')return`<div class="card" style="border-left:4px solid var(--warn);margin-bottom:16px"><b>You've used this month's AI reviews (30 of 30).</b> They renew on 1 Dec. You can still read all past reports.</div><div class="lockwrap"><div class="blur">${body[S.tab]()}</div></div>`;
+ if(S.gen&&S.tab=='report')return`<div class="card"><span class="sp"></span> &nbsp;Reading your 42 rule checks and 6 journal entries…</div>`;
+ return body[S.tab]()+`<p class="note" style="margin-top:12px">AI reviews used this month: 7 of 30 · <span class="lnk" data-regen="1">Regenerate</span> · <span class="lnk">Delete</span></p>`}
+function render(){
+ $('#st').innerHTML=ST.map(x=>`<button aria-pressed="${S.plan==x[0]}" data-plan="${x[0]}">${x[1]}</button>`).join('');
+ const locked=S.plan=='free';
+ $('#v').innerHTML=`<h2>Reports</h2><p class="sub">One page for numbers and AI. The numbers are always free. AI sections sit right under them.</p>
+ <div class="seg" style="margin-bottom:18px"><button aria-pressed="${S.per=='week'}" data-per="week">This week</button><button aria-pressed="${S.per=='month'}" data-per="month">This month</button></div> <button class="btn sm" style="margin-left:8px">Export PDF</button>
+ ${numbers()}<h3 style="font-size:22px;margin-bottom:12px">AI review ${locked?'<span class="pill ok">Pro</span>':''}</h3>
+ <div class="tabs" style="padding:4px 0;margin-bottom:14px">${TABS.map(t=>`<button class="tab" aria-selected="${S.tab==t[0]}" data-tab="${t[0]}">${t[1]}${locked&&t[0]!='report'?' 🔒':''}</button>`).join('')}</div>${aiArea()}`;
+ const m=$('#md');if(!S.modal){m.classList.remove('on');return}m.classList.add('on');
+ if(S.modal=='pro')$('#mc').innerHTML=`<h3 style="font-size:22px">Upgrade to Pro</h3><p class="note">Everything AI does for your process, plus full insights, replay, mistake lab and unlimited history.</p><ul class="f"><li>Full AI report with links to your trades</li><li>Pattern finder across all your trades</li><li>Pre-market plan check</li><li>Weekly mistake experiments</li><li>Ask your journal, with citations</li></ul><div class="seg" style="margin-bottom:12px"><button aria-pressed="${!S.yr}" data-yr="0">₹149 / month</button><button aria-pressed="${S.yr}" data-yr="1">₹1,199 / year</button></div><br><button class="btn p" data-m="pay">Continue</button> <button class="btn" data-m="x">Not now</button><p class="note" style="margin-top:12px">Streaks, scoring, rewards and certificates stay free. Cancel anytime.</p>`;
+ if(S.modal=='pay')$('#mc').innerHTML=`<h3 style="font-size:22px">Pay for Pro</h3><div class="seg" style="margin:10px 0 14px">${['upi','card','crypto'].map(x=>`<button aria-pressed="${S.pay==x}" data-pay="${x}">${x.toUpperCase()}</button>`).join('')}</div><div class="in"><input placeholder="${S.pay=='upi'?'name@bank':S.pay=='card'?'Card number':'Pick coin and network on the next step'}"></div><p class="note">Same checkout drawer as Settings → Billing. ${S.yr?'₹1,199 billed yearly':'₹149 billed monthly'}.</p><button class="btn p" data-m="done">Pay</button> <button class="btn" data-m="x">Back</button>`;
+ if(S.modal=='done')$('#mc').innerHTML=`<h3 style="font-size:22px">You're on Pro</h3><p class="note">Payment received. We'll build your first full report now.</p><button class="btn p" data-m="unlock">Show my report</button>`;
+}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-plan],[data-tab],[data-per],[data-m],[data-pay],[data-yr],[data-regen],[data-short]');if(!t)return;const d=t.dataset;
+ if(d.plan){S.plan=d.plan;S.modal=null}if(d.tab)S.tab=d.tab;if(d.per)S.per=d.per;if(d.pay)S.pay=d.pay;if(d.yr!=null)S.yr=d.yr=='1';
+ if(d.m){if(d.m=='x')S.modal=null;else if(d.m=='unlock'){S.modal=null;S.plan='pro';S.gen=true;render();setTimeout(()=>{S.gen=false;render()},1600);return}else S.modal=d.m}
+ if(d.regen){S.gen=true;render();setTimeout(()=>{S.gen=false;render()},1400);return}
+ if(d.short){alert('Free users get one short AI summary a week (about 4 lines, sample).')}
+ render()});
+$('#md').addEventListener('click',e=>{if(e.target.id=='md'){S.modal=null;render()}});
+$('#th').onclick=()=>{root.dataset.theme=root.dataset.theme=='dark'?'light':'dark'};render();
+</script></body></html>

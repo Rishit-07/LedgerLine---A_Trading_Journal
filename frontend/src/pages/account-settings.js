@@ -29,8 +29,8 @@ export function settingsMarkup(notifications) {
     ${panel('rules','Trading rules',`<form class="ws-form" data-edit="rules">${ruleDefinitions.map(([key,label,values,unit])=>`<div class="account-rule"><label>${label}<select name="${key}" class="n-in">${values.map(v=>`<option value="${v}">${v}${unit}</option>`).join('')}</select></label><label><input type="checkbox" name="hardRules" value="${key}"> Hard rule</label></div>`).join('')}${saveButton}</form>`)}
     <div data-preference="notifications" hidden>${notifications}</div>
     ${panel('appearance','Appearance','<p>Choose a light or dark workspace on this device.</p><button class="n-btn n-out dash-button" data-change-theme>Switch theme</button>')}
-    ${panel('privacy','Data and privacy','<p>Choose what visitors can see on your portfolio or export your trades.</p><div class="account-actions"><a href="/portfolio">Portfolio visibility</a><a href="/history#export">Export trades as CSV</a></div>')}
-    ${panel('billing','Plans and billing','<p>Ledgerline has no paid plans available.</p>')}
+    ${panel('privacy','Data and privacy','<label><input type="checkbox" data-report-consent disabled> Allow AI reviews to use my aggregated trading records</label><p data-consent-status role="status"></p><p>Choose what visitors can see on your portfolio or export your trades.</p><div class="account-actions"><a href="/portfolio">Portfolio visibility</a><a href="/history#export">Export trades as CSV</a></div>')}
+    ${panel('billing','Plans and billing','<p data-billing-plan></p><button class="n-btn n-out dash-button" data-view-pro>See Pro</button>')}
     </div></div>`;
 }
 
@@ -46,6 +46,14 @@ export async function bindAccountSettings(page,request) {
   };
   selectSection();
   page.querySelector('[data-change-theme]').onclick=()=>page.querySelector('[data-page-theme]').click();
+  const consent=page.querySelector('[data-report-consent]'),message=page.querySelector('[data-consent-status]');
+  page.querySelector('[data-view-pro]').onclick=async()=>{const {upgradeGate}=await import('../features/reports/upgrade.js');upgradeGate('aiReview');};
+  try {
+    const prefs=await request('/api/reports/preferences','GET');
+    consent.checked=prefs.enabled;consent.disabled=false;
+    page.querySelector('[data-billing-plan]').textContent='Current plan · '+prefs.plan;
+    consent.onchange=async()=>{consent.disabled=true;try{await request('/api/reports/preferences','PUT',{enabled:consent.checked});message.textContent='Preference saved.';}catch(e){consent.checked=!consent.checked;message.textContent=e.message;}finally{consent.disabled=false;}};
+  }catch(e){message.textContent=e.message;}
   const profile=await request('/api/onboarding','GET');
   for(const form of page.querySelectorAll('[data-edit]')) {
     const section=form.dataset.edit;
