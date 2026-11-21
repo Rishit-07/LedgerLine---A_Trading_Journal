@@ -1,4 +1,5 @@
 import './quick-trade.css';
+import { screenshotPicker, screenshotData } from '../components/trade-screenshots.js';
 
 const holdTime = 1200;
 
@@ -29,6 +30,8 @@ export function bindQuickTrade(page, { save, getDashboard, marketNames, onSaved 
   const submitLabel = form.querySelector('[data-trade-save-label]');
   const status = form.querySelector('[data-trade-status]');
   const details = form.querySelector('[data-trade-details]');
+  const before = screenshotPicker('before');
+  details.append(before);
   const resultField = form.querySelector('[data-result-field]');
   const checklist = form.querySelector('[data-trade-rules]');
   const progress = form.querySelector('[data-rule-progress]');
@@ -163,6 +166,7 @@ export function bindQuickTrade(page, { save, getDashboard, marketNames, onSaved 
     controls.forEach((control) => { control.disabled = true; });
     status.textContent = 'Saving your trade…';
     try {
+      trade.beforeScreenshot = await screenshotData(before.querySelector('input').files[0]);
       const saved = await save(trade);
       requestId = undefined;
       dialog.close();

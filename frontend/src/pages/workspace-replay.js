@@ -1,4 +1,5 @@
 import {fileCard} from '../components/file-actions.js';
+import {tradeScreenshots} from '../components/trade-screenshots.js';
 import { paginate } from './pagination.js';
 import { select, node, button, fillTradeOptions, formatDate, signedR, submit } from './workspace-ui.js';
 
@@ -88,7 +89,7 @@ function executionSummary(trade, reason, linkToReplay,request) {
     block.append(detail);
   }
   block.append(node('small',reason || 'No historical candles are available for this trade.'));
-  const action=node(linkToReplay ? 'a':'button','Import candle CSV','execution-link');
+  const action=node(linkToReplay ? 'a':'button','Optional candle import','execution-link');
   if(linkToReplay)action.href='/replay?'+new URLSearchParams({tradeId:trade.id})+'#candles';
   else {
     action.type='button';action.onclick=()=>{
@@ -166,13 +167,14 @@ export function tradeChart(trade, request) {
 }
 
 export const replay={
-  title:'Replay',description:'Step through a closed trade one candle at a time, with what you were thinking.',
+  title:'Replay',description:'Compare your entry and exit screenshots, or play back available candles.',
   action:`<label class="replay-picker"><span class="ws-visually-hidden">Choose a closed trade</span><select class="n-out" data-replay-trade></select></label>`,
   content:`<div class="replay-layout">
     <div class="replay-column">
       <section class="n-out ws-card replay-main">
         <header class="replay-card-head"><div><h2 data-replay-name>Closed trade</h2><p data-replay-caption></p></div>
           <span class="n-in replay-pill" data-replay-closed hidden></span></header>
+        <div data-replay-screenshots></div>
         <div class="n-in replay-chart-well">
           <canvas width="900" height="400" class="ws-chart" data-replay-chart role="img" aria-label="Trade candles" hidden></canvas>
           <p role="status" data-replay-status></p>
@@ -189,8 +191,8 @@ export const replay={
           <div class="replay-timestamps" data-replay-timestamps></div><p class="replay-key-help" data-replay-position></p>
           <p class="replay-key-help">Use the arrow keys to step and Space to play or pause.</p>
         </div>
-        <details class="ws-disclosure replay-upload" data-candle-upload hidden><summary>Add candle data</summary>
-          <p>Upload OHLC data for this trade with a timezone on each timestamp.</p>
+        <details class="ws-disclosure replay-upload" data-candle-upload hidden><summary>Optional candle import</summary>
+          <p>For price playback, import one CSV exported from your charting platform. Include one row per candle, up to 500, with the header timestamp,open,high,low,close. Include a timezone in each timestamp.</p>
           <form class="ws-form" data-candle-form><label>Candle CSV<input type="file" name="file" accept=".csv,text/csv" required></label>
             <button class="n-btn n-out dash-button">Save candles</button></form><p role="status" data-candle-status></p></details>
       </section>
@@ -316,6 +318,8 @@ export const replay={
     }
     async function load(){
       const current=++version;
+      const screenshots=select(page,'[data-replay-screenshots]');
+      screenshots.replaceChildren();
       page.querySelector('.execution-timeline')?.remove();
       pause();candles=[];step=0;selectedExit=chosenTrade=undefined;frame();
       const trade=data.trades.find(({id})=>id===picker.value);
@@ -330,6 +334,7 @@ export const replay={
         return;
       }
       chosenTrade=trade;
+      screenshots.append(tradeScreenshots(trade,request));
       select(page,'[data-replay-name]').textContent=trade.symbol+', '+trade.side;
       select(page,'[data-replay-caption]').textContent=[trade.setup,formatDate(trade.closedAt)].filter(Boolean).join(' · ');
       const closed=select(page,'[data-replay-closed]');closed.hidden=false;closed.textContent='Closed '+signedR(trade.result);

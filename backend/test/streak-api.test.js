@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import pg from 'pg';
+import sharp from 'sharp';
 import { createDashboardHandler, createTradeHandler } from '../src/dashboard.js';
 import { createPlanHandler } from '../src/plan.js';
 import { createCalendarHandlers } from '../src/calendar.js';
@@ -84,8 +85,10 @@ test('streak API applies the rules to real Postgres queries under a rolled-back 
     assert.deepEqual([empty.status, empty.body.current, empty.body.best], [200, 0, 0]);
     const template = { requestId: randomUUID(), symbol: 'NIFTY', market: 'stocks', side: 'long', result: -1,
       entry: 100, stop: null, target: null, kept: [], occurredAt: '2026-11-20T18:29:00Z' };
-    const previous = await call(createTrade, alice, { body: template });
+    const beforeScreenshot = (await sharp({create:{width:10,height:6,channels:3,background:'white'}}).jpeg().toBuffer()).toString('base64');
+    const previous = await call(createTrade, alice, { body: {...template,beforeScreenshot} });
     assert.equal(previous.status, 200);
+    assert.equal((await db.query("SELECT stage FROM trade_screenshots WHERE user_id=$1",[alice])).rows[0].stage,'before');
     assert.equal(previous.body.streak.todayCounted, false);
     const savedScore = (await call(dashboard, alice)).body.traderScore;
     assert.ok(Number.isInteger(savedScore.value) && savedScore.value >= 0 && savedScore.value <= 100);

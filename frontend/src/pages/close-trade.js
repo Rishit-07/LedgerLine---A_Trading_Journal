@@ -1,3 +1,5 @@
+import { screenshotPicker, screenshotData } from '../components/trade-screenshots.js';
+
 export function openCloseTrade(page, trade, request, refresh) {
   const dialog = document.createElement('dialog');
   dialog.className = 'n-out dash-dialog close-trade-dialog';
@@ -11,6 +13,8 @@ export function openCloseTrade(page, trade, request, refresh) {
   dialog.querySelector('[data-position]').textContent = trade.symbol + ' · This records the exit in your journal.';
   const form = dialog.querySelector('form');
   const submit = form.querySelector('[type=submit]');
+  const after = screenshotPicker('after');
+  form.querySelector('[role=status]').before(after);
   form.querySelector('[type=button]').onclick = () => dialog.close();
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
   form.onsubmit = async event => {
@@ -19,7 +23,8 @@ export function openCloseTrade(page, trade, request, refresh) {
     submit.disabled = true;
     try {
       await request('/api/workspace?page=history','POST',{action:'close',tradeId:trade.id,
-        result:form.elements.result.valueAsNumber, exit:form.elements.exit.value ? form.elements.exit.valueAsNumber : null});
+        result:form.elements.result.valueAsNumber, exit:form.elements.exit.value ? form.elements.exit.valueAsNumber : null,
+        afterScreenshot:await screenshotData(after.querySelector('input').files[0])});
     } catch (error) {
       form.querySelector('[role=status]').textContent = error.message;
       submit.disabled = false;

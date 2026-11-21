@@ -10,8 +10,10 @@ Profile, Badges, Settings and signed-in Support use their respective layouts. Th
 
 ## Journal replay
 
-The execution summary shows timestamps and prices recorded for each fill. Missing prices can be added from the execution record. Imported candles take precedence. With a server-side UPSTOX_HISTORY_TOKEN authorized for the intended display, Journal, History and Replay request historical candles from Upstox for matching Indian equity and derivative symbols. Bare symbols resolve against NSE. Prefix with BSE: for BSE. Only complete bars in the holding window are shown. If history is unavailable, the execution summary remains visible and the candle import is accessible. Playback is offered only for market candles. This does not infer the price path between fills.
+Journal shows optional before- and after-trade screenshots. A trader can attach the first when logging an entry and the second when closing the position, or edit them later in Journal. The backend stores a resized, metadata-stripped image per stage and Firebase UID. Deleting a trade removes its screenshots.
+
+History and Replay can request historical candles for supported Indian symbols when the server has an authorized UPSTOX_HISTORY_TOKEN. Imported candles take precedence. Replay also accepts one chart export containing up to 500 candle rows. Without candles, traders can review their images and recorded executions.
 
 ## Remaining phases
 
-Later-phase items include daily journal autosave and writing milestones, trade-edit history and screenshot uploads, complete mentor verification and social follow flows, and rewards and certificate sharing. These require separate implementation and verification against their respective boards.
+Later-phase items include daily journal autosave and writing milestones, trade-edit history, complete mentor verification and social follow flows, and rewards and certificate sharing. These require separate implementation and verification against their respective boards.

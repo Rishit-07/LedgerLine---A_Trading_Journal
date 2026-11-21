@@ -2,6 +2,7 @@ import {createCandleLookup} from './replay-candles.js';
 import { configuredCoach, askCoach, checkCoachScope } from './coach.js';
 import { communityApi } from './community.js';
 import { readJson, send } from './http.js';
+import { imageRequestLimit, prepareScreenshot, tradeScreenshots } from './trade-screenshots.js';
 
 const tradeId = /^[1-9]\d{0,17}$/;
 const uuid = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
@@ -92,9 +93,15 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
     history: async (uid, data) => {
       requireValue(data.action === 'close' && tradeId.test(data.tradeId), 'Choose an open trade.');
       requireValue(numeric(data.result,-10000,10000) && (data.exit == null || numeric(data.exit,0.00000001,1e12)), 'Enter a valid result in R and an optional exit price.');
-      const [closed] = await query(`UPDATE trades SET closed_at=now(),exit=$3,r_multiple=$4
-        WHERE user_id=$1 AND id=$2 AND closed_at IS NULL RETURNING id::text,closed_at AS "closedAt"`,
-        [uid,data.tradeId,data.exit ?? null,data.result]);
+      const image = data.afterScreenshot == null ? null : await prepareScreenshot(data.afterScreenshot);
+      const [closed] = await query(`WITH closed AS (UPDATE trades SET closed_at=now(),exit=$3,r_multiple=$4
+        WHERE user_id=$1 AND id=$2 AND closed_at IS NULL RETURNING user_id,id,closed_at
+      ), screenshot AS (
+        INSERT INTO trade_screenshots(user_id,trade_id,stage,image)
+        SELECT user_id,id,'after',$5::bytea FROM closed WHERE $5::bytea IS NOT NULL
+        ON CONFLICT (user_id,trade_id,stage) DO UPDATE SET image=excluded.image
+      ) SELECT id::text,closed_at AS "closedAt" FROM closed`,
+        [uid,data.tradeId,data.exit ?? null,data.result,image]);
       if (!closed) throw fail(409,'This position is already closed or unavailable. Refresh your trades.');
       return closed;
     },
@@ -257,11 +264,12 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
       if (!claims) return;
       const params = new URL(request.url, 'http://localhost').searchParams;
       const page = params.get('page');
-      if (!Object.hasOwn(pageLoaders,page)) return send(response,404,{ error:'Workspace page unavailable.' });
       try {
+        if (page === 'screenshots') return await tradeScreenshots(query,claims.uid,params.get('tradeId'),request,response);
+        if (!Object.hasOwn(pageLoaders,page)) return send(response,404,{ error:'Workspace page unavailable.' });
         if (request.method === 'POST') {
           if (!Object.hasOwn(writes,page)) return send(response,405,{ error:'This page does not accept changes.' });
-          const { error,data } = await readJson(request,120_000);
+          const { error,data } = await readJson(request,page === 'history' ? imageRequestLimit : 120_000);
           if (error || !data || typeof data !== 'object' || Array.isArray(data)) return send(response,error ?? 400,{ error:'Check the form details.' });
           return send(response,200,await writes[page](claims.uid,data));
         }

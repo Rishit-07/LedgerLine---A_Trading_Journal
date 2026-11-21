@@ -6,7 +6,7 @@ import dashboardMarkup from './dashboard.html?raw';
 import { bindPageTheme, mountPage } from './shared.js';
 import { bindWorkspaceAccount, bindToolbarStreak, bindWorkspaceSearch, prepareTradingShell, paintTradingShell } from './workspace-shell.js';
 import { signedR, stat, metric, rate, closedSummary, number } from './workspace-ui.js';
-import { tradeChart } from './workspace-replay.js';
+import { screenshotPicker, screenshotData, tradeScreenshots } from '../components/trade-screenshots.js';
 import { bindQuickTrade, showReceipt } from './quick-trade.js';
 import { badgeMarkup, bindBadgeUnlock, element } from './streak-view.js';
 import '@fontsource/instrument-serif/latin-400.css';
@@ -248,7 +248,7 @@ async function bindJournal(page, request, showBadge) {
     result.className=trade?.result>0?'is-win':trade?.result<0?'is-loss':'';
     detail.replaceChildren();actions.replaceChildren();noteForm.hidden=!trade;
     if (trade) {
-      detail.append(tradeChart(trade,request));
+      detail.append(tradeScreenshots(trade,request));
       const metrics=element('div','','trade-detail-metrics journal-trade-metrics');
       const duration=trade.closedAt?(Date.parse(trade.closedAt)-Date.parse(trade.openedAt))/60000:0;
       metrics.append(...[['Entry',trade.entry],['Exit',trade.exit],['Stop',trade.stop],['Target',trade.target],
@@ -393,6 +393,8 @@ function bindJournalLog(page, dashboard, request, onSaved) {
   const form=page.querySelector('[data-journal-log]');
   const status=form.querySelector('[data-journal-log-status]');
   const save=form.querySelector('button[type=submit]');
+  const before=screenshotPicker('before');
+  save.before(before);
   const sizing=form.querySelector('[data-trade-sizing]');
   const market=dashboard.markets.find((value)=>value in markets)??Object.keys(markets)[0];
   const fields=form.elements;
@@ -438,6 +440,7 @@ function bindJournalLog(page, dashboard, request, onSaved) {
     if ([stopPrice,targetPrice].some((price)=>price!==null&&price<=0)) throw new Error('Stop and target prices must be greater than zero.');
     const trade={requestId,symbol:data.get('symbol'),market:data.get('market'),side:data.get('side'),entry,
       stop:stopPrice,target:targetPrice,setup:data.get('setup'),mood:data.get('mood'),result:optional('result'),kept:data.getAll('kept')};
+    trade.beforeScreenshot=await screenshotData(before.querySelector('input').files[0]);
     const saved=await request('/api/trades','POST',trade);
     requestId=crypto.randomUUID();
     form.reset();fields.market.value=market;size();

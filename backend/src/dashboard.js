@@ -2,6 +2,7 @@ import { processScore } from './process-score.js';
 import { readJson, send } from './http.js';
 import { normalizeTradeTime } from './streak-logic.js';
 import { StreakError } from './streak-store.js';
+import { imageRequestLimit, prepareScreenshot } from './trade-screenshots.js';
 
 const dayMs = 86_400_000;
 const earlier = (day, days) => new Date(Date.parse(day) - days * dayMs).toISOString().slice(0, 10);
@@ -139,7 +140,7 @@ export function createTradeHandler(streaks, authenticate) {
   return async (request, response) => {
     const claims = await authenticate(request, response);
     if (!claims) return;
-    const { data, error } = await readJson(request, 4096);
+    const { data, error } = await readJson(request, imageRequestLimit);
     const symbol = typeof data?.symbol === 'string' ? data.symbol.trim().toUpperCase() : '';
     const setup = typeof data?.setup === 'string' ? data.setup.trim() : '';
     const mood = data?.mood ?? null;
@@ -154,6 +155,7 @@ export function createTradeHandler(streaks, authenticate) {
       return send(response, error ?? 400, { error: 'Check the trade details and try again.' });
     }
     try {
+      const before = data.beforeScreenshot == null ? null : await prepareScreenshot(data.beforeScreenshot);
       const { result: openedAt, streak } = await streaks.recomputeStreak(claims.uid, async (db, profile, now) => {
         const { rows: [existing] } = await db.query(
           'SELECT opened_at AS "openedAt" FROM trades WHERE user_id=$1 AND client_request_id=$2',
@@ -177,14 +179,17 @@ export function createTradeHandler(streaks, authenticate) {
             INSERT INTO journal_entries (user_id, trade_id, date, note, mood)
             SELECT $1, id, (opened_at AT TIME ZONE 'Asia/Kolkata')::date, '', $11::text
             FROM saved WHERE $11::text IS NOT NULL
+          ), screenshot AS (
+            INSERT INTO trade_screenshots(user_id,trade_id,stage,image)
+            SELECT $1,id,'before',$14::bytea FROM saved WHERE $14::bytea IS NOT NULL
           )
           SELECT opened_at AS "openedAt" FROM saved
-        `, [claims.uid, symbol, data.market, data.side, data.result, data.stop, data.target, setup || null, data.requestId, data.kept, mood, occurredAt, data.entry ?? null]);
+        `, [claims.uid, symbol, data.market, data.side, data.result, data.stop, data.target, setup || null, data.requestId, data.kept, mood, occurredAt, data.entry ?? null,before]);
         return row.openedAt;
       });
       send(response, 200, { saved: true, openedAt, streak });
     } catch (error) {
-      if (error instanceof StreakError) return send(response, error.status, { error: error.message });
+      if (error instanceof StreakError || error.status === 400) return send(response, error.status, { error: error.message });
       console.error('Could not save the trade (' + (error.code ?? 'unknown error') + ').');
       send(response, 503, { error: 'Your trade could not be saved. Try again.' });
     }
