@@ -24,9 +24,9 @@ export async function checkoutDrawer(term,request) {
       const resume=node('a','Check payment in Reports','n-btn n-out dash-button');resume.href='/reports?checkout='+encodeURIComponent(order.id);box.append(resume);
     }catch(e){status.textContent=e.message;pay.disabled=false;}
   });
-  let configured=false,selected='UPI';
+  let available={},selected='UPI';
   function select(method){
-    selected=method;pay.disabled=!configured||method==='Crypto';
+    selected=method;pay.disabled=!(method==='Crypto'?available.crypto?.[term]:available[term]);
 
     for(const b of options.children)b.setAttribute('aria-pressed',String(b.textContent===method));
     status.textContent=!pay.disabled?'You will review the price and authorize payment in secure checkout.':method+' payments are coming soon. Checkout will open once Ledgerline connects a payment provider.';
@@ -34,7 +34,7 @@ export async function checkoutDrawer(term,request) {
   for(const method of methods)options.append(button(method,()=>select(method)));
   box.append(options,node('p','Pro · '+term+' billing'),status,pay,button('Back',()=>box.close()));
   select('UPI');
-  try{configured=(await request('/api/billing/checkout','GET'))[term];select(selected);}catch(e){status.textContent=e.message;}
+  try{available=await request('/api/billing/checkout','GET');select(selected);}catch(e){status.textContent=e.message;}
 }
 
 export function upgradeGate(feature,request) {

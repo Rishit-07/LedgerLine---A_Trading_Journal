@@ -82,6 +82,9 @@ export const reports={
       try{
         for(let attempt=0;attempt<40&&page.isConnected;attempt++){
           const status=await request('/api/billing/status?id='+encodeURIComponent(order),'GET');
+          if(['underpaid','expired','failed'].includes(status.payment_state)){
+            message.textContent=status.payment_state==='underpaid'?'Payment is short. Open your hosted invoice to check the remaining amount.':'Checkout '+status.payment_state+'. Open See Pro to start a new checkout.';return;
+          }
           if(status.confirmed){
             history.replaceState(history.state,'','/reports');await load();
             if(data.pro&&data.enabled)await generate('full');return;

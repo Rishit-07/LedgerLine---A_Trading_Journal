@@ -114,6 +114,7 @@ const billing=billingApi(pool,authenticateRequest);
 const routes = new Map([
   ['/api/billing/checkout',{methods:['POST','GET'],handler:billing}],
   ['/api/billing/status',{methods:['GET'],handler:billing}],
+  ['/api/billing/crypto/webhook',{methods:['POST'],handler:billing}],
   ['/api/billing/webhook',{methods:['POST'],handler:billing}],
   ['/api/reports',{methods:['GET'],handler:reports}],
   ['/api/ai/report',{methods:['POST','DELETE'],handler:reports}],

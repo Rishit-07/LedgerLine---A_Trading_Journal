@@ -1,4 +1,5 @@
 import {createHmac,timingSafeEqual} from 'node:crypto';
+import {cryptoConfig,createCrypto,cryptoWebhook} from './report-crypto.js';
 import {readJson,send} from './http.js';
 
 export function verifySignature(raw,signature,secret){
@@ -12,6 +13,7 @@ export function billingApi(pool,authenticate,env=process.env,fetcher=fetch){
   let db;
   try{
    const url=new URL(req.url,'http://localhost');
+   if(url.pathname.endsWith('/crypto/webhook'))return await cryptoWebhook(req,res,pool,env);
    if(url.pathname.endsWith('/webhook')){
     const chunks=[];let size=0;
     for await(const chunk of req){size+=chunk.length;if(size>262144)return send(res,413,{error:'Event too large.'});chunks.push(chunk);}
@@ -30,14 +32,18 @@ export function billingApi(pool,authenticate,env=process.env,fetcher=fetch){
    }
    const claims=await authenticate(req,res);if(!claims)return;
    if(url.pathname.endsWith('/status')){
-    const {rows:[order]}=await pool.query('SELECT coalesce(paid_until>now(),false) confirmed FROM report_checkouts WHERE id::text=$1 AND user_id=$2',[url.searchParams.get('id'),claims.uid]);
+    const {rows:[order]}=await pool.query('SELECT payment_state,coalesce(paid_until>now(),false) confirmed FROM report_checkouts WHERE id::text=$1 AND user_id=$2',[url.searchParams.get('id'),claims.uid]);
     return send(res,order?200:404,order??{error:'Checkout not found.'});
    }
    const available=Boolean(env.RAZORPAY_KEY_ID&&env.RAZORPAY_KEY_SECRET&&env.RAZORPAY_WEBHOOK_SECRET);
    const terms={monthly:env.RAZORPAY_PRO_MONTHLY_PLAN_ID,yearly:env.RAZORPAY_PRO_YEARLY_PLAN_ID};
-   if(req.method==='GET')return send(res,200,{monthly:available&&Boolean(terms.monthly),yearly:available&&Boolean(terms.yearly)});
+   if(req.method==='GET')return send(res,200,{monthly:available&&Boolean(terms.monthly),yearly:available&&Boolean(terms.yearly),crypto:{monthly:Boolean(cryptoConfig(env,'monthly')),yearly:Boolean(cryptoConfig(env,'yearly'))}});
    const {data}=await readJson(req,2048);
-   if(!['monthly','yearly'].includes(data?.term)||!['Card','UPI'].includes(data.method))return send(res,400,{error:'Unsupported checkout option.'});
+   if(!['monthly','yearly'].includes(data?.term)||!['Card','UPI','Crypto'].includes(data.method))return send(res,400,{error:'Unsupported checkout option.'});
+   if(data.method==='Crypto'){
+    if(!cryptoConfig(env,data.term))return send(res,503,{error:'Crypto payments are awaiting a provider.'});
+    return send(res,201,await createCrypto(pool,claims.uid,data.term,env,fetcher));
+   }
    if(!available||!terms[data.term])return send(res,503,{error:'Checkout is awaiting a payment provider.'});
    const subscription=await fetcher('https://api.razorpay.com/v1/subscriptions',{method:'POST',headers:{Authorization:'Basic '+Buffer.from(env.RAZORPAY_KEY_ID+':'+env.RAZORPAY_KEY_SECRET).toString('base64'),'Content-Type':'application/json'},body:JSON.stringify({plan_id:terms[data.term],quantity:1,total_count:data.term==='monthly'?120:10,customer_notify:false}),signal:AbortSignal.timeout(12000)});
    if(!subscription.ok)return send(res,502,{error:'Could not open checkout. Please try again.'});
