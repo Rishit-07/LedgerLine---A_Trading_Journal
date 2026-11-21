@@ -1,3 +1,4 @@
+import { processScore } from './process-score.js';
 import { readJson, send } from './http.js';
 import { normalizeTradeTime } from './streak-logic.js';
 import { StreakError } from './streak-store.js';
@@ -22,7 +23,8 @@ function groupPerformance(trades, label) {
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
-function metrics({ day, trades }) {
+
+function metrics({ day, trades, maxTrades, forecastBrier }) {
   const closed = trades.filter((trade) => trade.result !== null);
   const month = closed.filter((trade) => trade.closedDay.startsWith(day.slice(0, 7)));
   const recent = closed.filter((trade) => trade.closedDay >= earlier(day, 6));
@@ -46,6 +48,10 @@ function metrics({ day, trades }) {
     return { date: trade.closedDay, equity };
   });
   const days = Array.from({ length: 35 }, (_, index) => earlier(day, 34 - index));
+  const openedByDay = new Map();
+  const journalWindow = trades.filter((trade) => trade.openedDay >= windowStart);
+  for (const trade of journalWindow) openedByDay.set(trade.openedDay, (openedByDay.get(trade.openedDay) ?? 0) + 1);
+  const traderScore = processScore(journalWindow, [...openedByDay.values()], maxTrades, forecastBrier);
   const daily = new Map();
   for (const trade of closed) {
     const group = daily.get(trade.closedDay) ?? [];
@@ -66,7 +72,7 @@ function metrics({ day, trades }) {
     average: recent.length ? total(recent) / recent.length : null,
     rulesFollowed: percent(keptCount, checkCount), today, recentTrades,
     open: trades.filter((trade) => trade.result === null), dailyLoss: dailyNet < 0 ? -dailyNet : 0,
-    curve, peak, drawdown, periods,
+    curve, peak, drawdown, periods, traderScore,
     days: days.map((date) => {
       const trades = daily.get(date) ?? [];
       return { date, result: trades.length ? total(trades) : null, count: trades.length };
@@ -91,6 +97,10 @@ export function createDashboardHandler(pool, authenticate) {
             t.r_multiple::float AS result, t.opened_at AS "openedAt", t.closed_at AS "closedAt",
             (t.opened_at AT TIME ZONE 'Asia/Kolkata')::date AS "openedDay",
             (t.closed_at AT TIME ZONE 'Asia/Kolkata')::date AS "closedDay",
+            (t.reviewed_at IS NOT NULL OR EXISTS (SELECT 1 FROM journal_entries j WHERE j.user_id=$1 AND j.trade_id=t.id
+              AND (btrim(j.note) <> '' OR j.mood IS NOT NULL OR cardinality(j.tags)>0))) AS journaled,
+            (SELECT c.kept FROM trade_checks c JOIN rules r ON r.user_id=c.user_id AND r.id=c.rule_id
+             WHERE c.user_id=$1 AND c.trade_id=t.id AND r.rule_key='risk') AS "riskKept",
             (SELECT count(*)::int FROM trade_checks c WHERE c.user_id = $1 AND c.trade_id = t.id) AS checks,
             (SELECT count(*)::int FROM trade_checks c WHERE c.user_id = $1 AND c.trade_id = t.id AND c.kept) AS kept
           FROM trades t CROSS JOIN today
@@ -99,20 +109,25 @@ export function createDashboardHandler(pool, authenticate) {
           ORDER BY t.opened_at DESC
         )
         SELECT today.day::text AS day, p.display_name AS "displayName", p.markets, p.timezone AS "streakTimezone",
-          p.risk_per_trade_pct::float AS "riskPerTrade", p.daily_loss_limit_r AS "dailyLossLimit",
-          p.max_trades_per_day AS "maxTrades", p.broker,
+          p.risk_per_trade_pct::float AS "riskPerTrade",
+          coalesce(CASE WHEN plan.locked_at IS NOT NULL THEN (plan.levels->>'maxLoss')::float END,p.daily_loss_limit_r) AS "dailyLossLimit",
+          coalesce(CASE WHEN plan.locked_at IS NOT NULL THEN (plan.levels->>'maxTrades')::int END,p.max_trades_per_day) AS "maxTrades", p.broker,
           (SELECT json_build_object('bias', bias, 'locked', locked_at IS NOT NULL)
            FROM plans WHERE user_id = $1 AND date = today.day) AS plan,
           coalesce((SELECT json_agg(json_build_object('id', id::text, 'text', text, 'hard', hard) ORDER BY position)
            FROM rules WHERE user_id = $1 AND active), '[]') AS rules,
           coalesce(s.current,0) AS streak,
+          (SELECT avg(power(probability / 100.0 - CASE WHEN outcome THEN 1 ELSE 0 END, 2))::float
+            FROM forecasts WHERE user_id=$1 AND outcome IS NOT NULL AND resolved_at >=
+              (today.day - 41)::timestamp AT TIME ZONE 'Asia/Kolkata') AS "forecastBrier",
           coalesce((SELECT json_agg(visible_trades ORDER BY "openedAt" DESC, id DESC) FROM visible_trades), '[]') AS trades
         FROM user_profile p CROSS JOIN today LEFT JOIN streak_state s ON s.user_id=p.user_id
+        LEFT JOIN plans plan ON plan.user_id=p.user_id AND plan.date=today.day
         WHERE p.user_id = $1 AND p.onboarded_at IS NOT NULL
       `, [claims.uid]);
       if (!data) return send(response, 409, { error: 'Finish onboarding to open Dashboard.' });
-      const { trades, ...profile } = data;
-      send(response, 200, { ...profile, ...metrics({ day: data.day, trades }) });
+      const { trades, forecastBrier, ...profile } = data;
+      send(response, 200, { ...profile, ...metrics({ day: data.day, trades, maxTrades: data.maxTrades, forecastBrier }) });
     } catch (error) {
       console.error('Could not load the dashboard (' + (error.code ?? 'unknown error') + ').');
       send(response, 503, { error: 'Dashboard is temporarily unavailable.' });
@@ -133,7 +148,7 @@ export function createTradeHandler(streaks, authenticate) {
       (mood !== null && !['Calm', 'Rushed', 'Fearful', 'Confident'].includes(mood)) ||
       !['long', 'short'].includes(data?.side) || !['stocks', 'options', 'futures', 'forex', 'crypto'].includes(data?.market) ||
       !/^[\da-f]{8}(-[\da-f]{4}){3}-[\da-f]{12}$/i.test(data?.requestId ?? '') ||
-      !validPrice(data.stop) || !validPrice(data.target) ||
+      !validPrice(data.stop) || !validPrice(data.target) || !validPrice(data.entry ?? null) ||
       !(data.result === null || (Number.isFinite(data.result) && Math.abs(data.result) <= 10000)) ||
       !Array.isArray(data.kept) || data.kept.some((id) => typeof id !== 'string' || !/^\d{1,18}$/.test(id))) {
       return send(response, error ?? 400, { error: 'Check the trade details and try again.' });
@@ -150,9 +165,9 @@ export function createTradeHandler(streaks, authenticate) {
         catch (error) { throw new StreakError(400, error.message); }
         const { rows: [row] } = await db.query(`
           WITH saved AS (
-            INSERT INTO trades (user_id, symbol, market, side, r_multiple, stop, target, setup, opened_at, closed_at, client_request_id)
+            INSERT INTO trades (user_id, symbol, market, side, r_multiple, stop, target, setup, opened_at, closed_at, client_request_id, entry)
             VALUES ($1,$2,$3,$4,$5::numeric,$6,$7,$8,$12::timestamptz,
-              CASE WHEN $5::numeric IS NOT NULL THEN $12::timestamptz END,$9)
+              CASE WHEN $5::numeric IS NOT NULL THEN $12::timestamptz END,$9,$13)
             RETURNING id, opened_at
           ), checks AS (
             INSERT INTO trade_checks (user_id, trade_id, rule_id, kept)
@@ -164,7 +179,7 @@ export function createTradeHandler(streaks, authenticate) {
             FROM saved WHERE $11::text IS NOT NULL
           )
           SELECT opened_at AS "openedAt" FROM saved
-        `, [claims.uid, symbol, data.market, data.side, data.result, data.stop, data.target, setup || null, data.requestId, data.kept, mood, occurredAt]);
+        `, [claims.uid, symbol, data.market, data.side, data.result, data.stop, data.target, setup || null, data.requestId, data.kept, mood, occurredAt, data.entry ?? null]);
         return row.openedAt;
       });
       send(response, 200, { saved: true, openedAt, streak });
