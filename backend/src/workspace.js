@@ -99,6 +99,16 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
       return closed;
     },
     replay: async (uid, data) => {
+      if(data.action==='fill-price'){
+        const field=data.field;
+        requireValue(tradeId.test(data.tradeId ?? '') && ['entry','exit'].includes(field) &&
+          numeric(data.price,0.00000001,999999999999),'Enter the price from your execution record.');
+        const [saved]=await query(`UPDATE trades SET ${field}=$3
+          WHERE user_id=$1 AND id=$2 AND closed_at IS NOT NULL AND ${field} IS NULL
+          RETURNING entry::float,exit::float`,[uid,data.tradeId,data.price]);
+        if(!saved)throw fail(409,'The price could not be added. Reload the trade to see its current record.');
+        return saved;
+      }
       if (data.action === 'rule') {
         requireValue(tradeId.test(data.tradeId ?? '') && string(data.lesson,1000,true),'Write a lesson before creating a rule.');
         const [rule] = await query(`INSERT INTO rules (user_id,rule_key,text,hard,position)

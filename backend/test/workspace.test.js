@@ -79,6 +79,11 @@ test('workspace uses real records, enforces ownership and only publishes selecte
     await db.query('UPDATE coach_daily_tokens SET spent=20000 WHERE user_id=$1',[owner]);
     assert.equal((await sendTurn('Review my rules',true)).status,429);
     assert.equal((await work('history')).body.trades[0].symbol,'PRIVATE SYMBOL');
+    const price={action:'fill-price',tradeId:trade.id,field:'entry',price:102};
+    assert.equal((await work('replay',other,price)).status,409);
+    assert.equal((await work('replay',owner,{...price,field:'side'})).status,400);
+    assert.equal((await work('replay',owner,price)).body.entry,102);
+    assert.equal((await work('replay',owner,{...price,price:108})).status,409);
     const candles=[{at:new Date().toISOString(),open:100,high:105,low:98,close:103}];
     assert.equal((await work('replay',other,{tradeId:trade.id,candles})).status,404);
     assert.equal((await work('replay',owner,{tradeId:trade.id,candles,lesson:'Keep the checklist visible.'})).status,200);
