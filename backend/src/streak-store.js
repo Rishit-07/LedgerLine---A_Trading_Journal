@@ -4,6 +4,8 @@ const milestoneDays = [7, 14, 30, 60, 100];
 export const badgeTitles = Object.fromEntries([
   ...milestoneDays.map((days) => ['streak-' + days, days + '-day streak']),
   ['process-cup', 'Process Cup'],
+  ['streak-7','First week'],
+  ['nine-clean-days','Nine clean days'],
 ]);
 
 export class StreakError extends Error {
@@ -84,6 +86,7 @@ export function createStreakStore(pool, clock = () => new Date()) {
           level=excluded.level,xp=excluded.xp,updated_at=excluded.updated_at
       `, [userId, state.current, state.best, state.freezes, state.lastCountedDay, state.level, state.xp, now]);
       const unlocks = milestoneDays.filter((threshold) => state.best >= threshold).map((threshold) => 'streak-' + threshold);
+      if (perfectBest >= 9) unlocks.push('nine-clean-days');
       if (perfectBest >= 30) unlocks.push('process-cup');
       await db.query(`
         INSERT INTO badges_earned (user_id, badge_key)

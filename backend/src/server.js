@@ -163,6 +163,7 @@ const routes = new Map([
   ['/api/streak/friends/preview', { methods: ['GET'], handler: streak.invitePreview }],
   ['/api/streak/battles', { methods: ['GET', 'POST'], handler: (request, response) =>
     (request.method === 'GET' ? streak.battles : streak.challenge)(request, response) }],
+  ['/api/streak/badges', { methods: ['GET','PUT'], handler: (req,res) => (req.method==='PUT'?streak.badgeVisibility:streak.badgeShelf)(req,res) }],
   ['/api/streak/badges/seen', { methods: ['POST'], handler: streak.badgesSeen }],
   ['/api/streak/share', { methods: ['GET', 'POST'], handler: (request, response) =>
     (request.method === 'GET' ? streak.shared : streak.share)(request, response) }],

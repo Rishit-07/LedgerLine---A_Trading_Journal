@@ -166,6 +166,34 @@ export function createStreakApi(pool, authenticate, store, { remindersAvailable 
       if (!rowCount) throw new StreakError(409, 'Choose an active friend with no ongoing battle.');
       return { ok: true };
     }, true),
+    badgeShelf: endpoint(async ({uid}) => {
+      const {streak} = await recomputeStreak(uid);
+      const { rows: items } = await pool.query(`
+        SELECT c.key,c.category,c.name,c.description,c.steps,c.target,c.unit,c.icon_path AS "iconPath",
+          e.earned_at AS "earnedAt",coalesce(e.portfolio_visible,false) AS shared,
+          CASE c.key
+            WHEN 'streak-7' THEN s.best WHEN 'streak-14' THEN s.best WHEN 'streak-30' THEN s.best
+            WHEN 'streak-60' THEN s.best WHEN 'streak-100' THEN s.best
+            WHEN 'nine-clean-days' THEN $2::int WHEN 'process-cup' THEN $2::int
+            ELSE NULL
+          END AS progress
+        FROM badge_catalog c JOIN streak_state s ON s.user_id=$1
+        LEFT JOIN badges_earned e ON e.user_id=$1 AND e.badge_key=c.key
+        WHERE c.category <> 'Community' OR e.earned_at IS NOT NULL
+          OR EXISTS(SELECT 1 FROM club_members WHERE user_id=$1)
+          OR EXISTS(SELECT 1 FROM space_members WHERE user_id=$1)
+          OR EXISTS(SELECT 1 FROM streak_friends WHERE $1 IN(user_id,friend_user_id) AND status='active')
+        ORDER BY c.position
+      `,[uid,streak.perfectBest]);
+      return {items};
+    }),
+    badgeVisibility: endpoint(async ({uid},{key,shared}) => {
+      if(typeof key!=='string'||typeof shared!=='boolean')throw new StreakError(400,'Choose a badge and visibility.');
+      const {rowCount}=await pool.query(
+        'UPDATE badges_earned SET portfolio_visible=$3 WHERE user_id=$1 AND badge_key=$2', [uid,key,shared]);
+      if(!rowCount)throw new StreakError(404,'Earn this badge before sharing it.');
+      return {shared};
+    },true),
     badgesSeen: endpoint(async ({ uid }, { key }) => {
       if (typeof key !== 'string' || key.length > 40) throw new StreakError(400, 'Badge unavailable.');
       await pool.query('UPDATE badges_earned SET seen_at=coalesce(seen_at,now()) WHERE user_id=$1 AND badge_key=$2', [uid, key]);

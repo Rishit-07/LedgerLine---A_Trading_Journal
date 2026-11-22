@@ -66,6 +66,11 @@ export const portfolio = {
       select(page,'[data-preview-visibility]').textContent=form.elements.visibility.selectedOptions[0].textContent;
       card.append(node('small','TRADING JOURNAL'),node('h3',value.displayName.trim() || data.account.displayName),
         node('p',value.headline),node('p',value.about), ...buildStats(value.sections, stats));
+      if(value.visibility!=='private'&&data.badges?.length){
+        const list=node('ul');
+        for(const badge of data.badges)list.append(node('li',badge.name+' · '+new Date(badge.earnedAt).toLocaleDateString()));
+        card.append(node('h4','Badges'),list);
+      }
       preview.replaceChildren(card);
     }
     function paintSharing() {
@@ -146,7 +151,7 @@ export async function renderPublicPortfolio(landing, slug) {
       cover.append(byline);
     }
     const metrics = buildStats(data.sections,data.stats);
-    if (data.about || metrics.length) cover.append(node('span','Scroll to explore ↓','portfolio-scroll'));
+    if (data.about || metrics.length || data.badges?.length) cover.append(node('span','Scroll to explore ↓','portfolio-scroll'));
     page.append(cover);
     if (data.about) {
       const about = node('section','','portfolio-sheet portfolio-about');
@@ -159,6 +164,12 @@ export async function renderPublicPortfolio(landing, slug) {
       group.append(...metrics);
       process.append(node('p','FROM THE JOURNAL','portfolio-folio'),node('h2','The process record'),group);
       page.append(process);
+    }
+    if(data.badges?.length){
+      const badges=node('section','','portfolio-sheet portfolio-about'),list=node('ul');
+      badges.append(node('h2','Badges'),list);
+      for(const badge of data.badges)list.append(node('li',badge.name+' · '+new Date(badge.earnedAt).toLocaleDateString()));
+      page.append(badges);
     }
     const end = node('footer','Made with Ledgerline','portfolio-footer');
     page.append(end);

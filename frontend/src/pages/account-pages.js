@@ -16,44 +16,6 @@ const shelfRows = state => catalog.map(item => ({
   progress: Math.min(item.target, item.key === 'process-cup' ? state.perfectBest ?? 0 : state.best)
 }));
 
-export const badgesMarkup = `<div class="account-board"><div class="account-summary" data-shelf-stats></div>
-<div class="account-shelf-layout"><section class="n-out account-panel"><h2>Your shelf</h2><p>Select a badge to see your progress and how to earn it.</p><div class="account-medals" data-shelf></div></section>
-<section class="n-out account-panel account-award" aria-live="polite" data-award></section></div></div>`;
-
-export function paintBadges(page,state) {
-  const items = shelfRows(state);
-  const latest = state.badges.at(-1);
-  const next = items.find(item=>!item.earned);
-  page.querySelector('[data-shelf-stats]').replaceChildren(stat('On your shelf',state.badges.length + ' / ' + items.length),stat('Latest',latest?.title ?? 'None yet'),stat('Next up',next?.title ?? 'Shelf complete'));
-  const shelf = page.querySelector('[data-shelf]');
-  for(const tile of page.querySelector('[data-shelf-stats]').children){tile.classList.remove('n-in');tile.classList.add('n-out');}
-  const selected = shelf.querySelector('[aria-pressed=true]')?.dataset.key;
-  function show(item) {
-    const pane = page.querySelector('[data-award]');
-    const bar = document.createElement('progress');
-    bar.max=item.target;
-    bar.value=item.earned ? item.target : item.progress;
-    bar.setAttribute('aria-label',item.title+' progress');
-    pane.replaceChildren(medal(item,!!item.earned),node('small',item.earned ? 'UNLOCKED' : 'IN PROGRESS'),node('h2',item.title),
-      node('p',item.key==='process-cup' ? 'Keep all your rules for 30 consecutive days.' : 'Build a journal streak of '+item.target+' days.'),
-      bar,node('strong',item.earned ? 'Earned '+formatDate(item.earned.earnedAt) : item.progress+' of '+item.target+' days'));
-    for(const button of shelf.children) button.setAttribute('aria-pressed', String(button.dataset.key===item.key));
-  }
-  shelf.replaceChildren(...items.map(item=>{
-    const button=node('button','','n-btn account-medal-button');
-    button.dataset.key=item.key;
-    const ring=node('span','','account-medal-ring');
-    ring.style.setProperty('--progress',100*(item.earned?1:item.progress/item.target)+'%');
-    ring.append(medal(item,!!item.earned));
-    const bar=document.createElement('progress');bar.max=item.target;bar.value=item.earned?item.target:item.progress;
-    bar.setAttribute('aria-label',item.title+' progress');
-    button.append(ring,node('strong',item.title),bar,node('small',item.earned?'Earned '+formatDate(item.earned.earnedAt):item.progress+' of '+item.target+' days'));
-    button.onclick=()=>show(item);
-    return button;
-  }));
-  show(items.find(item=>item.key===selected) ?? items.find(item=>item.key===latest?.key) ?? items[0]);
-}
-
 export const profileMarkup = `<div class="account-board"><article class="n-out account-card">
   <div class="account-banner"><svg aria-hidden="true" viewBox="0 0 1100 176" preserveAspectRatio="xMaxYMid slice"><g fill="none" stroke="white" opacity=".16" stroke-width="2"><circle cx="930" cy="150" r="60"/><circle cx="930" cy="150" r="110"/><circle cx="930" cy="150" r="165"/><circle cx="930" cy="150" r="225"/></g><path d="M0 150 C120 140 180 96 270 112 S420 60 520 84 S690 128 780 70 S980 40 1100 24" fill="none" stroke="white" stroke-opacity=".38" stroke-width="3"/></svg><strong>Ledgerline trader card</strong><div data-card-chips></div></div>
   <div class="account-identity"><div class="account-portrait" data-avatar></div><div class="account-person"><h2 data-person></h2><p data-bio></p><div class="account-tags" data-markets></div></div>

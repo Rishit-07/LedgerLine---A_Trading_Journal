@@ -1,4 +1,5 @@
-import { profileMarkup, badgesMarkup, paintProfile, paintBadges } from './account-pages.js';
+import { badgesMarkup, paintBadges } from './badge-shelf.js';
+import { profileMarkup, paintProfile } from './account-pages.js';
 import { settingsMarkup, bindAccountSettings } from './account-settings.js';
 import { paginate } from './pagination.js';
 import { openCloseTrade } from './close-trade.js';
@@ -130,7 +131,7 @@ export async function renderStreakPage(landing, { path, request, name, photoUrl,
       <main class="dash-content">
         ${toolbar.outerHTML}
         <header class="streak-heading streak-page-header">
-          <div><h1>${captions[mode]}</h1>${mode === 'journal' ? '' : '<p class="account-deck">' + ({profile:'How you trade and what others can see. Results show as percent and R, never currency.',settings:'Account, brokers, rules and privacy.',badges:'Your achievements in trading discipline.'})[mode] + '</p>'}</div>
+          <div><h1>${captions[mode]}</h1>${mode === 'journal' ? '' : '<p class="account-deck">' + ({profile:'How you trade and what others can see. Results show as percent and R, never currency.',settings:'Account, brokers, rules and privacy.',badges:'Earned for the way you trade, never for how much you made.'})[mode] + '</p>'}</div>
         </header>
         ${mode === 'journal' ? '<p class="dash-muted journal-deck">Every trade with its checklist, emotion and review.</p>' : ''}
         <p class="streak-message" role="status" data-streak-page-status>Loading…</p>
@@ -163,14 +164,14 @@ export async function renderStreakPage(landing, { path, request, name, photoUrl,
         mode==='profile' ? request('/api/workspace?page=portfolio','GET') : null,
         mode==='profile' ? request('/api/streak/friends','GET') : null
       ]);
-      function displayProfile(state) {
+      async function displayProfile(state) {
         paintTradingShell(page,dashboard ?? {},state.current);
-        if(mode==='badges') paintBadges(page,state);
+        if(mode==='badges') await paintBadges(page,request);
         else paintProfile(page,state,dashboard,portfolio,name,photoUrl,friends);
         showBadge(state);
       }
-      displayProfile(state);
-      page.addEventListener('toolbar-streak',event=>displayProfile(event.detail));
+      await displayProfile(state);
+      page.addEventListener('toolbar-streak',event=>void displayProfile(event.detail).catch(error=>{pageStatus.textContent=error.message;}));
     }
     pageStatus.textContent = '';
   } catch (error) { pageStatus.textContent = error.message; }

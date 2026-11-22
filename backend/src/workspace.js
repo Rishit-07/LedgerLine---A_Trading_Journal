@@ -54,6 +54,9 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
     return {remaining:Math.max(0,allowance-(wallet?.spent ?? 0)),allowance};
   }
   const community = communityApi(query);
+  const sharedBadges = uid => query(`SELECT c.name,e.earned_at AS "earnedAt"
+          FROM badges_earned e JOIN badge_catalog c ON c.key=e.badge_key
+          WHERE e.user_id=$1 AND e.portfolio_visible ORDER BY e.earned_at DESC`,[uid]);
   const pageLoaders = {
     history: async (uid) => {
       const ledger = await query(trades, [uid]);
@@ -73,6 +76,7 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
     portfolio: async (uid) => ({
       portfolio: (await query('SELECT '+portfolioFields+' FROM portfolios WHERE user_id=$1', [uid]))[0] ?? null,
       stats: (await query(portfolioStats, [uid]))[0],
+      badges: await sharedBadges(uid),
     }),
     people: community.people,
     coach: async (uid) => ({
@@ -315,7 +319,8 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
         if (!record) return send(response,404,{error:'Portfolio unavailable.'});
         const { user_id, sections, streak, best, level, ...identity } = record;
         const [stats] = await query(portfolioStats,[user_id]);
-        return send(response,200,{...identity,sections,stats:{
+        const badges=await sharedBadges(user_id);
+        return send(response,200,{...identity,sections,badges,stats:{
           ...(sections.streak ? {streak,best,level} : {}),
           ...(sections.adherence ? {adherence:stats.adherence} : {}),
           ...(sections.reviews ? {reviews:stats.reviews} : {}),
