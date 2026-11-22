@@ -1,7 +1,7 @@
 import { gsap } from 'gsap';
 import './streak.css';
 
-export const streakRule = 'A day counts when you log or review at least one trade, or note that you sat out.';
+export const streakRule = 'Log or review a trade, or note that you sat out. A scheduled market closure protects an active streak.';
 export const badgeMarkup = `
   <dialog class="n-out streak-badge-dialog" data-streak-badge aria-labelledby="streak-badge-title">
     <img src="/tally-cheer.svg" alt="" width="130" height="130" />
@@ -20,10 +20,10 @@ export function element(tag, text = '', className = '') {
 
 export function stateMessage(state) {
   if (!state.best) return 'Log your first trade to start your streak';
-  if (state.marketClosedToday) return 'Market closed. Your streak is protected. Today counts as a rest day after midnight.';
-  if (state.kindToday === 'rest') return 'Not trading counts too';
+  if (state.marketClosedToday) return 'Market closed. Your streak is safe. Today will count as a rest day at midnight.';
+  if (state.kindToday === 'rest') return 'Rest day logged. You kept your streak going!';
   if (state.skippedToday) return 'A rule was skipped. Your streak still counts.';
-  if (state.todayCounted) return 'Today counts';
+  if (state.todayCounted) return 'Yay, today counts! Keep it going.';
   if (!state.current) return 'Log or review a trade to start a new streak.';
   return 'Your streak is safe until midnight.';
 }
@@ -40,7 +40,7 @@ function reducedMotion() {
 
 function paintTally(mascot, state, previous) {
   const grew = previous ? state.current > previous.current || state.best > previous.best : state.todayCounted;
-  const mood = state.kindToday === 'rest' ? 'sleep' : state.skippedToday ? 'tuck' : grew ? 'cheer' : 'calm';
+  const mood = (state.kindToday === 'rest' || state.marketClosedToday) ? 'sleep' : state.skippedToday ? 'tuck' : grew ? 'cheer' : 'calm';
   mascot.src = '/tally-' + mood + '.svg';
   mascot.alt = 'Tally ' + { sleep: 'resting', tuck: 'tucking in', cheer: 'cheering', calm: 'calm' }[mood];
 }
@@ -85,12 +85,15 @@ export function bindStreakPanel(panel) {
       dot.title = dayNames[index] + ', ' + dateLabel.format(day) + (isToday ? ' · Today' : '');
       dot.classList.toggle('is-counted', counted);
       dot.classList.toggle('is-today', isToday);
+      const restPending = isToday && state.marketClosedToday && !counted;
       const reason = state.weekReasons?.[index];
-      const labels = {trade:'Trade logged', review:'Trade reviewed', rest:'Rest day logged', marketClosed:'Market closed · automatic rest', freeze:'Freeze used'};
+      dot.classList.toggle('is-protected', restPending);
+      if (restPending) dot.title += ' · Market closed · streak protected';
+      const labels = {trade:'Trade logged', review:'Trade reviewed', rest:'Rest day logged', marketClosed:'Market closed · rest day counted', freeze:'Freeze used'};
       if (reason) dot.title += ' · ' + labels[reason];
-      dot.textContent = reason === 'marketClosed' ? '☾' : reason === 'freeze' ? '❄' : counted ? '✓' : '';
+      dot.textContent = (reason === 'marketClosed' || restPending) ? '☾' : reason === 'freeze' ? '❄' : counted ? '✓' : '';
       dot.setAttribute('role', 'img');
-      dot.setAttribute('aria-label', dot.title + (counted ? ', counted' : ', uncounted'));
+      dot.setAttribute('aria-label', dot.title + (restPending ? ', counts at midnight' : counted ? ', counted' : ', uncounted'));
       if (isToday) label.setAttribute('aria-current', 'date');
       else label.removeAttribute('aria-current');
       if (counted && !previous?.week[index] && !reducedMotion()) {
@@ -105,6 +108,43 @@ export function bindStreakPanel(panel) {
     } else number.textContent = state.current;
     previous = state;
   };
+}
+
+const noticesShown = new Set();
+
+export function notifyStreak(page, state) {
+  if (!page.isConnected || !state?.today || !state.current) return;
+  const protectedDay = state.marketClosedToday && !state.todayCounted;
+  if (!protectedDay && !state.todayCounted) return;
+  const key = ['ledgerline.streak.notice', state.inviteCode ?? '', state.today, protectedDay ? 'protected' : 'counted'].join(':');
+  if (noticesShown.has(key)) return;
+  try {
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+  } catch {}
+  noticesShown.add(key);
+
+  const host = page.querySelector('dialog[open]') ?? page;
+  host.querySelector('[data-streak-notice]')?.remove();
+  const toast = element('aside', '', 'streak-notice n-out');
+  toast.dataset.streakNotice = '';
+  const image = document.createElement('img');
+  image.src = protectedDay ? '/tally-sleep.svg' : '/tally-cheer.svg';
+  image.alt = '';
+  const copy = element('div');
+  copy.setAttribute('role', 'status');
+  const count = state.current + '-day streak';
+  copy.append(
+    element('strong', protectedDay ? 'Your streak is safe!' : 'Yay, keep it going!'),
+    element('span', protectedDay ? count + ' protected while your market is closed.' : count + ' · Today counts.'),
+  );
+  const dismiss = element('button', '×', 'n-btn');
+  dismiss.type = 'button';
+  dismiss.setAttribute('aria-label', 'Dismiss streak notification');
+  dismiss.onclick = () => toast.remove();
+  toast.append(image, copy, dismiss);
+  host.append(toast);
+  setTimeout(() => toast.remove(), 7500);
 }
 
 export function bindBadgeUnlock(page, request) {

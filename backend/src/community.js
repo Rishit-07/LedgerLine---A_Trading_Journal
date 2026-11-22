@@ -8,7 +8,7 @@ export function communityApi(query) {
   async function people(uid) {
     const profiles = await query(`SELECT w.slug::text, coalesce(nullif(w.display_name,''),p.display_name) AS name,
       (SELECT f.status FROM streak_friends f WHERE f.status<>'ended' AND ((f.user_id=$1 AND f.friend_user_id=p.user_id) OR (f.friend_user_id=$1 AND f.user_id=p.user_id)) LIMIT 1) AS connection,
-      w.headline, p.streak_invite_code::text AS code,
+      w.headline, encode(p.profile_picture,'base64') AS avatar, p.streak_invite_code::text AS code,
       CASE WHEN (w.sections->>'streak')='true' THEN coalesce(s.current,0) END AS streak
       FROM portfolios w JOIN user_profile p USING(user_id) LEFT JOIN streak_state s USING(user_id)
       WHERE w.visibility='public' AND w.user_id<>$1 AND p.onboarded_at IS NOT NULL ORDER BY lower(coalesce(nullif(w.display_name,''),p.display_name)),w.slug`,[uid]);
@@ -31,7 +31,8 @@ export function groupStore(query,kind){
     throw Object.assign(new Error(reason==='not_verified'?'Verify your mentor account first.':'Unlock the Mentor plan first.'),{status:403,reason});
   }
   async function groups(uid,selectedId=null) {
-    const clubs = await query(`SELECT c.id::text,c.name,c.location,c.description,c.owner_id=$1 AS owner,
+    const clubs = await query(`SELECT ${kind==='space'?`c.topic,c.student_level,c.member_cap,c.cohort_start,c.cohort_end,c.space_rules,
+      (SELECT json_build_object('display_name',v.display_name,'topics',v.topics,'bio',v.bio,'verified',true,'photo',(SELECT encode(profile_picture,'base64') FROM user_profile WHERE user_id=v.user_id)) FROM mentor_verifications v WHERE v.user_id=c.owner_id AND v.status='approved') AS mentor_profile,`:''} c.id::text,c.name,c.location,c.description,c.owner_id=$1 AS owner,
       c.join_mode AS "joinMode",c.visibility, ${kind==='space'?'NOT '+entitled('c.owner_id'):'false'} AS "readOnly", CASE WHEN c.owner_id=$1 THEN c.invite_code END AS code,
       EXISTS(SELECT 1 FROM ${kind}_requests r WHERE r.${fk}=c.id AND r.user_id=$1) AS pending,
       m.stats_opt_in AS "statsOptIn",m.user_id IS NOT NULL AS joined,(SELECT count(*)::int FROM ${kind}_members WHERE ${fk}=c.id) AS members
@@ -39,14 +40,14 @@ export function groupStore(query,kind){
       WHERE m.user_id IS NOT NULL OR ($2='club' AND (c.visibility='public' OR c.id=$3 OR EXISTS
         (SELECT 1 FROM club_requests pending WHERE pending.club_id=c.id AND pending.user_id=$1)))
       ORDER BY (c.id=$3) DESC NULLS LAST,(m.user_id IS NOT NULL) DESC,c.created_at DESC,c.id`,[uid,kind,uuid.test(selectedId??'')?selectedId:null]);
-    const topics = await query(`SELECT t.id::text,t.${fk}::text AS "groupId",t.kind,t.body,t.created_at AS "createdAt",p.display_name AS author,
+    const topics = await query(`SELECT t.id::text,t.${fk}::text AS "groupId",t.kind,t.body,t.created_at AS "createdAt",p.display_name AS author, encode(p.profile_picture,'base64') AS avatar,
       EXISTS(SELECT 1 FROM ${kind}_checkins WHERE topic_id=t.id AND user_id=$1) AS checked,
       (SELECT count(*)::int FROM ${kind}_checkins k JOIN ${kind}_members cm ON cm.${fk}=c.id AND cm.user_id=k.user_id WHERE k.topic_id=t.id) AS completions,
-      coalesce((SELECT json_agg(json_build_object('author',rp.display_name,'body',r.body) ORDER BY r.id)
+      coalesce((SELECT json_agg(json_build_object('author',rp.display_name,'avatar',encode(rp.profile_picture,'base64'),'body',r.body) ORDER BY r.id)
         FROM ${kind}_replies r JOIN user_profile rp ON rp.user_id=r.user_id WHERE r.topic_id=t.id),'[]') AS replies
       FROM ${kind}_posts t JOIN ${table} c ON c.id=t.${fk} JOIN ${kind}_members m ON m.${fk}=c.id AND m.user_id=$1
       JOIN user_profile p ON p.user_id=t.author_id ORDER BY t.id DESC`,[uid]);
-    const members=await query(`SELECT cm.${fk}::text AS "groupId",p.display_name AS name,cm.joined_at AS "joinedAt",
+    const members=await query(`SELECT cm.${fk}::text AS "groupId",p.display_name AS name,encode(p.profile_picture,'base64') AS avatar,cm.joined_at AS "joinedAt",
       CASE WHEN ${kind==='space'?'cm.stats_opt_in AND c.owner_id=$1':'false'} THEN
         (SELECT round(100.0*count(*) FILTER(WHERE kept)/nullif(count(*),0)) FROM trade_checks WHERE user_id=cm.user_id) END AS adherence,
       c.owner_id=cm.user_id AS host FROM ${kind}_members cm JOIN ${table} c ON c.id=cm.${fk}
@@ -62,7 +63,7 @@ export function groupStore(query,kind){
     let id=input.id;
     const label = kind==='space'?'space':'club';
     if(kind==='space' && ['verify','unlock'].includes(action)){
-      if(action==='verify')await query("INSERT INTO mentor_verifications(user_id,status) VALUES($1,'pending') ON CONFLICT(user_id) DO UPDATE SET status='pending' WHERE mentor_verifications.status='rejected'",[uid]);
+      if(action==='verify')requireField(false,'Complete the mentor verification form.',400);
       else {
         if((await mentorState(uid)).verification!=='approved')deny('not_verified');
         await query('INSERT INTO mentor_plan_requests(user_id) VALUES($1) ON CONFLICT DO NOTHING',[uid]);
@@ -76,8 +77,17 @@ export function groupStore(query,kind){
         if(!state.entitled)deny('needs_plan');
       }
       requireField(validText(input.name,60) && validText(input.description,400) && typeof input.location==='string' && input.location.length<=60,'Enter a name and description.');
-      const joinMode=kind==='space'?'invite':input.joinMode??'open', visibility=kind==='space'?'private':input.visibility??'public';
+      const joinMode=kind==='space'?(input.joinMode??'invite'):input.joinMode??'open', visibility=kind==='space'?'private':input.visibility??'public';
       requireField(['open','invite','request'].includes(joinMode)&&['public','private'].includes(visibility),'Choose valid joining and visibility settings.');
+      if(kind==='space'){
+        const cap=Number(input.memberCap??50),start=input.cohortStart||null,end=input.cohortEnd||null;
+        requireField(['invite','request'].includes(joinMode)&&Number.isInteger(cap)&&cap>=1&&cap<=50,'Choose a valid access mode and member cap up to 50.');
+        requireField((!start||/^\d{4}-\d{2}-\d{2}$/.test(start))&&(!end||/^\d{4}-\d{2}-\d{2}$/.test(end))&&(!start||!end||end>=start),'Check your cohort dates.');
+        requireField(validText(input.topic??'General',100)&&['Beginner','Intermediate','Advanced','All levels'].includes(input.studentLevel??'All levels')&&validText(input.spaceRules??'Keep discussions educational.',1200),'Check your topic, level and rules.');
+        await query(`WITH created AS (INSERT INTO spaces(owner_id,name,description,location,join_mode,topic,student_level,member_cap,cohort_start,cohort_end,space_rules) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id)
+          INSERT INTO space_members(user_id,space_id) SELECT $1,id FROM created`,[uid,input.name.trim(),input.description.trim(),input.location.trim(),joinMode,input.topic??'General',input.studentLevel??'All levels',cap,start,end,input.spaceRules??'Keep discussions educational.']);
+        return groups(uid);
+      }
       await query(`WITH created AS (INSERT INTO ${table}(owner_id,name,description,location,join_mode,visibility) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id)
         INSERT INTO ${kind}_members(user_id,${fk}) SELECT $1,id FROM created`,[uid,input.name.trim(),input.description.trim(),input.location.trim(),joinMode,visibility]);
     } else {
@@ -86,8 +96,17 @@ export function groupStore(query,kind){
         id=(await query(`SELECT id FROM ${table} WHERE invite_code=$1`,[input.code]))[0]?.id;
       }
       requireField(uuid.test(id),'Choose a '+label+'.');
-      const [group]=await query(`SELECT owner_id,join_mode,invite_code, ${kind==='space'?entitled('owner_id'):'true'} AS writable FROM ${table} WHERE id=$1 FOR UPDATE`,[id]);
+      const [group]=await query(`SELECT owner_id,join_mode,invite_code, ${kind==='space'?'member_cap,':''} ${kind==='space'?entitled('owner_id'):'true'} AS writable FROM ${table} WHERE id=$1 FOR UPDATE`,[id]);
       requireField(group,'Group unavailable.',403);
+      if(kind==='space'&&action==='report'){
+        requireField(validText(input.reason,600)&&uid!==group.owner_id,'Describe the issue.');
+        const member=await query('SELECT 1 FROM space_members WHERE space_id=$1 AND user_id=$2',[id,uid]);requireField(member.length,'Join the space first.',403);
+        await query("INSERT INTO mentor_reports(space_id,mentor_id,reporter_id,reason) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING",[id,group.owner_id,uid,input.reason.trim()]);
+        await query("UPDATE mentor_verifications SET next_review_at=now() WHERE user_id=$1",[group.owner_id]);return groups(uid);
+      }
+      if(kind==='space'&&['join','approve'].includes(action)){
+        const count=await query('SELECT count(*)::int n FROM space_members WHERE space_id=$1',[id]);requireField(count[0].n<group.member_cap,'This space is full.',409);
+      }
       if(!group.writable && !['leave','consent'].includes(action))deny('needs_plan');
       let rows;
       if(action==='consent' && kind==='space'){
@@ -97,7 +116,7 @@ export function groupStore(query,kind){
         requireField(group.owner_id===uid,'Only the host can manage requests.',403);
         rows=await query(`DELETE FROM ${kind}_requests WHERE ${fk}=$1 AND user_id=$2 RETURNING user_id`,[id,input.member]);
         if(rows.length && action==='approve')await query(`INSERT INTO ${kind}_members(user_id,${fk}) VALUES($1,$2) ON CONFLICT DO NOTHING`,[input.member,id]);
-      }else if(action==='join' && group.join_mode==='request' && input.code!==group.invite_code){
+      }else if(action==='join' && group.join_mode==='request' && (kind==='space'||input.code!==group.invite_code)){
         await query(`INSERT INTO ${kind}_requests(user_id,${fk}) VALUES($1,$2) ON CONFLICT DO NOTHING`,[uid,id]);
         return groups(uid);
       }else if(action==='join') {

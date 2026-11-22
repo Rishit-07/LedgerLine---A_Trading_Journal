@@ -1,3 +1,4 @@
+import { notifyStreak } from './streak-view.js';
 import { streakChip, paintStreakChip } from './streak-chip.js';
 import dashboardMarkup from './dashboard.html?raw';
 import { bindPageTheme, mountPage } from './shared.js';
@@ -34,7 +35,7 @@ export function bindToolbarStreak(page, request) {
       if(!panel) {
         page.insertAdjacentHTML('beforeend',streakPanelMarkup);
         panel=bindStreakDialog(page,{request,getState:()=>state,onState:next=>{
-          state=next;paintStreakChip(page,next.current);panel.paintState(next);
+          state=next;notifyStreak(page,next);paintStreakChip(page,next.current);panel.paintState(next);
           page.dispatchEvent(new CustomEvent('toolbar-streak',{detail:next}));
         }});
       }
@@ -63,7 +64,7 @@ export function bindWorkspaceAccount(page, { name, photoUrl, signOut, status }) 
   account.querySelector('[data-account-name]').textContent = displayName;
   const initials = displayName.split(/\s+/).slice(0, 2).map((word) => Array.from(word)[0]).join('').toLocaleUpperCase();
   for(const label of page.querySelectorAll('[data-account-initials]')) label.textContent=initials;
-  if (typeof photoUrl === 'string' && /^https:\/\//i.test(photoUrl)) {
+  if (typeof photoUrl === 'string' && (/^(https:\/\/|data:image\/jpeg;base64,)/i).test(photoUrl)) {
     for(const photo of page.querySelectorAll('[data-account-photo]')){
       photo.addEventListener('load', () => { photo.hidden = false; }, { once: true });
       photo.src = photoUrl;

@@ -1,0 +1,47 @@
+/* Keep the original form control so labels, validation, type-ahead and change
+   handlers also work for selects added inside dialogs and dynamic forms. */
+html select:not([multiple]):where(:not([size]),[size="1"]) {
+  max-inline-size:100%;
+  border-radius:14px;
+  color:var(--ink);
+  font-family:inherit;
+}
+@supports (appearance:base-select) and selector(::picker(select)) {
+  html body select:not([multiple]):where(:not([size]),[size="1"]),
+  select:not([multiple]):where(:not([size]),[size="1"])::picker(select) {
+    appearance:base-select;
+  }
+  html body select:not([multiple]):where(:not([size]),[size="1"]) {
+    align-items:center; justify-content:space-between; gap:.85em;
+    min-block-size:2.7em; cursor:pointer; background-image:none;
+  }
+  select::picker-icon {
+    content:""; width:.5em; height:.5em; margin-inline:4px;
+    border:solid currentColor; border-width:0 1.7px 1.7px 0;
+    rotate:45deg; translate:0 -.12em; color:var(--sub); flex:none;
+  }
+  select:open::picker-icon { rotate:225deg; translate:0 .12em; color:var(--acc); }
+  select:not([multiple])::picker(select) {
+    box-sizing:border-box; min-inline-size:anchor-size(width); max-inline-size:calc(100vw - 16px);
+    max-block-size:min(22rem,48dvh); overflow:auto; overscroll-behavior:contain;
+    margin-block:5px; padding:5px; border:1px solid color-mix(in srgb,var(--ink) 15%,transparent);
+    border-radius:16px; background:var(--bg); color:var(--ink);
+    box-shadow:0 10px 30px color-mix(in srgb,var(--ink) 16%,transparent);
+    font:500 .9rem/1.35 var(--font-sans);
+  }
+  select:not([multiple]):where(:not([size]),[size="1"]) option {
+    padding:9px 12px; min-height:36px; border-radius:10px; gap:12px;
+    white-space:normal; overflow-wrap:anywhere; cursor:pointer;
+  }
+  select option::checkmark { order:1; margin-inline-start:auto; color:var(--acc); }
+  select:not([multiple]) option:checked { background:color-mix(in srgb,var(--acc) 12%,var(--bg)); color:var(--ink); }
+  select:not([multiple]) option:is(:hover,:focus-visible) { background:color-mix(in srgb,var(--acc) 19%,var(--bg)); outline:0; }
+  select:disabled, select option:disabled { opacity:.55; cursor:default; }
+  @media (prefers-reduced-motion:no-preference) {
+    select::picker-icon { transition:rotate .18s ease,translate .18s ease; }
+    select::picker(select) { opacity:0; transform:translateY(-3px); transition:opacity .16s,transform .16s,display .16s allow-discrete,overlay .16s allow-discrete; }
+    select:open::picker(select) { opacity:1; transform:none; }
+    @starting-style { select:open::picker(select) { opacity:0; transform:translateY(-3px); } }
+  }
+  @media (pointer:coarse) { select:not([multiple]) option { min-height:44px; } }
+}

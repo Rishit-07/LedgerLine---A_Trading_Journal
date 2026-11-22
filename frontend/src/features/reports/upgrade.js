@@ -26,7 +26,7 @@ export async function checkoutDrawer(term,request) {
       const order=await request('/api/billing/checkout','POST',{term,method:selected});
       const link=node('a','Open secure checkout','n-btn n-acc dash-button');link.href=order.url;link.target='_blank';link.rel='noopener';
       pay.replaceWith(link);
-      const resume=node('a','Check payment in Reports','n-btn n-out dash-button');resume.href='/reports?checkout='+encodeURIComponent(order.id);box.append(resume);
+      const resume=node('a','Check payment in AI Reports','n-btn n-out dash-button');resume.href='/reports?checkout='+encodeURIComponent(order.id);box.append(resume);
     }catch(e){status.textContent=e.message;pay.disabled=false;}finally{processing.remove();options.inert=false;card.inert=false;}
   });
   let available={},selected='UPI';

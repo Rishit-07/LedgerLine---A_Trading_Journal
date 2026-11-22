@@ -2,7 +2,7 @@ import {fileCard,fileAction,startedDownload} from '../components/file-actions.js
 import { paginate } from './pagination.js';
 import { node, select, button, stat, metric, message, number, formatDate, signedR, rate, markets, fillTradeOptions, submit, closedSummary, drawLine } from './workspace-ui.js';
 import { readTradeCsv } from './trade-csv.js';
-import { tradeChart } from './workspace-replay.js';
+import { tradeChart } from './history-chart.js';
 import { tradeScreenshots } from '../components/trade-screenshots.js';
 import { openCloseTrade } from './close-trade.js';
 
@@ -103,7 +103,6 @@ export const history = {
       const journal = node('a','Open journal','n-btn n-acc dash-button');
       journal.href='/journal?'+new URLSearchParams({tradeId:trade.id});links.append(journal);
       if (trade.closedAt) {
-        const replay = node('a','Replay trade','n-btn n-out dash-button'); replay.href='/replay?' + new URLSearchParams({ tradeId:trade.id }); links.append(replay);
       }
       if (!trade.reviewed) links.append(button('Mark reviewed',async (event) => {
         const target = event.currentTarget; target.disabled=true;

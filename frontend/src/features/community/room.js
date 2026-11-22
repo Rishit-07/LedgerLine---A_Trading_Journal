@@ -1,10 +1,8 @@
+import {communityAvatar} from '../../pages/profile-picture.js';
 import { node, select, button, message, submit, formatDate } from '../../pages/workspace-ui.js';
 import { paginate } from '../../pages/pagination.js';
 import '../../pages/community.css';
 
-function initial(name) {
-  return node('span',name.trim().split(/\s+/).slice(0,2).map(word=>Array.from(word)[0]).join('').toUpperCase(),'community-initial n-in');
-}
 function tabs(root, labels, onChange) {
   const controls=labels.map(label=>button(label,()=>activate(label)));
   root.append(...controls);
@@ -46,7 +44,7 @@ export function bindRoom(page,{data,save},{label,plural,title,goals,hostLabel,vi
     const rows=records.filter(g=>(view!==mine||g.joined) && (reach.value==='All'||(reach.value==='Local')===Boolean(g.location)) && (g.name+' '+g.location).toLowerCase().includes(term));
     list.replaceChildren(...rows.map(g=>{
       const article=node('article','','n-out ws-card community-person');
-      const head=node('header');head.append(initial(g.name),node('h2',g.name));article.append(head,node('p',g.description),
+      const head=node('header');head.append(communityAvatar(g.name),node('h2',g.name));article.append(head,node('p',g.description),
         node('small',[g.location||'Global',g.members+' member'+(g.members===1?'':'s'),g.owner?'Host':g.joined?'Member':''].filter(Boolean).join(' · ')));
       const actions=node('div','','ws-actions');
       if(g.joined) actions.append(button('Open '+label,()=>{roomId=g.id;window.history.pushState(null,'','/'+plural+'/'+g.id);activate(goals);}));
@@ -74,7 +72,7 @@ export function bindRoom(page,{data,save},{label,plural,title,goals,hostLabel,vi
       const roster=members.filter(m=>m.groupId===roomId);
       feed.replaceChildren(...roster.map(member=>{
         const item=node('article','','community-member n-in');
-        item.append(initial(member.name),node('strong',member.name),node('small',member.host?hostLabel:'Member'));
+        item.append(communityAvatar(member.name,member.avatar),node('strong',member.name),node('small',member.host?hostLabel:'Member'));
         if(member.adherence!=null)item.append(node('small',member.adherence+'% rules followed'));
         return item;
       }));
@@ -88,14 +86,14 @@ export function bindRoom(page,{data,save},{label,plural,title,goals,hostLabel,vi
     const items=topics.filter(t=>t.groupId===roomId && t.kind===(isGoal?'goal':view==='Announcements'?'announcement':'discussion'));
     feed.replaceChildren(...items.map(t=>{
       const card=node('article','','n-in community-topic');
-      card.append(node('small',t.author+' · '+formatDate(t.createdAt)),node('p',t.body));
+      const author=node('div','','community-byline');author.append(communityAvatar(t.author,t.avatar),node('small',t.author+' · '+formatDate(t.createdAt)));card.append(author,node('p',t.body));
       if(isGoal && !group.readOnly) {
         const progress=node('progress');progress.max=group.members||1;progress.value=t.completions;progress.setAttribute('aria-label','Member check-ins');
         card.append(progress,node('small',t.completions+' of '+group.members+' checked in'),action(t.checked?'Undo check-in':'Mark complete',{action:t.checked?'uncheck':'check',id:roomId,topicId:t.id},'Check-in updated.'));
       } else if(t.kind==='discussion') {
         const thread=node('details');thread.append(node('summary','Replies ('+t.replies.length+')'));
         const replies=node('div');thread.append(replies);
-        t.replies.forEach(r=>{const line=node('p');line.append(node('strong',r.author),' · '+r.body);replies.append(line);});
+        t.replies.forEach(r=>{const line=node('p');line.classList.add('community-byline');line.append(communityAvatar(r.author,r.avatar),node('strong',r.author),' · '+r.body);replies.append(line);});
         paginate(replies,'Discussion replies',4);
         const reply=node('form','','ws-form');const field=node('textarea');field.name='body';field.required=true;field.maxLength=600;field.setAttribute('aria-label','Reply');const send=node('button','Reply','n-btn n-out dash-button');reply.append(field,send);
         reply.addEventListener('submit',e=>submit(e,status,async v=>{await update({action:'reply',id:t.groupId,topicId:t.id,body:v.body});render();return 'Reply added.';}));if(!group.readOnly)thread.append(reply);card.append(thread);

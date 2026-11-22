@@ -1,3 +1,4 @@
+import {setupFields,setupColors,portfolioGroups,portfolioSetups} from '../../src/config/portfolio.js';
 import {createCandleLookup} from './replay-candles.js';
 import { configuredCoach, askCoach, checkCoachScope } from './coach.js';
 import { communityApi } from './community.js';
@@ -28,6 +29,10 @@ const trades = `SELECT t.id::text, t.symbol, t.market, t.side, t.setup, t.opened
   ) j ON true WHERE t.user_id=$1 ORDER BY t.opened_at DESC, t.id DESC LIMIT 501`;
 
 const portfolioFields = 'slug::text, headline, display_name AS "displayName", about, design, sections, visibility';
+const portfolioContentLimits = {
+  cover:100, location:100, playbookTitle:100, markets:1500, courses:1500,
+  tools:1500, rules:1500, books:1500, playbook:1500, lessons:1500, closing:1500,
+};
 const portfolioStats = `SELECT (SELECT count(*)::int FROM trades WHERE user_id=$1 AND reviewed_at IS NOT NULL) AS reviews,
   (SELECT round(100.0 * count(*) FILTER (WHERE kept) / nullif(count(*),0))::int FROM trade_checks WHERE user_id=$1) AS adherence`;
 const fail = (status, message) => Object.assign(new Error(message), { status });
@@ -54,9 +59,32 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
     return {remaining:Math.max(0,allowance-(wallet?.spent ?? 0)),allowance};
   }
   const community = communityApi(query);
-  const sharedBadges = uid => query(`SELECT c.name,e.earned_at AS "earnedAt"
+  const earnedBadges = (uid,sharedOnly=true) => query(`SELECT c.name,c.key,c.category,c.icon_path AS "iconPath",e.earned_at AS "earnedAt",e.portfolio_visible AS shared
           FROM badges_earned e JOIN badge_catalog c ON c.key=e.badge_key
-          WHERE e.user_id=$1 AND e.portfolio_visible ORDER BY e.earned_at DESC`,[uid]);
+          WHERE e.user_id=$1 AND (NOT $2::boolean OR e.portfolio_visible) ORDER BY e.earned_at DESC`,[uid,sharedOnly]);
+  async function sharedSetupStats(uid, sections) {
+    if (sections?.setupStats !== true || sections.presentation?.hidden?.includes('playbook')) return [];
+    const names = portfolioSetups(sections).map(s=>s.name);
+    if (!names.length) return [];
+    return query(`WITH selected AS (
+        SELECT DISTINCT unnest($2::text[]) AS name
+      ), sessions AS (
+        SELECT s.name, (t.opened_at AT TIME ZONE p.timezone)::date AS day,
+          count(DISTINCT t.id)::int AS logged, count(c.rule_id)::int AS checks,
+          count(c.rule_id) FILTER (WHERE c.kept)::int AS kept
+        FROM selected s JOIN trades t ON lower(btrim(t.setup))=lower(s.name) AND t.user_id=$1
+        JOIN user_profile p ON p.user_id=t.user_id
+        LEFT JOIN trade_checks c ON c.user_id=t.user_id AND c.trade_id=t.id
+        GROUP BY s.name, day
+      ), ranked AS (
+        SELECT *, row_number() OVER (PARTITION BY name ORDER BY day DESC) AS recent FROM sessions
+      ) SELECT s.name, coalesce(sum(r.logged),0)::int AS logged,
+        round(100.0 * sum(r.kept) / nullif(sum(r.checks),0))::int AS adherence,
+        coalesce(jsonb_agg(jsonb_build_object('day',r.day,'logged',r.logged,
+          'adherence',round(100.0*r.kept/nullif(r.checks,0))) ORDER BY r.day)
+          FILTER (WHERE r.recent<=7),'[]'::jsonb) AS sessions
+      FROM selected s LEFT JOIN ranked r USING (name) GROUP BY s.name`,[uid,names]);
+  }
   const pageLoaders = {
     history: async (uid) => {
       const ledger = await query(trades, [uid]);
@@ -73,11 +101,17 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
       'SELECT t.symbol,max(t.opened_at) AS last_used FROM trades t JOIN user_profile p USING(user_id) WHERE t.user_id=$1 AND t.market=ANY(p.markets) GROUP BY t.symbol ORDER BY last_used DESC LIMIT 100',[uid]), forecasts: await query(`SELECT id::text, symbol, direction, category, probability, thesis,
       due_on::text AS "dueOn", resolved_at AS "resolvedAt", outcome FROM forecasts WHERE user_id=$1 ORDER BY id DESC LIMIT 500`, [uid]) }),
     reports: async (uid) => ({ trades: (await query(trades, [uid])).slice(0, 500) }),
-    portfolio: async (uid) => ({
-      portfolio: (await query('SELECT '+portfolioFields+' FROM portfolios WHERE user_id=$1', [uid]))[0] ?? null,
+    portfolio: async (uid) => {
+      const portfolio = (await query('SELECT '+portfolioFields+' FROM portfolios WHERE user_id=$1', [uid]))[0] ?? null;
+      return {
+      avatar: (await query("SELECT encode(profile_picture,'base64') AS avatar FROM user_profile WHERE user_id=$1",[uid]))[0]?.avatar,
+      memberSince: (await query('SELECT onboarded_at FROM user_profile WHERE user_id=$1',[uid]))[0]?.onboarded_at,
+      clubCount: (await query('SELECT count(*)::int AS count FROM club_members WHERE user_id=$1',[uid]))[0]?.count,
+      portfolio, setupStats:await sharedSetupStats(uid,portfolio?.sections),
       stats: (await query(portfolioStats, [uid]))[0],
-      badges: await sharedBadges(uid),
-    }),
+      badges: await earnedBadges(uid,false),
+      };
+    },
     people: community.people,
     coach: async (uid) => ({
       tokens:await coachBalance(uid),
@@ -183,14 +217,60 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
       return { ok: true };
     },
     portfolio: async (uid, data) => {
-      requireValue(string(data.headline,120) && string(data.displayName,100) && string(data.about,1000) &&
-        ['dashboard','marginalia','terracotta'].includes(data.design) &&
+      if (data.action==='visibility') {
+        requireValue(['private','link','public'].includes(data.visibility) &&
+          ['streak','adherence','reviews'].every(key=>typeof data.sections?.[key]==='boolean'),'Choose valid portfolio settings.');
+        const sections=Object.fromEntries(['streak','adherence','reviews','photo',...(typeof data.sections.setupStats === 'boolean' ? ['setupStats'] : [])].map(key=>[key,data.sections[key]===true]));
+        const [portfolio]=await query(`INSERT INTO portfolios (user_id,visibility,sections,design)
+          VALUES ($1,$2,$3,'marginalia') ON CONFLICT (user_id) DO UPDATE SET visibility=excluded.visibility,
+            sections=portfolios.sections || excluded.sections
+          RETURNING ${portfolioFields}`,[uid,data.visibility,sections]);
+        return {portfolio};
+      }
+      const validDetails=string(data.headline,120) && string(data.displayName,100) && string(data.about,1000) &&
+        ['dashboard','marginalia','terracotta'].includes(data.design);
+      if(data.action==='customize'){
+        requireValue(validDetails,'Choose valid portfolio details.');
+        let sections = {};
+        if (data.content !== undefined) {
+          const fields = Object.entries(portfolioContentLimits);
+          requireValue(data.content && fields.every(([key,limit]) => string(data.content[key],limit)),
+            'Keep portfolio titles under 100 characters and section text under 1,500 characters.');
+          requireValue(data.content.playbook.split(/\r?\n/).filter(line => line.trim()).length <= 5,
+            'Add up to five setups with one setup per line.');
+          const content = Object.fromEntries(fields.map(([key]) => [key,data.content[key].trim()]));
+          sections = {content};
+          if (typeof data.setupStats === 'boolean') sections.setupStats = data.setupStats;
+        }
+        if (data.presentation !== undefined) {
+          const p=data.presentation;
+          requireValue(p && Array.isArray(p.setups) && p.setups.length<=5 && ['phone','card'].includes(p.frame) &&
+            ['marginalia','terracotta','sage','dashboard'].includes(p.theme) &&
+            Array.isArray(p.hidden) && p.hidden.every(k=>Object.hasOwn(portfolioGroups,k)),'Choose valid portfolio options.');
+          const setups=p.setups.map(item=>{
+            requireValue(item && setupFields.every(([key,,max])=>string(item[key],max,key==='name')) &&
+              setupColors.includes(item.color) && ['bars','line','columns'].includes(item.chart),'Check the fields for each setup.');
+            return {...Object.fromEntries(setupFields.map(([k])=>[k,item[k].trim()])),color:item.color,chart:item.chart};
+          });
+          sections.presentation={frame:p.frame,theme:p.theme,hidden:[...new Set(p.hidden)],setups};
+        }
+        const [portfolio]=await query(`INSERT INTO portfolios (user_id,headline,design,display_name,about,sections)
+          VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (user_id) DO UPDATE SET headline=excluded.headline,design=excluded.design,
+            display_name=excluded.display_name,about=excluded.about,sections=
+            (CASE WHEN portfolios.sections ? 'presentation' AND portfolios.design<>excluded.design
+              THEN jsonb_set(portfolios.sections,'{presentation,theme}',to_jsonb(excluded.design))
+              ELSE portfolios.sections END) || excluded.sections
+          RETURNING ${portfolioFields}`,
+          [uid,data.headline.trim(),data.design,data.displayName.trim(),data.about.trim(),sections]);
+        return {portfolio};
+      }
+      requireValue(validDetails &&
         ['private','link','public'].includes(data.visibility) && ['streak','adherence','reviews'].every((key) => typeof data.sections?.[key] === 'boolean'),
       'Choose valid portfolio settings.');
-      const sections = Object.fromEntries(['streak','adherence','reviews'].map((key) => [key,data.sections[key]]));
+      const sections = Object.fromEntries(['streak','adherence','reviews','photo',...(typeof data.sections.setupStats === 'boolean' ? ['setupStats'] : [])].map((key) => [key,data.sections[key]===true]));
       const [portfolio] = await query(`INSERT INTO portfolios (user_id,headline,design,sections,visibility,display_name,about)
         VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (user_id) DO UPDATE SET headline=excluded.headline,design=excluded.design,
-          sections=excluded.sections,visibility=excluded.visibility,display_name=excluded.display_name,about=excluded.about
+          sections=portfolios.sections || excluded.sections,visibility=excluded.visibility,display_name=excluded.display_name,about=excluded.about
         RETURNING ${portfolioFields}`, [uid,data.headline.trim(),data.design,sections,data.visibility,data.displayName.trim(),data.about.trim()]);
       return { portfolio };
     },
@@ -313,17 +393,29 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
       try {
         const [record] = await query(`SELECT w.user_id, w.headline,w.about,w.design,w.sections,w.visibility,
           coalesce(nullif(w.display_name,''),p.display_name) AS "displayName",
-          coalesce(s.current,0) AS streak,coalesce(s.best,0) AS best,coalesce(s.level,1) AS level
+          coalesce(s.current,0) AS streak,coalesce(s.best,0) AS best,coalesce(s.level,1) AS level,
+          CASE WHEN w.sections->>'photo'='true' THEN encode(p.profile_picture,'base64') END AS avatar
           FROM portfolios w JOIN user_profile p ON p.user_id=w.user_id
           LEFT JOIN streak_state s ON s.user_id=w.user_id WHERE w.slug=$1 AND w.visibility<>'private'`,[slug]);
         if (!record) return send(response,404,{error:'Portfolio unavailable.'});
         const { user_id, sections, streak, best, level, ...identity } = record;
         const [stats] = await query(portfolioStats,[user_id]);
-        const badges=await sharedBadges(user_id);
-        return send(response,200,{...identity,sections,badges,stats:{
-          ...(sections.streak ? {streak,best,level} : {}),
-          ...(sections.adherence ? {adherence:stats.adherence} : {}),
-          ...(sections.reviews ? {reviews:stats.reviews} : {}),
+        const hidden=new Set(sections.presentation?.hidden ?? []);
+        const badges=hidden.has('education') ? [] : await earnedBadges(user_id);
+        if (hidden.has('hello')) {identity.about='';identity.avatar=null;}
+        for (const key of ['markets','tools','rules','books','playbook','lessons','closing']) {
+          if (hidden.has(key) && sections.content) delete sections.content[key];
+        }
+        if (hidden.has('education') && sections.content) delete sections.content.courses;
+        if (hidden.has('playbook')) {
+          sections.presentation.setups=[];
+          if(sections.content) delete sections.content.playbookTitle;
+        }
+        const setupStats = await sharedSetupStats(user_id,sections);
+        return send(response,200,{...identity,sections,badges,setupStats,stats:{
+          ...(!hidden.has('process') && sections.streak ? {streak,best,level} : {}),
+          ...(!hidden.has('process') && sections.adherence ? {adherence:stats.adherence} : {}),
+          ...(!hidden.has('process') && sections.reviews ? {reviews:stats.reviews} : {}),
         }});
       } catch { return send(response,503,{error:'Portfolio temporarily unavailable.'}); }
     },

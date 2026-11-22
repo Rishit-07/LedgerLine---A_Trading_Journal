@@ -1,13 +1,13 @@
 import {processingCard} from '../../components/billing-ready.js';
 import {button,node,metric,drawLine} from '../../pages/workspace-ui.js';
 import {fileAction} from '../../components/file-actions.js';
-import {confirmationCard} from '../../components/confirmation-motion.js';
+import {showConfirmation} from '../../components/confirmation-motion.js';
 import {upgradeGate} from './upgrade.js';
 import './reports.css';
 
 const tabs={full:'Full report',patterns:'Patterns',plan:'Plan check',experiment:'Experiments',ask:'Ask your journal'};
 export const reports={
-  title:'Reports',description:'Review your trading process.',endpoint:'/api/reports',
+  title:'AI Reports',description:'Review your trading process.',endpoint:'/api/reports',
   content:`<div class="ws-section-head"><div class="ws-actions" data-periods></div><button class="n-btn n-out dash-button" data-pdf>Export PDF</button></div>
     <div class="report-metrics" data-numbers></div><div><section class="n-out ws-card"><h2>Score trend</h2><canvas class="ws-chart" width="800" height="240" data-trend aria-label="Daily process score"></canvas><p data-trend-note></p><h3>Top mistakes</h3><div data-mistakes></div></section></div>
     <section class="n-out ws-card report-ai"><h2>AI review</h2><div class="ws-actions" data-ai-tabs></div><div class="ws-stack" data-review></div></section>
@@ -50,7 +50,18 @@ export const reports={
       drawLine(el('trend'),data.trend.map(d=>d.score));el('trend-note').textContent=data.trend.length?data.trend.map(d=>d.day+' · '+d.score).join(' / '):'No scored trades in this period.';
       el('mistakes').replaceChildren(...data.mistakes.map(m=>node('p',m.kind+' · '+m.n)));
       if(!data.mistakes.length)el('mistakes').append(node('p','No recorded mistakes this period.'));
-      el('ai-tabs').replaceChildren(...Object.entries(tabs).map(([key,label])=>{const b=button((!data.pro&&key!=='full'?'🔒 ':'')+label,()=>{tab=key;paint();});b.disabled=busy;b.setAttribute('aria-pressed',String(tab===key));return b;}));
+      el('ai-tabs').replaceChildren(...Object.entries(tabs).map(([key,label])=>{
+        const b=button(label,()=>{tab=key;paint();});
+        b.disabled=busy;
+        b.setAttribute('aria-pressed',String(tab===key));
+        if (!data.pro && key!=='full') {
+          const lock=node('span','','report-lock');
+          lock.setAttribute('aria-hidden','true');
+          b.prepend(lock);
+          b.setAttribute('aria-label',label+' · Pro feature');
+        }
+        return b;
+      }));
       review.classList.remove('is-locked');review.replaceChildren();
       if(busy){const p=node('p','Reading your trade checks and journal days…','report-generating');p.setAttribute('role','status');review.append(p);}
       else if(!data.enabled){const a=node('a','Open Settings','n-btn n-out dash-button');a.href='/settings#privacy';review.append(node('p','AI features are off'),a);}
@@ -90,7 +101,7 @@ export const reports={
           }
           if(status.confirmed){
             history.replaceState(history.state,'','/reports');await load();
-            page.querySelector('.report-ai').before(confirmationCard('payment','Your Pro access is ready.'));
+            showConfirmation('payment','Your Pro access is ready.');
             if(data.pro&&data.enabled)await generate('full');return;
           }
           await new Promise(resolve=>setTimeout(resolve,3000));

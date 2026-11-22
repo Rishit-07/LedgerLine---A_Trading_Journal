@@ -2,7 +2,7 @@ import { streakChip, paintStreakChip } from './streak-chip.js';
 import { openCloseTrade } from './close-trade.js';
 import { paginate } from './pagination.js';
 import { bindQuickTrade } from './quick-trade.js';
-import { badgeMarkup, bindBadgeUnlock } from './streak-view.js';
+import { badgeMarkup, bindBadgeUnlock, notifyStreak } from './streak-view.js';
 import { bindStreakDialog, streakPanelMarkup } from './streak-panel.js';
 import { streakInviteCode } from '../streak-invite.js';
 import { bindTradingCalendar } from './trading-calendar.js';
@@ -219,6 +219,7 @@ export function renderDashboard(landing, { initial, load, name, photoUrl, save, 
     badge.querySelector('[data-streak]').textContent = streak.current + (streak.current === 1 ? ' day' : ' days');
     if (streakDialog?.dialog.open) streakDialog.paintState(streak);
     showBadge(streak);
+    notifyStreak(page,streak);
   }
   if (streakDialog) {
     badge.addEventListener('click', () => streakDialog.open());

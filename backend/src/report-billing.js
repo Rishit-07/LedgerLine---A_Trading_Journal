@@ -58,8 +58,13 @@ export function billingApi(pool,authenticate,env=process.env,fetcher=fetch){
     return send(res,200,{action:order.renewal_action??data.action});
    }
    if(url.pathname.endsWith('/status')){
-    const {rows:[order]}=await pool.query('SELECT plan,method,hosted_url,quote,payment_state,coalesce(paid_until>now(),false) confirmed FROM report_checkouts WHERE id::text=$1 AND user_id=$2',[url.searchParams.get('id'),claims.uid]);
-    return send(res,order?200:404,order??{error:'Checkout not found.'});
+    const {rows:[order]}=await pool.query('SELECT plan,method,provider_ref,hosted_url,quote,payment_state,coalesce(paid_until>now(),false) confirmed FROM report_checkouts WHERE id::text=$1 AND user_id=$2',[url.searchParams.get('id'),claims.uid]);
+    if(!order)return send(res,404,{error:'Checkout not found.'});
+    const {provider_ref,...status}=order;
+    if(order.method==='Card'&&provider_ref&&env.RAZORPAY_KEY_ID){
+     status.cardCheckout={key:env.RAZORPAY_KEY_ID,subscriptionId:provider_ref};
+    }
+    return send(res,200,status);
    }
    const available=Boolean(env.RAZORPAY_KEY_ID&&env.RAZORPAY_KEY_SECRET&&env.RAZORPAY_WEBHOOK_SECRET);
    const terms={monthly:env.RAZORPAY_PRO_MONTHLY_PLAN_ID,yearly:env.RAZORPAY_PRO_YEARLY_PLAN_ID};
@@ -82,7 +87,7 @@ export function billingApi(pool,authenticate,env=process.env,fetcher=fetch){
    const sub=await subscription.json();
    if(!sub.short_url?.startsWith('https://')||!sub.id)throw Error('Invalid checkout');
    const {rows:[order]}=await pool.query('INSERT INTO report_checkouts(user_id,term,plan_ref,provider_ref,plan,method,recipient,hosted_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id',[claims.uid,data.term,terms[data.term],sub.id,plan,data.method,claims.email,sub.short_url]);
-   send(res,201,{id:order.id,url:sub.short_url});
+   send(res,201,{id:order.id,url:sub.short_url,...(data.method==='Card'?{cardCheckout:{key:env.RAZORPAY_KEY_ID,subscriptionId:sub.id}}:{})});
   }catch{if(db)await db.query('ROLLBACK').catch(()=>{});send(res,503,{error:'Billing is temporarily unavailable.'});}
   finally{db?.release();}
  };

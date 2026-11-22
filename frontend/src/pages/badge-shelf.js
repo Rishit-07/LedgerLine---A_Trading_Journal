@@ -6,7 +6,7 @@ const colors = { Process:['#6f7ff0','#2f3b8f','#5b6ee1'], Streaks:['#ffa24a','#e
 const portion = item => item.earnedAt ? 1 : Math.min(1,(item.progress ?? 0)/item.target);
 const status = item => item.earnedAt ? 'Earned '+formatDate(item.earnedAt) : item.progress == null ? 'Tracking unavailable' : Math.min(item.progress,item.target)+' of '+item.target+' '+item.unit;
 
-function medal(item) {
+export function medal(item) {
   const shell=node('div','','bd-m'+(item.earnedAt?'':' bd-lock'));
   shell.setAttribute('aria-hidden','true');
   const palette = item.key==='process-cup'||item.key==='cup-gold' ? ['#f7c04a','#c27f10','#d99a1c'] : colors[item.category];

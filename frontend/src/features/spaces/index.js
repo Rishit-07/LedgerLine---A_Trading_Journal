@@ -1,4 +1,4 @@
-import {confirmationCard} from '../../components/confirmation-motion.js';
+import {confirmationCard,showConfirmation} from '../../components/confirmation-motion.js';
 import { houseRules, roomMarkup, bindRoom } from '../community/room.js';
 import { button, submit } from '../../pages/workspace-ui.js';
 
@@ -17,9 +17,9 @@ export const spaces={
   endpoint:'/api/spaces',
   content:houseRules+`<section class="n-out ws-card community-hero"><div><small>Mentorship</small>
       <h2>Work on your process together.</h2><p>Set a goal, check in and discuss what you learned.</p></div>
-      <button type="button" class="n-btn n-acc dash-button" data-start>Create a space</button></section>`+roomMarkup('space')+createPanel+'<p role="status" data-club-status></p>',
+      <div class="community-hero-actions"><button type="button" class="n-btn n-acc dash-button" data-start>Create a space</button></div></section>`+roomMarkup('space')+createPanel+'<p role="status" data-club-status></p>',
   bind(page,context){
-    const manage=document.createElement('a');manage.className='n-btn n-out dash-button';manage.href='/mentor-verification';manage.textContent='Mentor verification';page.querySelector('.community-hero').append(manage);
+    const manage=document.createElement('a');manage.className='n-btn n-out dash-button';manage.href='/mentor-verification';manage.textContent='Mentor verification';page.querySelector('.community-hero-actions').append(manage);
     if(context.data.mentor?.admin){const a=manage.cloneNode();a.href='/mentor-review';a.textContent='Reviewer queue';manage.after(a);}
     const joinNote=document.createElement('p');joinNote.textContent='Process stats are private. After joining, you can share them with this mentor and turn sharing off anytime.';page.querySelector('[data-code-form]').append(joinNote);
     bindRoom(page,context,{
@@ -41,7 +41,8 @@ export const spaces={
     if(credential)return;
     let first=true;
     try{if(key){first=!localStorage.getItem(key);localStorage.setItem(key,'seen');}}catch{}
-    credential=confirmationCard('mentor','Your mentor verification is approved.',first);
+    credential=confirmationCard('mentor','Your mentor verification is approved.');
+    if(first)showConfirmation('mentor','Your mentor verification is approved.');
     hero.after(credential);
   }
   function watchApproval(){

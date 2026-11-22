@@ -1,3 +1,4 @@
+import {createProfilePictureHandler} from './profile-picture.js';
 import {startBillingMail} from './billing-mail.js';
 import {billingApi} from './report-billing.js';
 import {billingProfile} from './billing-profile.js';
@@ -80,7 +81,7 @@ async function loadAccount(request, response) {
   if (!claims) return;
   const { uid } = claims;
   const find = `SELECT a.created_at AS "createdAt", p.display_name AS "displayName",
-    p.onboarded_at IS NOT NULL AS "onboardingCompleted" FROM ledgerline_accounts a
+    p.onboarded_at IS NOT NULL AS "onboardingCompleted", encode(p.profile_picture,'base64') AS avatar FROM ledgerline_accounts a
     LEFT JOIN user_profile p ON p.user_id = a.firebase_uid WHERE a.firebase_uid = $1`;
   try {
     const existing = await pool.query(find, [uid]);
@@ -163,6 +164,7 @@ const routes = new Map([
   ['/api/streak/friends/preview', { methods: ['GET'], handler: streak.invitePreview }],
   ['/api/streak/battles', { methods: ['GET', 'POST'], handler: (request, response) =>
     (request.method === 'GET' ? streak.battles : streak.challenge)(request, response) }],
+  ['/api/profile-picture', {methods:['PUT'], handler:createProfilePictureHandler(pool,authenticateRequest)}],
   ['/api/streak/badges', { methods: ['GET','PUT'], handler: (req,res) => (req.method==='PUT'?streak.badgeVisibility:streak.badgeShelf)(req,res) }],
   ['/api/streak/badges/seen', { methods: ['POST'], handler: streak.badgesSeen }],
   ['/api/streak/share', { methods: ['GET', 'POST'], handler: (request, response) =>

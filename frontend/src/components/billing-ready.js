@@ -51,10 +51,11 @@ export function processingCard(label = 'Confirming payment…') {
   const stage = document.createElement('div');
   stage.className = 'billing-processing';
   stage.setAttribute('role', 'status');
-  const card = document.createElement('i');
-  card.className = 'll-card-surface';
-  card.setAttribute('aria-hidden','true');
-  stage.append(card, document.createTextNode(label));
+  const visual = document.createElement('div');
+  visual.className = 'billing-process-visual';
+  visual.setAttribute('aria-hidden','true');
+  visual.innerHTML = '<span class="billing-process-base"></span><span class="billing-process-orbit"></span><span class="billing-process-card ll-card-surface"><span class="br-chip"></span></span>';
+  stage.append(visual, document.createTextNode(label));
   return stage;
 }
 

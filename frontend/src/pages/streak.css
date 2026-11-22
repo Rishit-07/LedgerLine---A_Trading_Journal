@@ -143,3 +143,16 @@
   .streak-share[open] .streak-share-sheet, .streak-badge-dialog[open], .streak-panel[open] { animation: streak-slide .4s cubic-bezier(.2,.9,.3,1) both; }
   @keyframes streak-slide { from { transform: translateY(25px); opacity: 0; } }
 }
+
+.streak-dot.is-protected { background:var(--track); color:var(--acc); }
+.streak-notice {
+  position:fixed; right:clamp(12px,3vw,36px); bottom:clamp(12px,3vw,36px);
+  z-index:100; display:flex; align-items:center; gap:12px;
+  max-width:calc(100vw - 24px); box-sizing:border-box; padding:12px 14px;
+  border:1px solid var(--track); border-radius:18px;
+  background:var(--bg); color:var(--ink);
+}
+.streak-notice img { width:48px; height:48px; object-fit:contain; }
+.streak-notice strong,.streak-notice span { display:block; }
+.streak-notice span { font-size:.85rem; color:var(--mut); }
+.streak-notice button { flex:none; color:var(--ink); min-width:36px; min-height:36px; }

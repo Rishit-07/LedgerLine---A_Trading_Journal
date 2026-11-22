@@ -3,3 +3,7 @@
 .report-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.report-metrics>div{padding:20px;border-radius:20px}.report-metrics strong{color:var(--acc);font-size:clamp(2rem,4vw,3.4rem)}.report-dialog[open]{color:var(--ink);background:var(--bg);padding:24px}.report-dialog li{margin-block:.5em}@media(max-width:600px){.report-metrics{grid-template-columns:1fr}.report-dialog.is-drawer{margin:auto 0 0;width:100%;height:auto;box-sizing:border-box}}
 
 .report-ai .is-locked{position:relative;min-height:220px;align-content:center;justify-items:center}.is-locked .report-preview{position:absolute;inset:0;padding:2rem;line-height:2.8}.report-gate{position:relative;max-width:420px;padding:22px;text-align:center;border-radius:18px;background:var(--bg)}.report-gate button{margin:.3rem}.report-ai article{border-inline-start:4px solid var(--acc)}[data-past] details{min-width:0}[data-review] details{max-height:16rem;overflow:auto}
+[data-ai-tabs] .dash-button { display:inline-flex; align-items:center; gap:7px; }
+.report-lock { width:14px; height:14px; flex:none; background:currentColor;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='10' width='14' height='11' rx='2.5'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3m-4 4v3'/%3E%3C/svg%3E") center / contain no-repeat;
+}

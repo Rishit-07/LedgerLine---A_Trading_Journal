@@ -36,3 +36,9 @@
 }
 
 .community-create .ws-section-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem}.mentor-create-steps{display:inline-block;margin:0 1rem .75rem 0}[data-mentor-gate]{display:inline-block}
+
+.community-initial { position:relative; overflow:hidden; flex:none; }
+.community-initial img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.community-byline { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.community-byline .community-initial,.account-friend-row .community-initial { width:28px; height:28px; font-size:10px; }
+.community-hero-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }

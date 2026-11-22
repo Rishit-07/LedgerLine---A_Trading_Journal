@@ -17,3 +17,7 @@ History and Replay can request historical candles for supported Indian symbols w
 ## Remaining phases
 
 Later-phase items include daily journal autosave and writing milestones, trade-edit history, complete mentor verification and social follow flows, and rewards and certificate sharing. These require separate implementation and verification against their respective boards.
+
+## Mentor review
+
+TODO for legal review: confirm SEBI treatment of educational mentoring, the mentor code and terms version, reviewer email estimates, and a retention period for profile photos, review tickets and the minimum withdrawal audit trail. Student-facing mentor details require approval. Invoice identity is stored separately.

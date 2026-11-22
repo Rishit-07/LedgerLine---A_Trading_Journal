@@ -1,3 +1,4 @@
+import {communityAvatar} from './profile-picture.js';
 import { node, select, button, message, submit, formatDate } from './workspace-ui.js';
 import { paginate } from './pagination.js';
 import './community.css';
@@ -6,9 +7,6 @@ function heading(active) {
   const links=[['people','People'],['spaces','Spaces'],['clubs','Clubs']];
   return `<div class="ws-notice"><strong>House rules</strong><p>Share how you plan, trade and review. Keep tips, trade calls and paid signals out of the discussion.</p></div>
     <nav class="community-nav n-out" aria-label="Community pages">${links.map(([key,text])=>`<a href="/${key}" ${active===key?'aria-current="page"':''}>${text}</a>`).join('')}</nav>`;
-}
-function initial(name) {
-  return node('span',name.trim().split(/\s+/).slice(0,2).map(word=>Array.from(word)[0]).join('').toUpperCase(),'community-initial n-in');
 }
 function anchor(label,href) {
   const a=node('a',label,'n-btn n-out dash-button');a.href=href;return a;
@@ -47,7 +45,7 @@ export const people={
       const rows=(discover?data.profiles:friends).filter(row=>(row.name+' '+(row.headline||'')).toLowerCase().includes(term));
       list.replaceChildren(...rows.map(row=>{
         const card=node('article','','n-out ws-card community-person');
-        const header=node('header');header.append(initial(row.name),node('h2',row.name));card.append(header);
+        const header=node('header');header.append(communityAvatar(row.name,row.avatar),node('h2',row.name));card.append(header);
         const actions=node('div','','ws-actions');
         if(discover) {
           if(row.headline)card.append(node('p',row.headline));

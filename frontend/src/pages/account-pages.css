@@ -43,3 +43,20 @@
 .account-nav{padding:20px;gap:10px}.account-nav button{box-shadow:var(--surface-raised);min-height:46px}.account-nav svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.account-nav{border-radius:28px}.account-provider-icon{background:var(--bg);box-shadow:var(--surface-inset);width:44px;height:44px}.account-read>div:first-child strong{color:var(--up)}.account-read>div:last-child strong{color:var(--down)}
 .account-providers label{position:relative}.account-providers input{position:absolute;opacity:0}.account-providers label:focus-within{outline:2px solid var(--acc);outline-offset:3px}.account-settings-layout{grid-template-columns:minmax(200px,28%) minmax(0,1fr)}
 @media(max-width:760px){.account-settings-layout{grid-template-columns:minmax(0,1fr)}.account-nav{padding:8px;gap:6px}.account-provider-icon{width:32px;height:32px}.account-providers label{padding:12px 10px}}
+
+.streak-page[data-workspace-mode=profile] .streak-page-header h1 { font:400 clamp(36px,4vw,44px)/1.05 'Instrument Serif',Georgia,serif; letter-spacing:-.02em; }
+.account-name-line { display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
+.account-name-line h2 { margin:0; }
+.account-process-tag { padding:5px 12px; border-radius:999px; color:var(--acc); font-size:11px; font-weight:700; }
+[data-profile-meta] { display:block; margin-top:6px; color:var(--mut); font-weight:700; }
+[data-workspace-mode=profile] .account-card-stats .ws-stat strong { font-family:var(--font-mono); }
+.account-friend-row { align-items:center; }
+.account-friend-row strong { flex:1; }
+[data-workspace-mode=profile] .account-overview { gap:28px; }
+@media(max-width:760px) { [data-workspace-mode=profile] .account-overview { gap:18px; } }
+.profile-totals { grid-column:1/-1; grid-template-columns:repeat(4,minmax(0,1fr)); }
+.profile-challenges { grid-column:1/3; }
+@media(max-width:760px) {
+  .profile-totals { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .profile-challenges { grid-column:auto; }
+}

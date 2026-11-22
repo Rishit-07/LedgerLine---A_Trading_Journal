@@ -9,7 +9,7 @@ import { bindWorkspaceAccount, bindToolbarStreak, bindWorkspaceSearch, prepareTr
 import { signedR, stat, metric, rate, closedSummary, number } from './workspace-ui.js';
 import { screenshotPicker, screenshotData, tradeScreenshots } from '../components/trade-screenshots.js';
 import { bindQuickTrade, showReceipt } from './quick-trade.js';
-import { badgeMarkup, bindBadgeUnlock, element } from './streak-view.js';
+import { badgeMarkup, bindBadgeUnlock, notifyStreak, element } from './streak-view.js';
 import '@fontsource/instrument-serif/latin-400.css';
 import './dashboard.css';
 
@@ -159,15 +159,16 @@ export async function renderStreakPage(landing, { path, request, name, photoUrl,
       await Promise.all([bindAccountSettings(page, request),bindSettings(page, request, showBadge)]);
     }
     else {
-      const [state,dashboard,portfolio,friends] = await Promise.all([
+      const [state,dashboard,portfolio,friends,battles] = await Promise.all([
         request('/api/streak','GET'), mode==='profile' ? request('/api/dashboard','GET') : null,
         mode==='profile' ? request('/api/workspace?page=portfolio','GET') : null,
-        mode==='profile' ? request('/api/streak/friends','GET') : null
+        mode==='profile' ? request('/api/streak/friends','GET') : null,
+        mode==='profile' ? request('/api/streak/battles','GET').catch(()=>null) : null
       ]);
       async function displayProfile(state) {
         paintTradingShell(page,dashboard ?? {},state.current);
         if(mode==='badges') await paintBadges(page,request);
-        else paintProfile(page,state,dashboard,portfolio,name,photoUrl,friends);
+        else paintProfile(page,state,dashboard,portfolio,name,photoUrl,friends,battles?.battles);
         showBadge(state);
       }
       await displayProfile(state);
@@ -290,10 +291,7 @@ async function bindJournal(page, request, showBadge) {
         close.onclick=()=>openCloseTrade(page,trade,request,loadJournal);
         actions.append(close);
       }
-      if (trade.result!==null) {
-        const replay=element('a','Open replay','n-btn n-out streak-btn');
-        replay.href='/replay?'+new URLSearchParams({tradeId:trade.id});actions.append(replay);
-      }
+
       if (!trade.reviewed) actions.append(action('Mark reviewed',async()=>{
         applyStreak(await request('/api/streak/review','POST',{tradeId:trade.id}));await loadJournal();
       },journalStatus));
@@ -350,6 +348,7 @@ async function bindJournal(page, request, showBadge) {
     if(dashboard) paintTradingShell(page,dashboard,state.current);
     rest.querySelector('button').textContent = state.manualRestToday ? 'Update rest-day note' : 'I sat out today';
     showBadge(state);
+    notifyStreak(page,state);
   }
 
   async function loadJournal(append = false) {

@@ -1,8 +1,11 @@
-import { markets, submit } from './workspace-ui.js';
+import {screenshotData} from '../components/trade-screenshots.js';
+import {avatarUrl} from './profile-picture.js';
+import { portfolioPath, portfolioVisibilityMarkup, fillPortfolioVisibility, readPortfolioVisibility } from './portfolio-preferences.js';
+import { markets, submit, formValues } from './workspace-ui.js';
 
 const sections = [
   ['account','Account','user'],['brokers','Brokers','briefcase-business'],['rules','Trading rules','list-checks'],
-  ['notifications','Notifications','bell'],['appearance','Appearance','sun'],['privacy','Data and privacy','shield'],['billing','Plans and billing','credit-card']
+  ['notifications','Notifications','bell'],['appearance','Appearance','sun'],['portfolio','Portfolio','user'],['privacy','Data and privacy','shield'],['billing','Plans and billing','credit-card']
 ];
 const providers = [
   ['zerodha','Zerodha','Kite Connect'],['upstox','Upstox','Upstox API'],['angel-one','Angel One','SmartAPI'],
@@ -24,12 +27,13 @@ export function settingsMarkup(notifications) {
   return `<div class="account-settings-layout account-board">
     <nav class="n-out account-panel account-nav" aria-label="Settings sections">${sections.map(([id,label,icon])=>`<button type="button" class="n-btn" data-pref-tab="${id}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${iconPaths[icon]}"/></svg>${label}</button>`).join('')}</nav>
     <div class="account-settings-panels">
-    ${panel('account','Account',`<form class="ws-form" data-edit="account"><label>Display name<input class="n-in" name="displayName" maxlength="100" required></label><fieldset><legend>Your markets</legend>${Object.entries(markets).map(([key,label])=>`<label><input name="markets" type="checkbox" value="${key}"> ${label}</label>`).join('')}</fieldset>${saveButton}</form>`)}
+    ${panel('account','Account',`<form class="ws-form" data-avatar-form><label>Profile picture<input name="picture" type="file" accept="image/jpeg,image/png,image/webp"></label><div class="account-actions"><button class="n-btn n-acc dash-button">Save picture</button><button class="n-btn n-out dash-button" type="button" data-remove-avatar>Remove picture</button></div><p role="status"></p></form><form class="ws-form" data-edit="account"><label>Display name<input class="n-in" name="displayName" maxlength="100" required></label><fieldset><legend>Your markets</legend>${Object.entries(markets).map(([key,label])=>`<label><input name="markets" type="checkbox" value="${key}"> ${label}</label>`).join('')}</fieldset>${saveButton}</form>`)}
     ${panel('brokers','Brokers',`<p>Choose your preferred import method. CSV imports are available for any broker.</p><form data-edit="broker"><div class="account-providers">${providers.map(([key,label,api])=>`<label class="n-out"><span class="account-provider-icon">${key==='csv'?'CSV':label.slice(0,1)}</span><span><strong>${label}</strong><small>${api}</small></span><input type="radio" name="broker" value="${key}" required></label>`).join('')}</div><label><input type="radio" name="broker" value="manual"> Add trades by hand</label><div class="account-actions">${saveButton}<a href="/history#import">Import CSV</a></div></form><div class="account-read"><div class="n-in"><strong>What Ledgerline reads</strong><p>Trade rows from the CSV file you choose. Direct broker sync requires a connected integration.</p></div><div class="n-in"><strong>What it never does</strong><p>Place orders, move money or change positions in your brokerage account.</p></div></div>`)}
     ${panel('rules','Trading rules',`<form class="ws-form" data-edit="rules">${ruleDefinitions.map(([key,label,values,unit])=>`<div class="account-rule"><label>${label}<select name="${key}" class="n-in">${values.map(v=>`<option value="${v}">${v}${unit}</option>`).join('')}</select></label><label><input type="checkbox" name="hardRules" value="${key}"> Hard rule</label></div>`).join('')}${saveButton}</form>`)}
     <div data-preference="notifications" hidden>${notifications}</div>
     ${panel('appearance','Appearance','<p>Choose a light or dark workspace on this device.</p><button class="n-btn n-out dash-button" data-change-theme>Switch theme</button>')}
-    ${panel('privacy','Data and privacy','<label><input type="checkbox" data-report-consent disabled> Allow AI reviews to use my aggregated trading records</label><p data-consent-status role="status"></p><p>Choose what visitors can see on your portfolio or export your trades.</p><div class="account-actions"><a href="/portfolio">Portfolio visibility</a><a href="/history#export">Export trades as CSV</a></div>')}
+    ${panel('privacy','Data and privacy','<label><input type="checkbox" data-report-consent disabled> Allow AI reviews to use my aggregated trading records</label><p data-consent-status role="status"></p><p>Choose what visitors can see on your portfolio or export your trades.</p><div class="account-actions"><a href="/settings#portfolio">Portfolio visibility</a><a href="/history#export">Export trades as CSV</a></div>')}
+    ${panel('portfolio','Portfolio',`<form class="ws-form" data-portfolio-settings>${portfolioVisibilityMarkup}<button class="n-btn n-acc dash-button" disabled>Save portfolio settings</button><p role="status"></p></form><div class="account-actions"><a data-own-portfolio href="/portfolio">Open my portfolio</a></div>`)}
     ${panel('billing','Plans and billing','<p>Billing has its own page now: your plan, payment method (UPI, card or crypto), crypto period and invoices all live there.</p><a class="n-btn n-acc dash-button" href="/billing">Open billing</a>')}
     </div></div>`;
 }
@@ -46,6 +50,21 @@ export async function bindAccountSettings(page,request) {
     history.replaceState(history.state,'','#'+button.dataset.prefTab);selectSection();
   };
   selectSection();
+  window.addEventListener('hashchange',selectSection);
+  const portfolioForm=page.querySelector('[data-portfolio-settings]');
+  const portfolioStatus=portfolioForm.querySelector('[role=status]');
+  const setPortfolio=portfolio=>{
+    fillPortfolioVisibility(portfolioForm,portfolio);
+    page.querySelector('[data-own-portfolio]').href=portfolio?.slug?portfolioPath(portfolio.slug):'/portfolio';
+    portfolioForm.querySelector('button').disabled=false;
+  };
+  void request('/api/workspace?page=portfolio','GET').then(({portfolio})=>setPortfolio(portfolio))
+    .catch(error=>{portfolioStatus.textContent=error.message;});
+  portfolioForm.onsubmit=event=>submit(event,portfolioStatus,async()=>{
+    const {portfolio}=await request('/api/workspace?page=portfolio','POST',{action:'visibility',...readPortfolioVisibility(formValues(portfolioForm))});
+    setPortfolio(portfolio);
+    return 'Portfolio settings saved.';
+  });
   page.querySelector('[data-change-theme]').onclick=()=>page.querySelector('[data-page-theme]').click();
   const consent=page.querySelector('[data-report-consent]'),message=page.querySelector('[data-consent-status]');
   try {
@@ -53,6 +72,25 @@ export async function bindAccountSettings(page,request) {
     consent.checked=prefs.enabled;consent.disabled=false;
     consent.onchange=async()=>{consent.disabled=true;try{await request('/api/reports/preferences','PUT',{enabled:consent.checked});message.textContent='Preference saved.';}catch(e){consent.checked=!consent.checked;message.textContent=e.message;}finally{consent.disabled=false;}};
   }catch(e){message.textContent=e.message;}
+  const avatarForm=page.querySelector('[data-avatar-form]');
+  const avatarStatus=avatarForm.querySelector('[role=status]');
+  async function saveAvatar(remove){
+    const file=avatarForm.elements.picture.files[0];
+    if(!remove&&!file){avatarStatus.textContent='Choose a picture first.';return;}
+    const controls=[...avatarForm.querySelectorAll('button,input')];
+    controls.forEach(control=>control.disabled=true);
+    try{
+      const {avatar}=await request('/api/profile-picture','PUT',{image:remove?null:await screenshotData(file)});
+      for(const photo of page.querySelectorAll('[data-account-photo]')){
+        if(avatar){photo.src=avatarUrl(avatar);photo.hidden=false;}else photo.hidden=true;
+      }
+      avatarForm.reset();
+      avatarStatus.textContent=remove?'Profile picture removed.':'Profile picture saved.';
+    }catch(error){avatarStatus.textContent=error.message;}
+    finally{controls.forEach(control=>control.disabled=false);}
+  }
+  avatarForm.onsubmit=event=>{event.preventDefault();void saveAvatar(false);};
+  avatarForm.querySelector('[data-remove-avatar]').onclick=()=>saveAvatar(true);
   const profile=await request('/api/onboarding','GET');
   for(const form of page.querySelectorAll('[data-edit]')) {
     const section=form.dataset.edit;

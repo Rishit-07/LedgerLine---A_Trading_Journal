@@ -127,7 +127,7 @@ export const plan={
       const kept=trades.reduce((count,trade)=>count+trade.kept,0);
       numbers.append(result,stat('Rules kept',checks?kept+' of '+checks:'—'));recap.append(numbers);
       const note=trades.find((trade)=>trade.note)?.note;if(note)recap.append(node('p','Your note: '+note,'dash-muted'));
-      const link=node('a','Replay yesterday’s trade','n-btn n-out dash-button'); link.href='/replay?tradeId='+encodeURIComponent(trades[0].id);recap.append(link);
+      const link=node('a','Review yesterday’s trade','n-btn n-out dash-button'); link.href='/journal?tradeId='+encodeURIComponent(trades[0].id);recap.append(link);
     }else recap.append(message('No trades closed yesterday.'));
     const tomorrow=new URLSearchParams(location.search).get('day')==='tomorrow';
     const planEndpoint='/api/plan'+(tomorrow?'?day=tomorrow':'');

@@ -115,7 +115,7 @@ export function createStreakApi(pool, authenticate, store, { remindersAvailable 
     },true),
     friends: endpoint(async ({ uid }) => {
       const { rows } = await pool.query(`
-        SELECT f.id::text, f.status, f.user_id=$1 AS outgoing, p.display_name AS name,
+        SELECT f.id::text, f.status, f.user_id=$1 AS outgoing, p.display_name AS name, encode(p.profile_picture,'base64') AS avatar,
           CASE WHEN f.status='active' THEN coalesce(s.current,0) END AS current
         FROM streak_friends f JOIN user_profile p ON p.user_id=CASE WHEN f.user_id=$1 THEN f.friend_user_id ELSE f.user_id END
         LEFT JOIN streak_state s ON s.user_id=p.user_id

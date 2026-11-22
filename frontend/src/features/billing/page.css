@@ -3,3 +3,35 @@
 [data-workspace-mode=billing] .workspace-heading h1{font-family:'Instrument Serif',serif;font-weight:400}
 
 .bill-board[hidden]{display:none}
+
+.bill-columns > aside { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.bill-columns { grid-template-columns:minmax(0,1fr); }
+.bill-payment {
+  width:min(100% - 24px,520px); max-height:calc(100dvh - 32px); box-sizing:border-box;
+  overflow:auto; border:0; border-radius:22px; padding:clamp(16px,4vw,28px);
+  background:var(--bg); color:var(--ink);
+}
+.bill-payment::backdrop { background:#10102588; }
+.bill-payment header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.bill-payment h2 { margin:0; }
+.bill-payment [data-bill=methods] { display:grid; gap:10px; }
+.bill-payment [data-bill=methods] button { text-align:left; }
+.bill-payment [aria-pressed=true] { color:var(--acc); outline:1px solid var(--acc); }
+.bill-payment [data-bill=confirm-payment] { margin-top:16px; }
+.bill-payment [data-bill=payment-status]:not(:empty) { margin-top:12px; }
+.bill-start:not(:disabled) { position:relative; }
+.bill-start:not(:disabled)::after {
+  content:''; position:absolute; inset:-2px; pointer-events:none; border-radius:inherit;
+  box-shadow:0 0 0 2px var(--acc),0 0 15px var(--acc); opacity:.28;
+}
+@media(prefers-reduced-motion:no-preference) {
+  .bill-start:not(:disabled)::after { animation:bill-start-pulse 2.6s ease-out infinite; }
+  @keyframes bill-start-pulse {
+    0%,100% { opacity:.26; transform:scale(1); }
+    58% { opacity:0; transform:scale(1.09,1.24); }
+  }
+}
+@media(max-width:760px) {
+  .bill-columns > aside { grid-template-columns:1fr; }
+  .bill-payment { margin:auto 0 0; width:100%; max-width:none; border-radius:22px 22px 0 0; }
+}

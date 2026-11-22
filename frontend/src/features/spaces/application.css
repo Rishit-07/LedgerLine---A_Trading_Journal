@@ -1,0 +1,33 @@
+.workspace-content .mentor-application { width:min(100%,760px); max-width:none; justify-self:center; margin-inline:auto; }
+.mentor-progress.onboarding-progress { grid-template-columns:repeat(5,minmax(0,1fr)); width:100%; margin:6px auto 28px; }
+.mentor-progress.onboarding-progress::before { inset-inline:10%; }
+.mentor-application .mentor-step,.mentor-status-card { padding:clamp(20px,3.2vw,40px); border-radius:28px; }
+.mentor-status-card { background:var(--bg); box-shadow:var(--surface-raised); }
+.mentor-application .mentor-step { display:grid; gap:22px; max-width:none; }
+.mentor-step-head small { color:var(--sub); font-weight:650; }
+.mentor-step-head h2 { font:400 clamp(30px,4vw,44px)/1.06 Georgia,serif; margin:6px 0 12px; }
+.mentor-step-head h2:focus { outline:none; }
+.mentor-step-head p { margin:5px 0; color:var(--sub); line-height:1.5; }
+.mentor-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.mentor-fields > :is(label,fieldset) { min-width:0; margin:0; }
+.mentor-fields > :is(fieldset,[data-kind=check],[data-kind=url],[data-kind=boolean],[data-kind=textarea],[data-kind=links]) { grid-column:1/-1; }
+.mentor-step .mentor-fields fieldset label,.mentor-step .mentor-fields [data-kind=check] { display:flex; flex-direction:row; align-items:center; gap:8px; }
+.mentor-step input[type=checkbox] { width:1.1em; height:1.1em; accent-color:var(--acc); flex:none; }
+.mentor-step .mentor-fields [data-kind=check] input { order:-1; }
+.mentor-photo-section { display:grid; gap:12px; border-top:1px solid var(--track); padding-top:16px; }
+.mentor-photo-section .mentor-photo { max-width:100%; }
+.mentor-step .mentor-step-actions { position:static; justify-content:space-between; padding:16px 0 0; border-top:1px solid var(--track); border-radius:0; }
+.mentor-step-actions button:last-child { margin-inline-start:auto; }
+.mentor-step p[role=status]:empty { display:none; }
+.mentor-application > .mentor-step + button { margin-top:18px; }
+@media(prefers-reduced-motion:no-preference) {
+  .mentor-application .mentor-step { animation:mentor-slide .27s ease-out both; --travel:12px; }
+  .mentor-application .mentor-step[data-direction=back] { --travel:-12px; }
+  @keyframes mentor-slide { from { opacity:0; transform:translateX(var(--travel)); } }
+}
+@media(max-width:600px) {
+  .mentor-fields { grid-template-columns:minmax(0,1fr); }
+  .mentor-progress.onboarding-progress li { font-size:clamp(9px,2.45vw,12px); }
+  .mentor-progress.onboarding-progress span { width:32px; height:32px; }
+  .mentor-progress.onboarding-progress::before { top:15px; }
+}

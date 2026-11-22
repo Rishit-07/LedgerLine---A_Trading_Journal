@@ -1,3 +1,4 @@
+import {avatarUrl} from './pages/profile-picture.js';
 import {
   createUserWithEmailAndPassword,
   getAdditionalUserInfo,
@@ -359,14 +360,14 @@ export async function renderAccountPage(path, landing, appPages) {
   if (['/billing','/history','/plan','/mentor-verification','/mentor-review','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach','/calendar'].includes(path)) {
     const { renderWorkspace } = await import('./pages/workspace.js');
     await renderWorkspace(landing, { path, request, uid:user.uid, name:account.displayName || user.displayName,
-      photoUrl:user.photoURL, signOut:() => signOut(auth) });
+      photoUrl:avatarUrl(account.avatar)||user.photoURL, signOut:() => signOut(auth) });
     addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
     return;
   }
 
   if (['/journal', '/profile', '/badges', '/settings'].includes(path)) {
     const { renderStreakPage } = await import('./pages/streak-pages.js');
-    await renderStreakPage(landing, { path, request, name: account.displayName || user.displayName, photoUrl:user.photoURL, signOut: () => signOut(auth) });
+    await renderStreakPage(landing, { path, request, name: account.displayName || user.displayName, photoUrl:avatarUrl(account.avatar)||user.photoURL, signOut: () => signOut(auth) });
     addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
     return;
   }
@@ -375,7 +376,7 @@ export async function renderAccountPage(path, landing, appPages) {
     const { renderDashboard } = await import('./pages/dashboard.js');
     const load = () => authenticatedRequest(user, '/api/dashboard', 'GET');
     renderDashboard(landing, {
-      initial: await load(), load, name: account.displayName || user.displayName, photoUrl: user.photoURL, request,
+      initial: await load(), load, name: account.displayName || user.displayName, photoUrl: avatarUrl(account.avatar)||user.photoURL, request,
       save: (trade) => authenticatedRequest(user, '/api/trades', 'POST', trade),
       loadCalendar: () => authenticatedRequest(user, '/api/calendar', 'GET'),
       loadCalendarMonth: (month) => authenticatedRequest(user, '/api/calendar/month?month=' + encodeURIComponent(month), 'GET'),

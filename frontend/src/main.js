@@ -6,6 +6,7 @@ import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
 import '@fontsource/ibm-plex-mono/600.css';
 import './styles/tokens.css';
+import './styles/selects.css';
 import './styles/landing.css';
 import './styles/responsive.css';
 import { initMotion } from './motion.js';
@@ -42,7 +43,7 @@ const appPages = {
   '/coach': 'AI coach',
   '/plan': 'Plan',
   '/mistake': 'Mistake lab',
-  '/reports': 'Weekly reports',
+  '/reports': 'AI Reports',
   '/badges': 'Badges',
   '/portfolio': 'Portfolio',
   '/people': 'People',
@@ -119,7 +120,7 @@ if(legacyBillingRoute(path,location.search)){location.replace('/billing');}else 
   import('./pages/legal.js').then(({ renderLegal }) => bindPublicAccount(renderLegal(landing))).catch(renderLoadError);
 } else if (path.startsWith('/p/')) {
   landing.hidden = true;
-  import('./pages/workspace-portfolio.js').then(({ renderPublicPortfolio }) =>
+  import('./pages/portfolio-public.js').then(({ renderPublicPortfolio }) =>
     renderPublicPortfolio(landing, path.slice(3))).catch(renderLoadError);
 } else if (path === '/streak/share') {
   landing.hidden = true;
