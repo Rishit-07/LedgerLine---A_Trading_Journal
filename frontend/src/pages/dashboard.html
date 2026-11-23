@@ -58,12 +58,12 @@
         <h1 id="dash-greeting">Dashboard</h1>
         <p class="dash-month-label">This month</p>
         <p class="dash-month" data-month-result>—</p>
+        <div class="dash-actions"><button class="n-btn n-acc dash-button" type="button" data-log-trade><span aria-hidden="true">＋</span> Log a trade</button><a class="n-btn n-out dash-button" href="#today">Review today</a></div>
         <p class="dash-muted" data-month-note></p>
-        <div class="dash-actions"><button class="n-btn n-acc dash-button" type="button" data-log-trade>Log a trade <span aria-hidden="true">→</span></button><a class="n-btn n-out dash-button" href="#today">Review today</a></div>
       </div>
       <div class="dash-hero-tiles">
-        <section class="n-out dash-score-tile"><h2>Trader Score</h2><div class="dash-score-ring" data-trader-score></div><p class="dash-muted" data-score-detail></p></section>
-        <button type="button" class="n-btn n-out dash-mini-tile dash-streak-badge" data-open-streak aria-haspopup="dialog" aria-controls="streak"><strong data-streak>—</strong><span>Journal streak <b aria-hidden="true">↗</b></span></button>
+        <section class="n-out dash-score-tile"><h2>Trader Score</h2><div class="dash-score-ring"><div><strong data-trader-score>—</strong><small data-hero-level></small></div></div><p class="dash-muted" data-score-detail></p></section>
+        <button type="button" class="n-btn n-out dash-mini-tile dash-streak-badge" data-open-streak aria-haspopup="dialog" aria-controls="streak"><strong data-streak>—</strong><span>Journal streak</span></button>
         <div class="n-out dash-mini-tile"><strong data-adherence>—</strong><span>Rules followed</span></div>
       </div>
     </section>

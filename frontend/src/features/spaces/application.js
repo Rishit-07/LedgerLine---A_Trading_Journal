@@ -1,4 +1,4 @@
-import {fields,steps,sectionError,termsVersion} from '../../../../src/config/mentor-form.js';
+import {fields,steps,mentorFieldApplies,sectionError,termsVersion} from '../../../../src/config/mentor-form.js';
 import {node,button} from '../../pages/workspace-ui.js';
 import {confirmationCard} from '../../components/confirmation-motion.js';
 import '../../components/billing-ready.css';
@@ -41,7 +41,7 @@ export const application={title:'Verify you teach',description:'Apply for human 
    form.append(head);
    root.append(tracker,form);
    if(!step){
-    head.append(node('p','Verified account · '+data.email),node('p','Reviewers can see this application. Students can see your display name, optional photo, topics, bio and verified badge.'));
+    head.append(node('p','Verified account · '+data.email),node('p','Reviewers can see this application. Students can see your display name, photo, topics, bio and verified badge.'));
    }
    const group=node('div','','mentor-fields');form.append(group);
    const getters={};
@@ -64,15 +64,17 @@ export const application={title:'Verify you teach',description:'Apply for human 
     }
 
    }
-   if(step===3){const sync=()=>{const answer=getters.sebi_registered();for(const [k,visible] of [['education_only_ack',answer===false],['sebi_reg_number',answer===true],['sebi_verify_url',answer===true]])form.querySelector('[data-field='+k+']').hidden=!visible;};form.addEventListener('change',sync);sync();}
+   /* Conditional fields participate in browser validation only while applicable. */
+   const syncFields=()=>{const answers={topics:getters.topics?.(),sebi_registered:getters.sebi_registered?.()};for(const wrap of group.children){const applies=mentorFieldApplies(wrap.dataset.field,answers);wrap.hidden=!applies;for(const input of wrap.querySelectorAll('input,select,textarea')){input.disabled=!applies;input.required=applies && wrap.dataset.kind!=='multi';}}};form.addEventListener('change',syncFields);syncFields();
+
    if(!step){
     const preview=node('img','','mentor-photo');preview.alt='Your profile photo';preview.hidden=!photo;if(photo)preview.src='data:image/jpeg;base64,'+photo;
     const video=node('video','','mentor-photo');video.muted=true;video.playsInline=true;video.hidden=true;
     const store=source=>{const canvas=document.createElement('canvas'),w=source.videoWidth||source.naturalWidth,h=source.videoHeight||source.naturalHeight;if(!w||!h)throw Error('Wait for the camera image.');const scale=Math.min(1,720/Math.max(w,h));canvas.width=Math.round(w*scale);canvas.height=Math.round(h*scale);canvas.getContext('2d').drawImage(source,0,0,canvas.width,canvas.height);preview.src=canvas.toDataURL('image/jpeg',.84);photo=preview.src.split(',')[1];preview.hidden=false;};
     const capture=button('Take photo',()=>{try{store(video);stop();video.hidden=capture.hidden=true;}catch(e){status.textContent=e.message;}});capture.hidden=true;
-    const start=button('Open camera',async()=>{stop();const ticket=epoch;try{const camera=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});if(epoch!==ticket||!video.isConnected){camera.getTracks().forEach(t=>t.stop());return;}stream=camera;video.srcObject=camera;video.hidden=false;await video.play();capture.hidden=false;}catch{stop();status.textContent='Camera unavailable. Allow camera access, upload a photo, or continue without one.';}});
+    const start=button('Open camera',async()=>{stop();const ticket=epoch;try{const camera=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});if(epoch!==ticket||!video.isConnected){camera.getTracks().forEach(t=>t.stop());return;}stream=camera;video.srcObject=camera;video.hidden=false;await video.play();capture.hidden=false;}catch{stop();status.textContent='Camera unavailable. Allow camera access, or upload a photo.';}});
     const file=node('input');file.type='file';file.accept='image/jpeg,image/png,image/webp';file.onchange=async()=>{const blob=file.files[0];if(!blob)return;if(blob.size>5*1024*1024||!['image/jpeg','image/png','image/webp'].includes(blob.type)){status.textContent='Choose a JPEG, PNG or WebP under 5 MB.';return;}const url=URL.createObjectURL(blob);try{const im=new Image();im.src=url;await im.decode();store(im);}catch{status.textContent='Unable to read photo.';}finally{URL.revokeObjectURL(url);}};
-    const l=node('label','Profile photo (optional)');l.append(file);const photos=node('div','','mentor-photo-section');
+    const l=node('label','Profile photo (required)');l.append(file);const photos=node('div','','mentor-photo-section');
     const photoActions=node('div','','ws-actions');
     form.append(photos);photos.append(l,preview,video,photoActions);photoActions.append(start,capture,button('Remove photo',()=>{stop();video.hidden=capture.hidden=true;photo=null;preview.hidden=true;preview.removeAttribute('src');}));
    }
@@ -80,7 +82,7 @@ export const application={title:'Verify you teach',description:'Apply for human 
    const actions=node('div','','ws-actions mentor-step-actions');form.append(status,actions);
    if(step)actions.append(button('Back',()=>{Object.assign(data,Object.fromEntries(Object.entries(getters).map(([k,get])=>[k,get()])));step--;draw(-1);}));
    const next=node('button',step===4?'Submit for review':'Save and continue','n-btn n-acc dash-button');actions.append(next);
-   form.onsubmit=async e=>{e.preventDefault();const values=Object.fromEntries(Object.entries(getters).map(([k,get])=>[k,get()]));if(step===3){if(values.sebi_registered)values.education_only_ack=false;else values.sebi_reg_number=values.sebi_verify_url='';}const problem=sectionError(values,step);if(problem){status.textContent=problem;return;}const last=step===4;next.disabled=true;for(const control of actions.children)control.disabled=true;
+   form.onsubmit=async e=>{e.preventDefault();const values=Object.fromEntries(Object.entries(getters).map(([k,get])=>[k,get()]));if(step===3){if(values.sebi_registered)values.education_only_ack=false;else values.sebi_reg_number=values.sebi_verify_url='';}const problem=sectionError(values,step)||(!step&&!photo?'Take or upload a profile photo.':'');if(problem){status.textContent=problem;return;}const last=step===4;next.disabled=true;for(const control of actions.children)control.disabled=true;
     try{await request(path,'POST',{action:last?'submit':'save',step,values,...(!step?{photo:photo??null}:{})});Object.assign(data,values);if(last){data.status='pending';data.reviewer_note='';editing=false;}else step++;draw(1);}
     catch(e){status.textContent=e.message;for(const control of actions.children)control.disabled=false;}
    };
