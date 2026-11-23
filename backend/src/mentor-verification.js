@@ -32,7 +32,8 @@ export function mentorVerification(pool,authenticate,auth,admin=false){
    if(req.method==='GET'){
     if(!admin){
      const {rows:[r]}=await pool.query('SELECT * FROM mentor_verifications WHERE user_id=$1',[user.uid]);
-     return send(res,200,{...view(r),email:user.email,admin:eligibleReviewer(user)});
+     const phone = r?.phone || user.phone_number || (await pool.query('SELECT contact_phone FROM user_profile WHERE user_id=$1',[user.uid])).rows[0]?.contact_phone;
+     return send(res,200,{...view(r),phone:phone || null,email:user.email,admin:eligibleReviewer(user)});
     }
     const id=url.searchParams.get('id');
     if(!id)return send(res,200,{items:(await pool.query("SELECT id,display_name,status,next_review_at FROM mentor_verifications WHERE status IN ('pending','approved') ORDER BY (status='pending') DESC,next_review_at NULLS LAST,submitted_at")).rows});
@@ -66,6 +67,8 @@ export function mentorVerification(pool,authenticate,auth,admin=false){
      const section=fields[data.step].map(([k])=>k);
      const next={...r,...Object.fromEntries(section.map(k=>[k,data.values?.[k]??null]))};
      for(const i of data.action==='submit'?fields.map((_,i)=>i):[data.step]){const problem=sectionError(next,i);if(problem)reject(problem);}
+     if((data.step===0 || data.action==='submit') && !(data.step===0 && data.photo!==undefined ? data.photo : r.photo))
+       reject('Take or upload a profile photo.');
      const changed=section.map((k,i)=>k+'=$'+(i+2)).join(',');
      await db.query('UPDATE mentor_verifications SET '+changed+' WHERE user_id=$1',[user.uid,...section.map(k=>next[k])]);
      if(data.step===0&&data.photo!==undefined){

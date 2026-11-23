@@ -1,3 +1,5 @@
+import { linkWithPhoneNumber, RecaptchaVerifier } from 'firebase/auth';
+import { mountVerificationCode } from '../components/verification-code.js';
 import pageMarkup from './onboarding.html?raw';
 import { bindPageTheme, mountPage } from './shared.js';
 import { animatePageExit } from './navigation.js';
@@ -10,7 +12,7 @@ const limits = [
   ['trades', 'Max trades per day', [2, 3, 5, 8, 10], ''],
 ];
 
-export function renderOnboarding(landing, { initial, email, save, signOut, destination = '/dashboard' }) {
+export function renderOnboarding(landing, { initial, user, auth, email, save, signOut, destination = '/dashboard' }) {
   document.title = 'Set up Ledgerline';
   const page = mountPage(landing, pageMarkup);
   bindPageTheme(page);
@@ -25,10 +27,86 @@ export function renderOnboarding(landing, { initial, email, save, signOut, desti
   const selected = new Set(initial.markets ?? []);
   const values = { risk: initial.risk ?? 1, loss: initial.loss ?? 2, trades: initial.trades ?? 3 };
   const hardRules = new Set(initial.hardRules ?? []);
-  let step = initial.step;
+  let step = initial.requirePhoneOtp && !user.phoneNumber ? 1 : initial.step;
   let saving = false;
   form.elements.displayName.value = initial.displayName ?? '';
   form.elements.email.value = email ?? '';
+
+  const phone = form.elements.phone;
+  const send = form.querySelector('[data-send-code]');
+  const codeHost = form.querySelector('[data-code]');
+  const phoneStatus = form.querySelector('[data-phone-status]');
+  let busy = false;
+  let resendAfter = 0;
+
+  function refreshPhone() {
+    if (!user.phoneNumber) return;
+    phone.value = user.phoneNumber;
+    phone.readOnly = true;
+    send.hidden = true;
+    form.querySelector('[data-phone-notice]').hidden = true;
+    phoneStatus.textContent = 'Phone number verified.';
+  }
+  phone.value = initial.contactPhone || '';
+  send.hidden = !initial.requirePhoneOtp;
+  if (initial.requirePhoneOtp) {
+    form.querySelector('[data-phone-notice]').textContent = 'Google processes the number for abuse prevention. SMS rates may apply.';
+  }
+  refreshPhone();
+  phone.addEventListener('input', () => {
+    codeHost.replaceChildren();
+    phoneStatus.textContent = '';
+    send.textContent = 'Send verification code';
+  });
+  send.addEventListener('click', async () => {
+    if (!initial.requirePhoneOtp || busy || user.phoneNumber) return;
+    const number = phone.value.replace(/[\s()-]/g, '');
+    if (!/^\+[1-9]\d{6,14}$/.test(number)) {
+      phoneStatus.textContent = 'Enter the full phone number, starting with + and your country code.';
+      phone.focus();
+      return;
+    }
+    if (Date.now() < resendAfter) {
+      phoneStatus.textContent = 'Wait a minute before requesting another code.';
+      return;
+    }
+    let captcha;
+    busy = phone.readOnly = send.disabled = true;
+    phoneStatus.textContent = 'Sending code…';
+    try {
+      captcha = new RecaptchaVerifier(auth, form.querySelector('[data-captcha]'), { size: 'invisible' });
+      const confirmation = await linkWithPhoneNumber(user, number, captcha);
+      resendAfter = Date.now() + 60000;
+      phoneStatus.textContent = '';
+      send.textContent = 'Resend code';
+      mountVerificationCode(codeHost, {
+        destination: number,
+        confirm: async code => {
+          phone.readOnly = send.disabled = true;
+          try {
+            await confirmation.confirm(code);
+            await user.getIdToken(true);
+          } catch (error) {
+            if (user.phoneNumber) refreshPhone();
+            else phone.readOnly = send.disabled = false;
+            throw new Error(error.code === 'auth/credential-already-in-use'
+              ? 'This number belongs to another account.'
+              : error.code === 'auth/code-expired' || error.code === 'auth/session-expired'
+                ? 'This code expired. Request another code.'
+                : error.code === 'auth/invalid-verification-code' ? 'Incorrect code. Try again.' : 'Verification could not finish. Check your connection and try again.');
+          }
+        },
+        onVerified: refreshPhone,
+      });
+    } catch (error) {
+      phoneStatus.textContent = error.code === 'auth/too-many-requests'
+        ? 'Too many requests. Try again later.'
+        : 'The SMS could not be sent. Check the number and try again.';
+    } finally {
+      captcha?.clear();
+      busy = phone.readOnly = send.disabled = false;
+    }
+  });
 
   signOutButton.addEventListener('click', async () => {
     signOutButton.disabled = true;
@@ -144,11 +222,22 @@ export function renderOnboarding(landing, { initial, email, save, signOut, desti
       form.elements.displayName.focus();
       return;
     }
+    const contactPhone = phone.value.replace(/[\s()-]/g, '') || null;
+    if (step === 1 && contactPhone && !/^\+[1-9]\d{6,14}$/.test(contactPhone)) {
+      status.textContent = 'Enter your phone number with its country code.';
+      phone.focus();
+      return;
+    }
+    if (initial.requirePhoneOtp && !user.phoneNumber) {
+      status.textContent = 'Verify your phone number to continue.';
+      (codeHost.querySelector('input') || phone).focus();
+      return;
+    }
     if (step === 2 && !selected.size) {
       status.textContent = 'Choose at least one market.';
       return;
     }
-    const data = step === 1 ? { displayName } : step === 2 ? { markets: [...selected] }
+    const data = step === 1 ? { displayName, contactPhone } : step === 2 ? { markets: [...selected] }
       : step === 3 ? { ...values, hardRules: [...hardRules] } : {};
     const panel = panels[step - 1];
     panel.inert = signOutButton.disabled = true;

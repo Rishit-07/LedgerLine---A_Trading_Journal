@@ -88,7 +88,8 @@ function fillDashboard(page, data, name) {
   const hour = Number(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Kolkata' }).format(new Date()));
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const firstName = (data.displayName || name || '').trim().split(/\s+/)[0];
-  set('#dash-greeting', firstName ? `${greeting}, ${firstName}.` : `${greeting}.`);
+  set('#dash-greeting', firstName ? greeting+',' : greeting+'.');
+  if(firstName) one('#dash-greeting').append(document.createElement('br'),firstName+'.');
   set('[data-dash-date]', `${date.format(new Date(data.day))} · IST`);
   set('[data-month-result]', r(data.monthlyBooked));
   set('[data-month-note]', data.monthlyBooked === null ? 'No closed trades this month.' : 'Realized result from your closed trades.');
@@ -97,7 +98,7 @@ function fillDashboard(page, data, name) {
   set('[data-trader-score]', score?.value ?? '—');
   set('[data-score-detail]', score?.value == null ? 'Log a trade to see your score'
     : score.coverage < 100 ? `Of 100 · ${score.coverage}% of weights available` : 'Of 100 · Last 42 days');
-  const scoreRing = one('[data-trader-score]');
+  const scoreRing = one('.dash-score-ring');
   scoreRing.style.setProperty('--score-fill', (score?.value ?? 0) + '%');
   if (score?.value != null) scoreRing.setAttribute('aria-label', 'Trader Score ' + score.value + ' out of 100');
   else scoreRing.removeAttribute('aria-label');
@@ -215,6 +216,7 @@ export function renderDashboard(landing, { initial, load, name, photoUrl, save, 
   const streakDialog = request ? bindStreakDialog(page, { request, getState: () => streak, onState: applyStreak }) : null;
   function applyStreak(next) {
     streak = next;
+    page.querySelector('[data-hero-level]').textContent=Number.isInteger(next.level)?'Level '+next.level:'';
     paintStreakChip(page,streak.current);
     badge.querySelector('[data-streak]').textContent = streak.current + (streak.current === 1 ? ' day' : ' days');
     if (streakDialog?.dialog.open) streakDialog.paintState(streak);

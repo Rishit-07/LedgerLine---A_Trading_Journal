@@ -5,7 +5,7 @@ const brokers = new Set(['manual', 'csv', 'zerodha', 'upstox', 'angel-one', 'dha
 const ruleKeys = ['risk', 'loss', 'trades'];
 
 const readProfile = (db, uid) => db.query(`
-  SELECT display_name AS "displayName", markets, risk_per_trade_pct::float AS risk,
+  SELECT display_name AS "displayName", contact_phone AS "contactPhone", markets, risk_per_trade_pct::float AS risk,
     daily_loss_limit_r AS loss, max_trades_per_day AS trades, broker,
     onboarding_step AS step, onboarded_at AS "completedAt",
     ARRAY(SELECT rule_key FROM rules WHERE user_id = $1 AND hard AND active) AS "hardRules"
@@ -31,9 +31,9 @@ function validStep(payload) {
 
 async function saveStep(db, uid, input) {
   if (input.step === 1) {
-    await db.query(`INSERT INTO user_profile (user_id, display_name, onboarding_step) VALUES ($1, $2, 2)
-      ON CONFLICT (user_id) DO UPDATE SET display_name = excluded.display_name,
-        onboarding_step = greatest(user_profile.onboarding_step, 2)`, [uid, input.displayName.trim()]);
+    await db.query(`INSERT INTO user_profile (user_id, display_name, contact_phone, onboarding_step) VALUES ($1, $2, $3, 2)
+      ON CONFLICT (user_id) DO UPDATE SET display_name = excluded.display_name, contact_phone = excluded.contact_phone,
+        onboarding_step = greatest(user_profile.onboarding_step, 2)`, [uid, input.displayName.trim(), input.contactPhone ?? null]);
   } else if (input.step === 2) {
     await db.query(`UPDATE user_profile SET markets = $2, onboarding_step = greatest(onboarding_step, 3) WHERE user_id = $1`, [uid, input.markets]);
   } else if (input.step === 3) {
@@ -51,7 +51,7 @@ async function saveStep(db, uid, input) {
   }
 }
 
-export function createOnboardingHandler(pool, authenticate) {
+export function createOnboardingHandler(pool, authenticate, requirePhoneOtp = process.env.REQUIRE_PHONE_OTP === 'true') {
   return async (request, response) => {
     const claims = await authenticate(request, response);
     if (!claims) return;
@@ -60,11 +60,23 @@ export function createOnboardingHandler(pool, authenticate) {
     try {
       if (request.method === 'GET') {
         const { rows: [profile] } = await readProfile(pool, uid);
-        send(response, 200, profile ?? { step: 1, displayName: claims.name ?? '' });
+        send(response, 200, { ...(profile ?? { step: 1, displayName: claims.name ?? '' }), requirePhoneOtp });
         return;
       }
       const { data, error } = await readJson(request, 4096);
       const editing = data?.section !== undefined;
+      if (!editing && requirePhoneOtp && !claims.phone_number) {
+        send(response, 403, { error: 'Verify your phone number to continue.' });
+        return;
+      }
+      if (!editing && data?.step === 1) {
+        const phone = claims.phone_number || data.contactPhone || null;
+        if (phone !== null && (typeof phone !== 'string' || !/^\+[1-9]\d{6,14}$/.test(phone))) {
+          send(response, 400, { error: 'Enter a phone number with its country code.' });
+          return;
+        }
+        data.contactPhone = phone;
+      }
       const validEdit = data?.section === 'account' ? validStep({...data,step:1}) && validStep({...data,step:2})
         : data?.section === 'rules' ? validStep({...data,step:3}) && data.broker === undefined
         : data?.section === 'broker' && brokers.has(data.broker);
