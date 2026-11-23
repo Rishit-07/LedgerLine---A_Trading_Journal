@@ -2,6 +2,12 @@ export function send(response, status, body) {
   response.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
+    // The API only returns JSON: it must never be rendered, framed or sniffed as something else.
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+    'Cross-Origin-Resource-Policy': 'same-origin',
   });
   response.end(JSON.stringify(body));
 }
