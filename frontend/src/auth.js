@@ -335,7 +335,7 @@ export async function renderAccountPage(path, landing, appPages) {
     const initial = await authenticatedRequest(user, '/api/onboarding', 'GET');
     if (initial.completedAt) location.replace(dashboardDestination);
     else renderOnboarding(landing, {
-      initial, email: user.email, destination: dashboardDestination,
+      initial, user, auth, email: user.email, destination: dashboardDestination,
       save: (data) => authenticatedRequest(user, '/api/onboarding', 'PUT', data),
       signOut: () => signOut(auth),
     });

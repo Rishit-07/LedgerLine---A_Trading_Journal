@@ -65,6 +65,10 @@ export function createOnboardingHandler(pool, authenticate) {
       }
       const { data, error } = await readJson(request, 4096);
       const editing = data?.section !== undefined;
+      if (!editing && !claims.phone_number) {
+        send(response, 403, { error: 'Verify your phone number to continue.' });
+        return;
+      }
       const validEdit = data?.section === 'account' ? validStep({...data,step:1}) && validStep({...data,step:2})
         : data?.section === 'rules' ? validStep({...data,step:3}) && data.broker === undefined
         : data?.section === 'broker' && brokers.has(data.broker);
