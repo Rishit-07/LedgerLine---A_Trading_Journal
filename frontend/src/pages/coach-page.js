@@ -6,7 +6,7 @@ export const coach = {
   description: 'Ask questions about your trading process.',
   content: `<div class="coach-layout">
     <aside class="n-out ws-card coach-sidebar">
-      <button type="button" class="n-btn n-acc dash-button" data-new-chat>+ New chat</button>
+      <button type="button" class="btn btn-primary" data-new-chat>+ New chat</button>
       <nav aria-label="Past chats" data-chat-history></nav>
     </aside>
     <section class="n-out ws-card ws-coach">
@@ -14,21 +14,21 @@ export const coach = {
         <div><h2 data-chat-title>New chat</h2><p data-chat-connection></p></div>
         <details class="coach-options" data-options hidden>
           <summary aria-label="Chat options">•••</summary>
-          <div><button type="button" data-rename>Rename chat</button><button type="button" data-pin>Pin chat</button><button type="button" data-delete>Delete chat</button></div>
+          <div><button type="button" class="btn btn-ghost" data-rename>Rename chat</button><button type="button" class="btn btn-ghost" data-pin>Pin chat</button><button type="button" class="btn btn-danger" data-delete>Delete chat</button></div>
         </details>
       </header>
       <form class="coach-edit" data-edit hidden>
         <label data-rename-label>Chat name <input name="title" maxlength="80" autocomplete="off"></label>
         <span data-delete-label hidden>Delete this chat and its messages permanently?</span>
-        <div><button class="n-btn n-out" type="button" data-cancel>Cancel</button>
-        <button class="n-btn n-acc" type="submit" data-confirm>Save name</button></div>
+        <div><button class="btn btn-secondary" type="button" data-cancel>Cancel</button>
+        <button class="btn btn-primary" type="submit" data-confirm>Save name</button></div>
       </form>
       <div class="ws-chat" role="log" aria-label="Conversation" data-coach-chat></div>
       <form class="ws-form" data-coach-form>
         <label class="ws-visually-hidden" for="coach-question">Message Ledger</label>
         <div class="coach-composer">
           <textarea id="coach-question" name="question" rows="2" maxlength="600" placeholder="Message Ledger…" required></textarea>
-          <button type="submit" class="n-btn n-acc dash-button" aria-label="Send message" title="Send message">↑</button>
+          <button type="submit" class="btn btn-primary" aria-label="Send message" title="Send message">↑</button>
         </div>
         <div class="coach-composer-meta"><small>Enter to send · Shift+Enter for a new line</small><small data-token-balance></small></div>
         <small data-coach-consent></small>
@@ -110,7 +110,7 @@ export const coach = {
     function paintHistory() {
       const ordered = [...chats.values()].sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || b.updatedAt.localeCompare(a.updatedAt));
       history.replaceChildren(node('h3', 'Past chats'), ...ordered.map((chat) => {
-        const button = node('button', '', 'n-btn');
+        const button = node('button', '', 'btn btn-ghost');
         button.title=chat.title;
         if (chat.pinned) {
           button.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m15 4 5 5-3 1-3 4v3l-2 2-7-7 2-2h3l4-3zM8 16l-5 5"/></svg>';
@@ -125,7 +125,7 @@ export const coach = {
       if (!ordered.length) history.append(node('p', 'No past chats.'));
       for (const [id, draft] of drafts) {
         if (!draft || chats.has(id) || id === activeId) continue;
-        const button = node('button', 'Unsent chat', 'n-btn');
+        const button = node('button', 'Unsent chat', 'btn btn-ghost');
         button.type = 'button';
         button.addEventListener('click', () => void open(id, true));
         history.append(button);

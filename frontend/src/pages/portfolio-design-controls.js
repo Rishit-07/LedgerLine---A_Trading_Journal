@@ -37,7 +37,7 @@ export function portfolioDesignControls(form,data) {
   setups.append(help);
   const frame=options(setups,'Show setups as',[['phone','Phone screens'],['card','Plain cards']],settings.frame || 'phone');
   const cards=node('div','','portfolio-setup-list');
-  const add=node('button','Add a setup','mgn-customize-secondary');add.type='button';
+  const add=node('button','Add a setup','btn btn-secondary');add.type='button';
   setups.append(cards,add);
   const entries=[];
   function sync(){entries.forEach(({title},i)=>title.textContent='Setup '+(i+1));add.hidden=entries.length>=5;}
@@ -51,7 +51,7 @@ export function portfolioDesignControls(form,data) {
     }
     const color=options(panel,'Colour',setupColors.map((c,i)=>[c,['Indigo','Green','Clay','Violet','Rose'][i]]),item.color || setupColors[entries.length%5],true);
     const chart=options(panel,'Session chart',[['columns','Columns'],['line','Line'],['bars','Bars']],item.chart || 'columns');
-    const remove=node('button','Remove setup','mgn-customize-remove');remove.type='button';
+    const remove=node('button','Remove setup','btn btn-danger');remove.type='button';
     const entry={title,panel,inputs,read:()=>({...Object.fromEntries(Object.entries(inputs).map(([k,v])=>[k,v.value.trim()])),color:color(),chart:chart()})};
     remove.onclick=()=>{entries.splice(entries.indexOf(entry),1);panel.remove();sync();add.focus();};
     panel.append(remove);cards.append(panel);entries.push(entry);sync();

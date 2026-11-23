@@ -16,7 +16,7 @@ export function paginate(list, label, size = 5, filter = '', revealIndex) {
     previous.textContent = 'Previous';
     next.textContent = 'Next';
     previous.type = next.type = 'button';
-    previous.className = next.className = 'n-btn n-out dash-button';
+    previous.className = next.className = 'btn btn-secondary';
     nav.append(previous, counter, next);
     list.after(nav);
     pager = { nav, previous, next, counter, index: 0, filter };

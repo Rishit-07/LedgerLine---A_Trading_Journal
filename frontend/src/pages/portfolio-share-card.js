@@ -15,7 +15,7 @@ export function openPortfolioShare(profile, stats, name) {
 
   if(!profile?.slug || !['link','public'].includes(profile.visibility)){
     panel.append(node('p','Set your saved portfolio to Anyone with the link or Public to share it.'));
-    const settings=node('a','Portfolio settings','n-btn n-acc dash-button');
+    const settings=node('a','Portfolio settings','btn btn-primary');
     settings.href='/settings#portfolio';
     panel.append(settings);
     return;
@@ -28,7 +28,7 @@ export function openPortfolioShare(profile, stats, name) {
   canvas.hidden=true;
   canvas.setAttribute('role','img');
   canvas.setAttribute('aria-label','Ledgerline portfolio card with a QR code');
-  const open=node('a','Open shared profile','n-btn n-out dash-button');
+  const open=node('a','Open shared profile','btn btn-secondary');
   open.href=href+'?view=visitor';
   const copy=button('Copy link',async()=>{
     try{await navigator.clipboard.writeText(href);status.textContent='Portfolio link copied.';}

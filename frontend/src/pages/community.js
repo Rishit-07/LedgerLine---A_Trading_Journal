@@ -9,7 +9,7 @@ function heading(active) {
     <nav class="community-nav n-out" aria-label="Community pages">${links.map(([key,text])=>`<a href="/${key}" ${active===key?'aria-current="page"':''}>${text}</a>`).join('')}</nav>`;
 }
 function anchor(label,href) {
-  const a=node('a',label,'n-btn n-out dash-button');a.href=href;return a;
+  const a=node('a',label,'btn btn-secondary');a.href=href;return a;
 }
 function tabs(root, labels, onChange) {
   const controls=labels.map(label=>button(label,()=>activate(label)));
@@ -23,7 +23,7 @@ function tabs(root, labels, onChange) {
 export const people={
   title:'Community',description:'Find traders and connect over the way you trade.',
   content:heading('people')+`<div class="community-tabs n-in" data-tabs></div><section class="community-body">
-    <div class="community-list-head"><label>Search traders<input type="search" class="n-in" data-search placeholder="Name or headline"></label><a class="n-btn n-out dash-button" href="/portfolio">Edit my portfolio</a></div>
+    <div class="community-list-head"><label>Search traders<input type="search" class="n-in" data-search placeholder="Name or headline"></label><a class="btn btn-secondary" href="/portfolio">Edit my portfolio</a></div>
     <div class="community-grid" data-people></div><p role="status" data-feedback></p></section>`,
   async bind(page,{data,request,reload}) {
     const list=select(page,'[data-people]'),search=select(page,'[data-search]'),status=select(page,'[data-feedback]');

@@ -6,7 +6,7 @@ export const plan={
   action:'<span class="n-in plan-market-clock" data-plan-market-clock hidden></span>',
   content:`<div class="plan-layout">
     <div class="plan-main"><nav class="plan-steps" aria-label="Plan steps">
-      ${['Bias','Setups','Limits','Commit'].map((label,index)=>`<button class="n-btn n-out" type="button" data-plan-step="${index}"><span>${index+1}</span>${label}</button>`).join('')}
+      ${['Bias','Setups','Limits','Commit'].map((label,index)=>`<button class="btn btn-secondary" type="button" data-plan-step="${index}"><span>${index+1}</span>${label}</button>`).join('')}
     </nav><section class="n-out ws-card">
       <form class="ws-form" data-full-plan><fieldset class="plan-step">
         <div data-plan-pane="0"><h2>What is the market likely to do?</h2><p>Decide what you are watching before the session starts.</p>
@@ -27,14 +27,14 @@ export const plan={
         <div data-plan-pane="3" hidden><h2>How are you, honestly?</h2>
           <p>Review the plan alongside your rules before you commit.</p>
           <label>State of mind<select name="mood"><option value="">Choose how you feel</option><option>Calm</option><option>Rushed</option><option>Fearful</option><option>Confident</option></select></label></div>
-      </fieldset><div class="ws-actions"><button class="n-btn n-out dash-button" value="save">Save draft</button>
-        <button class="n-btn n-acc dash-button" value="lock" hidden>Hold to commit</button><button class="n-btn n-out dash-button" value="unlock" hidden>Unlock plan</button></div>
+      </fieldset><div class="ws-actions"><button class="btn btn-secondary" value="save">Save draft</button>
+        <button class="btn btn-primary" value="lock" hidden>Hold to commit</button><button class="btn btn-secondary" value="unlock" hidden>Unlock plan</button></div>
       </form><p role="status" data-full-plan-status></p></section>
       <section class="n-out ws-card plan-rules-card"><h2>Rules I am holding myself to</h2><p>These rules apply to each trade logged today.</p><div data-full-plan-rules></div></section></div>
     <aside class="ws-stack plan-summary-stack"><section class="n-out ws-card"><div class="ws-section-head"><h2><i class="plan-status-ring" aria-hidden="true"></i>Today’s plan</h2><span class="n-in plan-state" data-plan-state></span></div>
       <p data-plan-date></p><div class="ws-stack" data-full-plan-summary></div>
-      <div class="ws-actions plan-pagination"><button class="n-btn n-out dash-button" type="button" data-plan-back>Back</button>
-        <button class="n-btn n-acc dash-button" type="button" data-plan-next>Next</button></div></section>
+      <div class="ws-actions plan-pagination"><button class="btn btn-secondary" type="button" data-plan-back>Back</button>
+        <button class="btn btn-primary" type="button" data-plan-next>Next</button></div></section>
       <section class="n-out ws-card"><h2>Yesterday</h2><p>Closed trades only.</p><div class="ws-stack" data-yesterday></div></section></aside></div>`,
   async bind(page,{ data,request }){
     const form=select(page,'[data-full-plan]'), status=select(page,'[data-full-plan-status]');
@@ -127,7 +127,7 @@ export const plan={
       const kept=trades.reduce((count,trade)=>count+trade.kept,0);
       numbers.append(result,stat('Rules kept',checks?kept+' of '+checks:'—'));recap.append(numbers);
       const note=trades.find((trade)=>trade.note)?.note;if(note)recap.append(node('p','Your note: '+note,'dash-muted'));
-      const link=node('a','Review yesterday’s trade','n-btn n-out dash-button'); link.href='/journal?tradeId='+encodeURIComponent(trades[0].id);recap.append(link);
+      const link=node('a','Review yesterday’s trade','btn btn-secondary'); link.href='/journal?tradeId='+encodeURIComponent(trades[0].id);recap.append(link);
     }else recap.append(message('No trades closed yesterday.'));
     const tomorrow=new URLSearchParams(location.search).get('day')==='tomorrow';
     const planEndpoint='/api/plan'+(tomorrow?'?day=tomorrow':'');

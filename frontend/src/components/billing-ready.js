@@ -26,11 +26,12 @@ export function playBillingIntro() {
   title.textContent = 'Your billing workspace';
   const skip = document.createElement('button');
   skip.type = 'button';
+  skip.className = 'btn btn-ghost';
   skip.textContent = 'Skip animation';
   skip.onclick = () => intro.close();
   const proceed = document.createElement('button');
   proceed.type = 'button';
-  proceed.className = 'br-continue';
+  proceed.className = 'btn btn-primary br-continue';
   proceed.textContent = 'Continue →';
   proceed.hidden = true;
   proceed.onclick = () => intro.close();

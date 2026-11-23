@@ -29,7 +29,7 @@ const qrColors = { Ink:'#171724', Indigo:'#4f5bd5', Green:'#176244' };
 export const portfolio = {
   title:'Portfolio',
   description:'Build it once, share it as a card, link or QR.',
-  action:'<div class="pf-top-share"><button type="button" class="n-btn n-acc dash-button" data-customize-profile>Customize</button><a class="n-btn n-out dash-button" data-open-shared-profile aria-disabled="true">Open shared profile</a><button type="button" class="n-btn n-out dash-button" data-copy-portfolio>Copy link</button></div>',
+  action:'<div class="pf-top-share"><button type="button" class="btn btn-primary" data-customize-profile>Customize</button><a class="btn btn-secondary" data-open-shared-profile aria-disabled="true">Open shared profile</a><button type="button" class="btn btn-secondary" data-copy-portfolio>Copy link</button></div>',
   content:`<div class="n-in pf-disclosure">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z M12 8v4m0 4h.01"/></svg>
       <p><strong>What goes public</strong> Your portfolio shows process: rules kept, streaks and reviews. It does not show returns, account size or instrument names, and it makes no promises of profit.</p>
@@ -39,10 +39,10 @@ export const portfolio = {
         <section class="n-out pf-panel" id="portfolio-visibility" aria-labelledby="pf-visibility-heading">
           <h2 id="pf-visibility-heading">Who can see it</h2>
           <div class="n-in pf-segment" role="group" aria-label="Portfolio visibility">
-            ${visibilityOptions.map(([key,label])=>`<button type="button" class="n-btn" data-pf-visibility="${key}">${label}</button>`).join('')}
+            ${visibilityOptions.map(([key,label])=>`<button type="button" class="btn btn-ghost" data-pf-visibility="${key}">${label}</button>`).join('')}
           </div>
           <p class="n-in pf-note" data-visibility-note></p>
-          <button type="button" class="n-btn n-acc dash-button" data-pf-save-visibility hidden>Save visibility</button>
+          <button type="button" class="btn btn-primary" data-pf-save-visibility hidden>Save visibility</button>
           <p role="status" data-visibility-status></p>
         </section>
         <section class="n-out pf-panel" aria-labelledby="pf-profile-heading">
@@ -53,7 +53,7 @@ export const portfolio = {
             <label>Headline<input class="n-in" name="headline" maxlength="120"></label>
             <label>About<textarea class="n-in" name="about" rows="4" maxlength="1000"></textarea></label>
             <div data-pf-markets hidden><span class="pf-field-label">Markets</span><div class="pf-market-list"></div></div>
-            <button class="n-btn n-acc dash-button" type="submit">Save portfolio</button>
+            <button class="btn btn-primary" type="submit">Save portfolio</button>
           </form>
           <p role="status" data-portfolio-status></p>
         </section>
@@ -62,7 +62,7 @@ export const portfolio = {
           <p class="pf-muted">Switch sections on or off. The preview updates.</p>
           <form data-pf-sections class="pf-section-form">
             ${Object.entries(portfolioSections).map(([key,label])=>`<label><span>${label}<small>${({streak:'Current streak, best and level',adherence:'Percentage of trade checks you kept',reviews:'From your journal',photo:'Your current Ledgerline profile picture',setupStats:'Trade counts and rule adherence for published setups'})[key]}</small></span><input type="checkbox" role="switch" name="${key}"></label>`).join('')}
-            <button class="n-btn n-acc dash-button" type="submit">Save sections</button>
+            <button class="btn btn-primary" type="submit">Save sections</button>
             <p role="status" data-sections-status></p>
           </form>
         </section>
@@ -73,7 +73,7 @@ export const portfolio = {
         <section class="n-out pf-panel">
           <h2>Privacy</h2>
           <p class="pf-muted">Account balance and broker details are never on a portfolio.</p>
-          <a class="n-btn n-out dash-button" href="/settings#portfolio">Portfolio settings</a>
+          <a class="btn btn-secondary" href="/settings#portfolio">Portfolio settings</a>
         </section>
       </div>
       <div class="pf-editor-right">
@@ -95,23 +95,23 @@ export const portfolio = {
         <section class="n-out pf-panel">
           <div class="pf-panel-heading"><h2>Share cards</h2>
             <div class="n-in pf-segment" role="group" aria-label="Share card format">
-              ${Object.entries(portfolioCardFormats).map(([key,format])=>`<button class="n-btn" type="button" data-card-format="${key}">${format.label}</button>`).join('')}
+              ${Object.entries(portfolioCardFormats).map(([key,format])=>`<button class="btn btn-ghost" type="button" data-card-format="${key}">${format.label}</button>`).join('')}
             </div>
           </div>
           <div class="pf-card-preview"><canvas role="img" aria-label="Portfolio share card" data-card-canvas hidden></canvas></div>
           <p class="pf-muted" data-card-status role="status"></p>
           <div class="ws-actions">
-            <button type="button" class="n-btn n-out dash-button" data-card-include hidden>Choose stats to share</button>
-            <button type="button" class="n-btn n-acc dash-button" data-card-download disabled>Save image</button>
+            <button type="button" class="btn btn-secondary" data-card-include hidden>Choose stats to share</button>
+            <button type="button" class="btn btn-primary" data-card-download disabled>Save image</button>
           </div>
         </section>
         <section class="n-out pf-panel">
           <div class="pf-panel-heading"><h2>Share access</h2><small data-preview-visibility></small></div>
           <p class="pf-muted" data-share-status></p>
           <div class="ws-actions" data-portfolio-share hidden>
-            <a class="n-btn n-out dash-button" data-public-link target="_blank" rel="noopener">Open shared portfolio</a>
-            <button type="button" class="n-btn n-out dash-button" data-share-card>Share card</button>
-            <button type="button" class="n-btn n-out dash-button" data-copy-portfolio>Copy portfolio link</button>
+            <a class="btn btn-secondary" data-public-link target="_blank" rel="noopener">Open shared portfolio</a>
+            <button type="button" class="btn btn-secondary" data-share-card>Share card</button>
+            <button type="button" class="btn btn-secondary" data-copy-portfolio>Copy portfolio link</button>
           </div>
           <p role="status" data-portfolio-copy-status></p>
         </section>
@@ -123,12 +123,12 @@ export const portfolio = {
             <figure class="streak-invite-qr pf-personal-qr"><div class="streak-qr-frame"><canvas role="img" aria-label="QR to open the saved portfolio"></canvas></div><figcaption data-qr-caption></figcaption></figure>
             <div>
               <span class="pf-field-label">Code colour</span>
-              <div class="pf-qr-colors" role="group" aria-label="QR colour">${Object.keys(qrColors).map(color=>`<button type="button" class="n-btn n-out dash-button" data-qr-color="${color}">${color}</button>`).join('')}</div>
+              <div class="pf-qr-colors" role="group" aria-label="QR colour">${Object.keys(qrColors).map(color=>`<button type="button" class="btn btn-secondary" data-qr-color="${color}">${color}</button>`).join('')}</div>
               <code data-qr-url></code>
               <div class="ws-actions">
-                <button type="button" class="n-btn n-acc dash-button" data-qr-png>Download PNG</button>
-                <button type="button" class="n-btn n-out dash-button" data-qr-svg>SVG</button>
-                <button type="button" class="n-btn n-out dash-button" data-qr-print>Print sheet</button>
+                <button type="button" class="btn btn-primary" data-qr-png>Download PNG</button>
+                <button type="button" class="btn btn-secondary" data-qr-svg>SVG</button>
+                <button type="button" class="btn btn-secondary" data-qr-print>Print sheet</button>
               </div>
               <p role="status" data-qr-status></p>
             </div>

@@ -20,8 +20,8 @@ const moods = ['Calm','Rushed','Fearful','Confident'];
 const journal = `
     <div class="journal-workspace">
       <nav class="n-in journal-mode-switch" aria-label="Journal sections">
-        <a class="n-btn dash-button" href="#log">Log a trade</a>
-        <a class="n-btn dash-button" href="#review">Review trades</a>
+        <a class="btn btn-ghost" href="#log">Log a trade</a>
+        <a class="btn btn-ghost" href="#review">Review trades</a>
       </nav>
       <section class="journal-entry-panel" data-journal-section="log" aria-label="Log a trade">
       <section class="n-out ws-card journal-new"><h2>New trade</h2>
@@ -34,9 +34,9 @@ const journal = `
           <div class="trade-detail-metrics"><label>Market<select class="n-in" name="market">${Object.entries(markets).map(([id,label])=>`<option value="${id}">${label}</option>`).join('')}</select></label>
             <label>Entry price<input class="n-in" type="number" name="entry" min=".00000001" step="any" inputmode="decimal"></label></div>
           ${[['stop','Stop distance'],['target','Target distance']].map(([name,label])=>`<label>${label}
-            <span class="journal-adjust"><button type="button" class="n-btn n-out" data-offset="-1" aria-label="Decrease ${label.toLowerCase()}">−</button>
+            <span class="journal-adjust"><button type="button" class="btn btn-secondary" data-offset="-1" aria-label="Decrease ${label.toLowerCase()}">−</button>
             <input class="n-in" type="number" name="${name}" min=".00000001" step="any" inputmode="decimal">
-            <button type="button" class="n-btn n-out" data-offset="1" aria-label="Increase ${label.toLowerCase()}">+</button></span></label>`).join('')}
+            <button type="button" class="btn btn-secondary" data-offset="1" aria-label="Increase ${label.toLowerCase()}">+</button></span></label>`).join('')}
           <div class="trade-detail-metrics" data-trade-sizing></div>
           <fieldset class="journal-moods"><legend>Feeling before trade</legend>
             ${moods.map((mood)=>`<label class="n-out"><input type="radio" name="mood" value="${mood}">${mood}</label>`).join('')}</fieldset>
@@ -45,31 +45,31 @@ const journal = `
             <label>Result (R) <small>Leave blank for an open trade</small><input class="n-in" type="number" name="result" min="-10000" max="10000" step="any"></label>
             <div class="ws-stack" data-journal-log-rules></div>
           </details>
-          <button class="n-btn n-acc dash-button journal-hold" type="submit">Log this trade →</button>
+          <button class="btn btn-primary journal-hold" type="submit">Log this trade →</button>
           <p class="dash-muted journal-hold-help">Hold to save, or press Enter.</p><p role="status" data-journal-log-status></p>
         </form>
       </section>
       <section class="n-out streak-tile" aria-labelledby="streak-rest-title"><h2 id="streak-rest-title">Rest day</h2>
         <form data-rest-form><label>Note <small>(optional)</small><textarea class="n-in" name="note" maxlength="1000" rows="2"></textarea></label>
-        <button class="n-btn n-out streak-btn">I sat out today</button></form><div data-rest-days></div></section>
+        <button class="btn btn-secondary">I sat out today</button></form><div data-rest-days></div></section>
       </section>
       <section class="journal-review-panel" data-journal-section="review" aria-label="Review trades" hidden>
       <section class="n-out ws-card journal-inbox"><div class="ws-section-head journal-review-status">
         <div><h2 data-journal-review-text>Needs review</h2><p>Review each trade’s setup and feeling, then mark it reviewed.</p></div>
-        <a class="n-btn n-out dash-button" href="/dashboard#streak">Journal streak</a></div><div class="ws-stack" data-journal-inbox></div></section>
+        <a class="btn btn-secondary" href="/dashboard#streak">Journal streak</a></div><div class="ws-stack" data-journal-inbox></div></section>
       <div class="ws-metric-grid journal-metrics" data-journal-metrics></div>
       <div class="journal-split">
       <div class="journal-column">
       <section class="n-out streak-tile" aria-labelledby="streak-activity-title">
         <h2 id="streak-activity-title">Trade log</h2>
         <div class="ws-actions journal-filters" aria-label="Filter trades">
-          <button type="button" class="n-btn n-out streak-btn" data-journal-filter="all">All</button>
-          <button type="button" class="n-btn n-out streak-btn" data-journal-filter="wins">Wins</button>
-          <button type="button" class="n-btn n-out streak-btn" data-journal-filter="losses">Losses</button>
-          <button type="button" class="n-btn n-out streak-btn" data-journal-filter="breaks">Rule breaks</button>
+          <button type="button" class="btn btn-secondary" data-journal-filter="all">All</button>
+          <button type="button" class="btn btn-secondary" data-journal-filter="wins">Wins</button>
+          <button type="button" class="btn btn-secondary" data-journal-filter="losses">Losses</button>
+          <button type="button" class="btn btn-secondary" data-journal-filter="breaks">Rule breaks</button>
         </div>
         <div class="ws-stack" data-journal-activity></div>
-        <button type="button" class="n-btn n-out streak-btn" data-more-trades hidden>Load older trades</button>
+        <button type="button" class="btn btn-secondary" data-more-trades hidden>Load older trades</button>
       </section>
       <section class="n-out ws-card"><h2>R by setup</h2><p>Average R in the trade log</p><div class="ws-stack" data-journal-setup></div></section>
       <section class="n-out ws-card"><h2>R by mood</h2><p>Average R by recorded feeling</p><div class="ws-stack" data-journal-mood></div></section>
@@ -80,7 +80,7 @@ const journal = `
         <header class="ws-section-head"><div><h2 id="journal-trade-title" data-journal-detail-title>Trade review</h2><p data-journal-trade-caption></p></div><strong data-journal-result></strong></header>
         <div class="ws-stack" data-journal-detail></div>
         <form data-journal-note hidden><label>Your note<textarea class="n-in" name="note" maxlength="1000" rows="4"></textarea></label>
-          <button class="n-btn n-out streak-btn">Save note</button></form>
+          <button class="btn btn-secondary">Save note</button></form>
         <div class="ws-actions" data-journal-actions></div>
       </section>
       </div>
@@ -94,7 +94,7 @@ const settings = `
     <h2 id="streak-settings-title">Journal streak settings</h2>
     <form data-streak-settings>
       <label>Timezone<input class="n-in" name="timezone" list="streak-timezones" required maxlength="80" /><datalist id="streak-timezones"></datalist></label>
-      <button type="button" class="n-btn n-out streak-btn" data-local-zone>Use device timezone</button>
+      <button type="button" class="btn btn-secondary" data-local-zone>Use device timezone</button>
       <fieldset><legend>Auto-rest exchanges</legend>
         <label><input type="checkbox" name="exchange" value="NSE" /> NSE</label>
         <label><input type="checkbox" name="exchange" value="BSE" /> BSE</label>
@@ -104,7 +104,7 @@ const settings = `
         <label>Local reminder time<input class="n-in" type="time" name="reminderTime" /></label>
         <p class="streak-footnote" data-reminder-info></p>
       </fieldset>
-      <button class="n-btn n-acc streak-btn">Save settings</button>
+      <button class="btn btn-primary">Save settings</button>
       <p role="status" class="streak-message" data-settings-status></p>
     </form>
   </section>`;
@@ -243,7 +243,7 @@ async function bindJournal(page, request, showBadge) {
           ...(setup.value?{setup:setup.value}:{}),...(mood.value?{mood:mood.value}:{})});
         applyStreak(result);await loadJournal();
       },journalStatus);
-      review.classList.add('n-acc');
+      review.classList.replace('btn-secondary','btn-primary');
       choices.append(setup,mood,review);row.append(info,choices);
       return row;
     }));
@@ -286,7 +286,7 @@ async function bindJournal(page, request, showBadge) {
       else detail.append(element('p','No rule checks recorded.'));
       noteForm.elements.note.value=trade.note;
       if (!trade.closedAt) {
-        const close=element('button','Close trade','n-btn n-acc streak-btn');
+        const close=element('button','Close trade','btn btn-primary');
         close.type='button';
         close.onclick=()=>openCloseTrade(page,trade,request,loadJournal);
         actions.append(close);
@@ -514,7 +514,7 @@ async function run(button, status, handler) {
 }
 
 function action(label, handler, status) {
-  const button = element('button', label, 'n-btn n-out streak-btn');
+  const button = element('button', label, 'btn btn-secondary');
   button.type = 'button';
   button.addEventListener('click', () => run(button, status, handler));
   return button;

@@ -36,24 +36,6 @@
   border-radius: var(--radius-inset);
   transition: background 0.5s;
 }
-.n-btn {
-  border: 0;
-  font-family: inherit;
-  color: var(--ink);
-  transition:
-    box-shadow 0.2s,
-    transform 0.2s;
-}
-.n-btn:hover {
-  transform: translateY(-2px);
-}
-.n-btn:active {
-  box-shadow:
-    inset 5px 5px 10px var(--sd),
-    inset -5px -5px 10px var(--sl);
-  transform: none;
-}
-.n-btn:focus-visible,
 .n-a:focus-visible {
   outline: 3px solid var(--acc);
   outline-offset: 3px;

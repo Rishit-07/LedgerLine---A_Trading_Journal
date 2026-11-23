@@ -41,7 +41,7 @@ function tradeList(container, trades, empty, showDate = false) {
     details.querySelector('strong').replaceChildren(view);
     row.append(details);
     if (trade.result === null) {
-      const close = text('button','Close trade','n-btn n-out dash-button');
+      const close = text('button','Close trade','btn btn-secondary');
       close.type = 'button';
       close.addEventListener('click',()=>close.dispatchEvent(new CustomEvent('close-position',{bubbles:true,detail:trade})));
       row.append(close);
@@ -54,8 +54,8 @@ function tradeList(container, trades, empty, showDate = false) {
 function tradePager(container, controls, empty, showDate) {
   let trades = [];
   let page = 0;
-  const previous = text('button', 'Previous', 'n-btn n-out dash-button');
-  const next = text('button', 'Next', 'n-btn n-out dash-button');
+  const previous = text('button', 'Previous', 'btn btn-secondary');
+  const next = text('button', 'Next', 'btn btn-secondary');
   const status = text('span', '');
   status.setAttribute('role', 'status');
   previous.type = next.type = 'button';

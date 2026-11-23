@@ -12,6 +12,6 @@
 .n-root a.lp-get-started:is(:hover,:focus-visible){background:var(--acc);color:var(--on-indigo);border-color:var(--acc)}
 .lp-get-started svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;transition:transform .18s ease}.lp-get-started:hover svg,.lp-get-started:focus-visible svg{transform:translateX(3px)}
 @media(prefers-reduced-motion:reduce){.brand-opening{display:none}.upload-drop,.file-outline,.file-action,.lp-get-started svg{transition:none!important}}
-.execution-timeline>.execution-link{justify-self:start}.execution-detail>time{grid-column:2}.execution-detail>b{grid-row:2}.upload-card-head img{display:block}.lp-get-started [data-account-label]{pointer-events:none}
+.execution-detail>time{grid-column:2}.execution-detail>b{grid-row:2}.upload-card-head img{display:block}.lp-get-started [data-account-label]{pointer-events:none}
 .upload-brand{position:relative;overflow:hidden}.upload-brand canvas{position:absolute;inset:0;width:100%;height:100%}
 @media(prefers-reduced-motion:no-preference){.brand-reveal-tile img{animation:brand-appear .42s ease-out both}@keyframes brand-appear{from{opacity:0;transform:scale(.87)}to{opacity:1;transform:scale(1)}}}

@@ -9,6 +9,8 @@ import './styles/tokens.css';
 import './styles/selects.css';
 import './styles/landing.css';
 import './styles/responsive.css';
+import './styles/controls.css';
+import { initControls } from './controls.js';
 import { initMotion } from './motion.js';
 import { initSectionRail } from './section-rail.js';
 import { initToolWheel } from './tool-wheel.js';
@@ -17,6 +19,7 @@ import './styles/auth.css';
 import { animatePageEntry, bindPageNavigation } from './pages/navigation.js';
 import { bindPublicAccount } from './pages/public-account.js';
 
+initControls();
 const landing = document.querySelector('#landing');
 const root = document.documentElement;
 const themeToggle = document.querySelector('[data-action="toggleTheme"]');
@@ -63,7 +66,7 @@ function renderPending(title, message, retry = false) {
   else if (title === 'Page unavailable') description.hidden = true;
   if (retry) {
     const button = document.createElement('button');
-    button.className = 'n-btn n-out auth-button';
+    button.className = 'btn btn-secondary';
     button.type = 'button';
     button.textContent = 'Try again';
     button.addEventListener('click', () => location.reload());

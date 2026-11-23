@@ -17,11 +17,11 @@ export function roomMarkup(label){
   return `<div class="community-tabs n-in" data-tabs></div><section data-directory>
       <div class="community-list-head"><label>Find a ${label}<input type="search" class="n-in" data-club-search placeholder="Name or location"></label>
       <label>Reach<select class="n-in" data-reach><option>All</option><option>Global</option><option>Local</option></select></label></div>
-      <form class="ws-form" data-code-form><label>Join with code<input name="code" required></label><button class="n-btn n-out dash-button">Join</button></form><div class="community-grid" data-clubs></div></section>
+      <form class="ws-form" data-code-form><label>Join with code<input name="code" required></label><button class="btn btn-secondary">Join</button></form><div class="community-grid" data-clubs></div></section>
       <section class="ws-columns" data-room hidden><div class="n-out ws-card"><label>Your ${label}<select data-room-select class="n-in"></select></label>
         <h2 data-room-title></h2><p data-room-about></p><div class="ws-stack" data-topics></div></div>
         <div class="n-out ws-card" data-compose><h2 data-compose-title></h2><form class="ws-form" data-topic-form>
-        <label data-text-label>Message<textarea name="body" maxlength="600" rows="3" required></textarea></label><button class="n-btn n-acc dash-button">Publish</button></form><p data-compose-note></p></div></section>`;
+        <label data-text-label>Message<textarea name="body" maxlength="600" rows="3" required></textarea></label><button class="btn btn-primary">Publish</button></form><p data-compose-note></p></div></section>`;
 }
 
 export function bindRoom(page,{data,save},{label,plural,title,goals,hostLabel,views,bindCreate,memberControls}){
@@ -95,7 +95,7 @@ export function bindRoom(page,{data,save},{label,plural,title,goals,hostLabel,vi
         const replies=node('div');thread.append(replies);
         t.replies.forEach(r=>{const line=node('p');line.classList.add('community-byline');line.append(communityAvatar(r.author,r.avatar),node('strong',r.author),' · '+r.body);replies.append(line);});
         paginate(replies,'Discussion replies',4);
-        const reply=node('form','','ws-form');const field=node('textarea');field.name='body';field.required=true;field.maxLength=600;field.setAttribute('aria-label','Reply');const send=node('button','Reply','n-btn n-out dash-button');reply.append(field,send);
+        const reply=node('form','','ws-form');const field=node('textarea');field.name='body';field.required=true;field.maxLength=600;field.setAttribute('aria-label','Reply');const send=node('button','Reply','btn btn-secondary');reply.append(field,send);
         reply.addEventListener('submit',e=>submit(e,status,async v=>{await update({action:'reply',id:t.groupId,topicId:t.id,body:v.body});render();return 'Reply added.';}));if(!group.readOnly)thread.append(reply);card.append(thread);
       }
       return card;

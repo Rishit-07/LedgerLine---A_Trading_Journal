@@ -33,9 +33,9 @@ function calendarMarkup() {
   header.classList.add('ws-visually-hidden');
   const options = document.createElement('div');
   options.className = 'ws-actions ws-calendar-toggles';
-  options.innerHTML = `<button class="n-btn n-out dash-button" type="button" data-calendar-mode="result">Result</button>
-    <button class="n-btn n-out dash-button" type="button" data-calendar-mode="process">Process</button>
-    <button class="n-btn n-out dash-button" type="button" data-calendar-today>Today</button>`;
+  options.innerHTML = `<button class="btn btn-secondary" type="button" data-calendar-mode="result">Result</button>
+    <button class="btn btn-secondary" type="button" data-calendar-mode="process">Process</button>
+    <button class="btn btn-secondary" type="button" data-calendar-today>Today</button>`;
   const controls = node('div','','ws-calendar-header');
   const monthNav = calendar.querySelector('.dash-month-nav');
   monthNav.before(controls);
@@ -56,19 +56,19 @@ function calendarMarkup() {
 
 export const calendar = {
   title:'Trading calendar',description:'Every day at a glance. Tap a day to see its trades and review.',
-  action:'<button class="n-btn n-out dash-button" type="button" data-calendar-export>Export month</button>',
+  action:'<button class="btn btn-secondary" type="button" data-calendar-export>Export month</button>',
   get content() {
     const { metrics, calendar, dialog } = calendarMarkup();
     return metrics + `<div class="ws-calendar-board"><div class="calendar-column">${calendar}
       <section class="n-out ws-card"><div class="ws-section-head"><h2>Economic events, this week</h2><div class="ws-actions">
-        <button type="button" class="n-btn n-out dash-button" data-event-impact="all" aria-pressed="true">All impacts</button>
-        <button type="button" class="n-btn n-out dash-button" data-event-impact="high" aria-pressed="false">High only</button></div></div>
+        <button type="button" class="btn btn-secondary" data-event-impact="all" aria-pressed="true">All impacts</button>
+        <button type="button" class="btn btn-secondary" data-event-impact="high" aria-pressed="false">High only</button></div></div>
         <p>Scheduled releases · IST</p><div class="ws-stack" data-calendar-week-events></div></section>
       </div><div class="calendar-column"><aside class="n-out ws-card calendar-day-review" data-calendar-selected aria-label="Selected trading day"></aside>
       <section class="n-out ws-card"><h2>Market news</h2><p>Latest headlines from connected sources</p>
-        <div class="ws-actions calendar-news-filters"><button type="button" class="n-btn n-out dash-button" data-news-country="all" aria-pressed="true">All</button>
-          <button type="button" class="n-btn n-out dash-button" data-news-country="india" aria-pressed="false">India</button>
-          <button type="button" class="n-btn n-out dash-button" data-news-country="global" aria-pressed="false">Global</button></div>
+        <div class="ws-actions calendar-news-filters"><button type="button" class="btn btn-secondary" data-news-country="all" aria-pressed="true">All</button>
+          <button type="button" class="btn btn-secondary" data-news-country="india" aria-pressed="false">India</button>
+          <button type="button" class="btn btn-secondary" data-news-country="global" aria-pressed="false">Global</button></div>
         <div class="ws-stack" data-calendar-catalysts></div></section>
     </div></div>` + dialog;
   },
@@ -97,7 +97,7 @@ export const calendar = {
         status.setAttribute('role','status');
         panel.append(status);
         if (dayError) {
-          const retry=node('button','Try again','n-btn n-out dash-button');
+          const retry=node('button','Try again','btn btn-secondary');
           retry.onclick=()=>selectDay(activeDay);
           panel.append(retry);
         }
@@ -141,7 +141,7 @@ export const calendar = {
         paginate(list,'Daily notes');
       }
       if(activeDay<=data.today) {
-        const report=node('a','Open day report','n-btn n-acc dash-button');
+        const report=node('a','Open day report','btn btn-primary');
         report.href='/reports?'+new URLSearchParams({date:activeDay});
         panel.append(report);
       }

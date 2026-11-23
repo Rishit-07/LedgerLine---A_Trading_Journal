@@ -1,11 +1,12 @@
 import {fields,steps,mentorFieldApplies,sectionError,termsVersion} from '../../../../src/config/mentor-form.js';
 import {node,button} from '../../pages/workspace-ui.js';
 import {confirmationCard} from '../../components/confirmation-motion.js';
+import {setRequired,requireAny} from '../../controls.js';
 import '../../components/billing-ready.css';
 import '../../pages/onboarding.css';
 import './application.css';
 const path='/api/mentor-verification';
-function link(label,href){const a=node('a',label,'n-btn n-out dash-button');a.href=href;return a;}
+function link(label,href){const a=node('a',label,'btn btn-secondary');a.href=href;return a;}
 export const application={title:'Verify you teach',description:'Apply for human review before unlocking your mentor plan.',endpoint:path,content:'<section class="mentor-application"></section>',bind(page,{data,request}){
  const root=page.querySelector('.mentor-application');let step=data.step??0,stream,photo=data.photo,editing=false,epoch=0;
  function stop(){epoch++;stream?.getTracks().forEach(t=>t.stop());stream=null;}
@@ -64,9 +65,58 @@ export const application={title:'Verify you teach',description:'Apply for human 
     }
 
    }
-   /* Conditional fields participate in browser validation only while applicable. */
-   const syncFields=()=>{const answers={topics:getters.topics?.(),sebi_registered:getters.sebi_registered?.()};for(const wrap of group.children){const applies=mentorFieldApplies(wrap.dataset.field,answers);wrap.hidden=!applies;for(const input of wrap.querySelectorAll('input,select,textarea')){input.disabled=!applies;input.required=applies && wrap.dataset.kind!=='multi';}}};form.addEventListener('change',syncFields);syncFields();
+   // Required fields match sectionError(): each one is marked, glows red when empty and blocks Save and continue.
+   const control=key=>form.querySelector('[data-field='+key+'] :is(input,textarea,select)');
+   const need=(key,message,min)=>{const el=control(key);if(!el)return;el.dataset.requiredMessage=message;if(min)el.minLength=min;};
+   const anyOf=(key,message)=>{const wrap=form.querySelector('[data-field='+key+']');if(wrap)requireAny(wrap,message);};
+   if(step===0){
+    need('full_name','Add your full name before saving');
+    need('display_name','Add the name students will see');
+    need('phone','Add your phone number');
+    need('country','Add your country');
+    need('city','Add your city');
+   }
+   if(step===1){
+    anyOf('topics','Choose at least one topic');
+    anyOf('markets','Choose at least one market');
+    anyOf('levels','Choose at least one student level');
+    need('languages','Add the languages you teach');
+    need('bio','Describe your trading and teaching experience',50);
+    need('other_topic','Name your other topic');
+   }
+   if(step===2){
+    need('evidence_links','Add at least one link to your teaching');
+    need('sample_link','Add a sample lesson or syllabus link');
+    need('certifications','Add your certifications');
+    need('past_students_self_reported','Add your number of past students');
+   }
+   if(step===3){
+    need('sebi_registered','Choose Yes or No');
+    need('education_only_ack','Confirm you will teach education only');
+    need('sebi_reg_number','Add your registration number');
+    need('sebi_verify_url','Add the link where your registration can be verified');
+   }
+   if(step===4){
+    for(const box of form.querySelectorAll('[data-field=promises] input')){
+     box.dataset.requiredMessage='Accept this promise to submit';
+     setRequired(box,true);
+    }
+   }
 
+   /* Conditional fields participate in browser validation only while applicable. */
+   const syncFields=()=>{
+    const answers={topics:getters.topics?.(),sebi_registered:getters.sebi_registered?.()};
+    for(const wrap of group.children){
+     const applies=mentorFieldApplies(wrap.dataset.field,answers);
+     wrap.hidden=!applies;
+     for(const input of wrap.querySelectorAll('input,select,textarea')){
+      input.disabled=!applies;
+      if(wrap.dataset.kind!=='multi')setRequired(input,applies);
+     }
+    }
+   };
+   form.addEventListener('change',syncFields);
+   syncFields();
    if(!step){
     const preview=node('img','','mentor-photo');preview.alt='Your profile photo';preview.hidden=!photo;if(photo)preview.src='data:image/jpeg;base64,'+photo;
     const video=node('video','','mentor-photo');video.muted=true;video.playsInline=true;video.hidden=true;
@@ -79,9 +129,9 @@ export const application={title:'Verify you teach',description:'Apply for human 
     form.append(photos);photos.append(l,preview,video,photoActions);photoActions.append(start,capture,button('Remove photo',()=>{stop();video.hidden=capture.hidden=true;photo=null;preview.hidden=true;preview.removeAttribute('src');}));
    }
    if(step===4)form.append(link('Terms and conditions','/terms'),node('p','Mentor code · Teach for education only. Do not promise returns, provide trading calls, or sell signals. Version '+termsVersion));
-   const actions=node('div','','ws-actions mentor-step-actions');form.append(status,actions);
+   const actions=node('div','','form-actions mentor-step-actions');form.append(status,actions);
    if(step)actions.append(button('Back',()=>{Object.assign(data,Object.fromEntries(Object.entries(getters).map(([k,get])=>[k,get()])));step--;draw(-1);}));
-   const next=node('button',step===4?'Submit for review':'Save and continue','n-btn n-acc dash-button');actions.append(next);
+   const next=node('button',step===4?'Submit for review':'Save and continue','btn btn-primary');actions.append(next);
    form.onsubmit=async e=>{e.preventDefault();const values=Object.fromEntries(Object.entries(getters).map(([k,get])=>[k,get()]));if(step===3){if(values.sebi_registered)values.education_only_ack=false;else values.sebi_reg_number=values.sebi_verify_url='';}const problem=sectionError(values,step)||(!step&&!photo?'Take or upload a profile photo.':'');if(problem){status.textContent=problem;return;}const last=step===4;next.disabled=true;for(const control of actions.children)control.disabled=true;
     try{await request(path,'POST',{action:last?'submit':'save',step,values,...(!step?{photo:photo??null}:{})});Object.assign(data,values);if(last){data.status='pending';data.reviewer_note='';editing=false;}else step++;draw(1);}
     catch(e){status.textContent=e.message;for(const control of actions.children)control.disabled=false;}

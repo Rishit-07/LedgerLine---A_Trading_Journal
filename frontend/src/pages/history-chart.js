@@ -58,7 +58,7 @@ function executionSummary(trade, reason, linkToReplay,request) {
       const form=node('form','','execution-price-form');
       const input=node('input');input.type='number';input.name='price';input.min='0.00000001';input.step='any';input.required=true;
       input.placeholder='Execution price';input.setAttribute('aria-label',stage+' execution price');
-      const save=node('button','Save','execution-link'),status=node('small');status.setAttribute('role','status');
+      const save=node('button','Save','btn btn-primary'),status=node('small');status.setAttribute('role','status');
       form.append(input,save,status);
       form.onsubmit=event=>submit(event,status,async({price})=>{
         const field=stage.toLowerCase();

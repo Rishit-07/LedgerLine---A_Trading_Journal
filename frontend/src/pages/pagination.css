@@ -1,6 +1,6 @@
 .list-pages { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:8px; margin-top:12px; }
 .list-pages span { font:600 12px var(--font-sans); color:var(--sub); }
-.list-pages .dash-button { min-height:32px; padding:6px 11px; font-size:12px; }
+.list-pages .btn { padding-inline:14px; font-size:13px; }
 .list-pages[hidden] { display:none; }
 @media screen { .off-list-page { display:none!important; } }
 @media print { .list-pages { display:none!important; } }

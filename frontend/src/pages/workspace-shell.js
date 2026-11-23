@@ -14,7 +14,7 @@ export function prepareTradingShell(template) {
   actions.insertAdjacentHTML('afterbegin', streakChip);
   const avatar = template.content.querySelector('.dash-avatar').cloneNode(true);
   const profile = document.createElement('a');
-  profile.className = 'n-btn n-out workspace-profile';
+  profile.className = 'btn btn-secondary workspace-profile';
   profile.href = '/profile';
   profile.setAttribute('aria-label','Open your profile');
   profile.append(avatar);

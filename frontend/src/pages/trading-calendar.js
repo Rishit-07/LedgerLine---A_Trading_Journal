@@ -196,7 +196,7 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
       monthStatus.textContent = '';
     } catch {
       if (request !== monthRequest) return;
-      const retry = element('button', 'Try again', 'n-btn n-out dash-button');
+      const retry = element('button', 'Try again', 'btn btn-secondary');
       retry.type = 'button';
       retry.addEventListener('click', () => void selectMonth(month, true));
       monthStatus.replaceChildren(element('span', 'Monthly results are unavailable. '), retry);
@@ -261,7 +261,7 @@ export function bindTradingCalendar(page, { loadCalendar, loadCalendarMonth, loa
     }
     journal.append(trades);
     if(trades.querySelector('ul'))paginate(trades.querySelector('ul'),'Daily trades');
-    const report = element('a','Open day report','n-btn n-out dash-button');
+    const report = element('a','Open day report','btn btn-secondary');
     report.href = '/reports?' + new URLSearchParams({date:dayInput.value});
     journal.append(report);
     if (dayData.notes.length) {
