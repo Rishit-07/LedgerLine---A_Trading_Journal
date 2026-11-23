@@ -21,8 +21,8 @@
         <label class="onboarding-label">Display name<input class="n-in" name="displayName" autocomplete="name" maxlength="100" required /></label>
         <label class="onboarding-label">Verified email<input class="n-in" name="email" type="email" readonly /></label>
         <label class="onboarding-label">Phone number with country code<input class="n-in" name="phone" type="tel" autocomplete="tel" placeholder="+91 …" /></label>
-        <p data-phone-notice>Send a text to verify this number. Google processes the number for abuse prevention. SMS rates may apply.</p>
-        <button type="button" class="n-btn n-out otp-send" data-send-code>Send verification code</button>
+        <p data-phone-notice>Optional. Your contact number will be saved as unverified.</p>
+        <button type="button" class="n-btn n-out otp-send" data-send-code hidden>Send verification code</button>
         <div data-captcha></div>
         <div data-code></div>
         <p data-phone-status role="status"></p>

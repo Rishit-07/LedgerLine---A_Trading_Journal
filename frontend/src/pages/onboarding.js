@@ -27,7 +27,7 @@ export function renderOnboarding(landing, { initial, user, auth, email, save, si
   const selected = new Set(initial.markets ?? []);
   const values = { risk: initial.risk ?? 1, loss: initial.loss ?? 2, trades: initial.trades ?? 3 };
   const hardRules = new Set(initial.hardRules ?? []);
-  let step = user.phoneNumber ? initial.step : 1;
+  let step = initial.requirePhoneOtp && !user.phoneNumber ? 1 : initial.step;
   let saving = false;
   form.elements.displayName.value = initial.displayName ?? '';
   form.elements.email.value = email ?? '';
@@ -47,6 +47,11 @@ export function renderOnboarding(landing, { initial, user, auth, email, save, si
     form.querySelector('[data-phone-notice]').hidden = true;
     phoneStatus.textContent = 'Phone number verified.';
   }
+  phone.value = initial.contactPhone || '';
+  send.hidden = !initial.requirePhoneOtp;
+  if (initial.requirePhoneOtp) {
+    form.querySelector('[data-phone-notice]').textContent = 'Google processes the number for abuse prevention. SMS rates may apply.';
+  }
   refreshPhone();
   phone.addEventListener('input', () => {
     codeHost.replaceChildren();
@@ -54,7 +59,7 @@ export function renderOnboarding(landing, { initial, user, auth, email, save, si
     send.textContent = 'Send verification code';
   });
   send.addEventListener('click', async () => {
-    if (busy || user.phoneNumber) return;
+    if (!initial.requirePhoneOtp || busy || user.phoneNumber) return;
     const number = phone.value.replace(/[\s()-]/g, '');
     if (!/^\+[1-9]\d{6,14}$/.test(number)) {
       phoneStatus.textContent = 'Enter the full phone number, starting with + and your country code.';
@@ -217,7 +222,13 @@ export function renderOnboarding(landing, { initial, user, auth, email, save, si
       form.elements.displayName.focus();
       return;
     }
-    if (!user.phoneNumber) {
+    const contactPhone = phone.value.replace(/[\s()-]/g, '') || null;
+    if (step === 1 && contactPhone && !/^\+[1-9]\d{6,14}$/.test(contactPhone)) {
+      status.textContent = 'Enter your phone number with its country code.';
+      phone.focus();
+      return;
+    }
+    if (initial.requirePhoneOtp && !user.phoneNumber) {
       status.textContent = 'Verify your phone number to continue.';
       (codeHost.querySelector('input') || phone).focus();
       return;
@@ -226,7 +237,7 @@ export function renderOnboarding(landing, { initial, user, auth, email, save, si
       status.textContent = 'Choose at least one market.';
       return;
     }
-    const data = step === 1 ? { displayName } : step === 2 ? { markets: [...selected] }
+    const data = step === 1 ? { displayName, contactPhone } : step === 2 ? { markets: [...selected] }
       : step === 3 ? { ...values, hardRules: [...hardRules] } : {};
     const panel = panels[step - 1];
     panel.inert = signOutButton.disabled = true;
