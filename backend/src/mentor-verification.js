@@ -5,7 +5,8 @@ import {prepareScreenshot,imageRequestLimit} from './trade-screenshots.js';
 
 const keys=fields.flat().map(([name])=>name);
 const editable=['draft','needs_info','rejected','revoked'];
-const adminEmail='sairishitsunku@gmail.com';
+// The one address allowed to review mentor applications. Set REVIEWER_EMAIL to change it without editing code.
+const adminEmail=(process.env.REVIEWER_EMAIL||'sairishitsunku@gmail.com').toLowerCase();
 export const eligibleReviewer=u=>u.email_verified===true&&u.email?.toLowerCase()===adminEmail;
 export async function reviewer(u,auth){
  if(!eligibleReviewer(u))return false;

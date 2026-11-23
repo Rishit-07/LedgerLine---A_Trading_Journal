@@ -74,7 +74,10 @@ async function authenticateRequest(request, response) {
   }
   let claims;
   try {
-    claims = await auth.verifyIdToken(token);
+    // Changes and data downloads also check that the sign-in was not revoked or its account deleted.
+    // Plain reads skip that extra Firebase round trip to stay fast.
+    const sensitive = !['GET', 'HEAD'].includes(request.method) || (request.url ?? '').startsWith('/api/account/export');
+    claims = await auth.verifyIdToken(token, sensitive);
   } catch {
     send(response, 401, { error: 'Sign in again to continue.' });
     return;
