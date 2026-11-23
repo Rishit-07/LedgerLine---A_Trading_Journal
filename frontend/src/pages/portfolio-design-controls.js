@@ -17,6 +17,7 @@ function options(parent, label, choices, current, swatches=false) {
   return ()=>selected;
 }
 
+const setupHints={name:'e.g. Opening range breakout',rule:'e.g. Trade the first close outside the 15-minute range',how:'When you take it and why, in your own words',tag:'e.g. my first-hour setup',hard:'e.g. Not chasing a move that already ran',checks:'A candle closes outside the range\nThe stop sits on the other side of it',note:'e.g. Waited for the close and skipped the first spike'};
 export function portfolioDesignControls(form,data) {
   const settings=data.sections?.presentation ?? {};
   const theme=options(form,'Design',[['marginalia','Marginalia','#5b6ee1'],['terracotta','Terracotta','#e0613a'],['sage','Field notes','#2f8f6b'],['dashboard','Dashboard','#514ac0']],settings.theme || data.design || 'marginalia',true);
@@ -29,7 +30,11 @@ export function portfolioDesignControls(form,data) {
     label.append(input);sections.append(label);switches.push(input);
   }
   const setups=node('section','','portfolio-edit-setups');
-  setups.append(node('h3','Your setups'),node('p','Each named setup has its own page. Match its name to your journal to show recorded stats.'));
+  setups.append(node('h3','Your setups'),node('p','A setup is one repeatable way you take a trade, such as an opening range breakout or a VWAP pullback. Each one you add gets its own page on your portfolio, with your rules and what you learned. Fill in only the name to start. You can add up to five.'));
+  const help=node('details','','portfolio-setup-help');
+  help.append(node('summary','See an example'));
+  help.append(node('p','Name: Opening range breakout. Your rule: Trade the first close outside the 15-minute range. Entry rules: A candle closes outside the range; the stop sits on the other side of it. Use the same name as in your journal and your real trade count and rules followed appear automatically. Put *stars* or [brackets] around a phrase to circle or highlight it.'));
+  setups.append(help);
   const frame=options(setups,'Show setups as',[['phone','Phone screens'],['card','Plain cards']],settings.frame || 'phone');
   const cards=node('div','','portfolio-setup-list');
   const add=node('button','Add a setup','mgn-customize-secondary');add.type='button';
@@ -42,7 +47,7 @@ export function portfolioDesignControls(form,data) {
     const inputs={};
     for(const [key,label,max] of setupFields){
       const field=node('label',label),input=node(['how','checks','note'].includes(key)?'textarea':'input');
-      input.maxLength=Math.max(max,(item[key]||'').length);input.value=item[key]||'';field.append(input);panel.append(field);inputs[key]=input;
+      input.maxLength=Math.max(max,(item[key]||'').length);input.value=item[key]||'';input.placeholder=setupHints[key]||'';field.append(input);panel.append(field);inputs[key]=input;
     }
     const color=options(panel,'Colour',setupColors.map((c,i)=>[c,['Indigo','Green','Clay','Violet','Rose'][i]]),item.color || setupColors[entries.length%5],true);
     const chart=options(panel,'Session chart',[['columns','Columns'],['line','Line'],['bars','Bars']],item.chart || 'columns');

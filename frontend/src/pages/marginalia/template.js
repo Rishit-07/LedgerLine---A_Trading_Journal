@@ -1361,6 +1361,7 @@ function Placeholder({ info, ph }) {
     return (React.createElement(Sheet, { info: info },
         React.createElement("div", { className: "mgn-skills" },
             React.createElement(Heading, { text: ph.title, seed: 18 }),
+            ph.about ? React.createElement("p", { className: "mgn-p", style: { marginTop: "1.4em", maxWidth: "34em" } }, ph.about) : null,
             React.createElement("p", { className: "mgn-p mgn-muted", style: { marginTop: "1.4em" } }, "Only visible to you until you add content."),
             React.createElement("button", { onClick: act, style: { marginTop: "1.2em", border: "1px solid currentColor", borderRadius: 999, padding: "10px 18px", color: "var(--fg)", font: "500 14px/1.4 var(--mgn-body)" } }, ph.action))));
 }
