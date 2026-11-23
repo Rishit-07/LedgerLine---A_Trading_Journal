@@ -10,6 +10,7 @@ import './styles/selects.css';
 import './styles/landing.css';
 import './styles/responsive.css';
 import './styles/controls.css';
+import './styles/skeleton.css';
 import { initControls } from './controls.js';
 import { initMotion } from './motion.js';
 import { initSectionRail } from './section-rail.js';

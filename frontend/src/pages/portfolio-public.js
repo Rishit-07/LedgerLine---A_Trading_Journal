@@ -1,4 +1,5 @@
 import {portfolioDesignControls} from './portfolio-design-controls.js';
+import { showSkeleton } from '../skeleton.js';
 import {mountPage} from './shared.js';
 import {node} from './workspace-ui.js';
 import {portfolioPath} from './portfolio-preferences.js';
@@ -149,6 +150,7 @@ export async function renderPublicPortfolio(landing, slug) {
   document.head.append(robots);
   const page = mountPage(landing,'<main class="n-root portfolio-page"><p class="portfolio-load" role="status">Loading portfolio…</p></main>');
   const status = page.firstChild;
+  const hideSkeleton = showSkeleton(status, 'chart');
   try {
     const visitor = new URLSearchParams(location.search).get('view') === 'visitor';
     const [owner, publicResult] = await Promise.all([
@@ -170,6 +172,7 @@ export async function renderPublicPortfolio(landing, slug) {
     status.remove();
     if (owner) addOwnerActions(page, slug, data);
   } catch (error) { status.textContent = error.message; }
+  finally { hideSkeleton(); }
 }
 
 async function loadOwnedPortfolio(slug) {
