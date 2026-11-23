@@ -40,7 +40,7 @@ export function showConfirmation(kind, caption, done = () => {}) {
       </div>
     </div>
     <div class="ll-success-copy"><h2>${title}</h2><p></p></div>
-    <button type="button" class="ll-success-continue" autofocus>Continue <span aria-hidden="true">→</span></button>`;
+    <button type="button" class="btn btn-primary ll-success-continue" autofocus>Continue <span aria-hidden="true">→</span></button>`;
   dialog.querySelector('p').textContent = caption;
   dialog.querySelector('button').onclick = () => dialog.close();
   dialog.addEventListener('close', () => {

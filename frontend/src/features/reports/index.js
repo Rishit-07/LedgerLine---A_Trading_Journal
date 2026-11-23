@@ -8,7 +8,7 @@ import './reports.css';
 const tabs={full:'Full report',patterns:'Patterns',plan:'Plan check',experiment:'Experiments',ask:'Ask your journal'};
 export const reports={
   title:'AI Reports',description:'Review your trading process.',endpoint:'/api/reports',
-  content:`<div class="ws-section-head"><div class="ws-actions" data-periods></div><button class="n-btn n-out dash-button" data-pdf>Export PDF</button></div>
+  content:`<div class="ws-section-head"><div class="ws-actions" data-periods></div><button class="btn btn-secondary" data-pdf>Export PDF</button></div>
     <div class="report-metrics" data-numbers></div><div><section class="n-out ws-card"><h2>Score trend</h2><canvas class="ws-chart" width="800" height="240" data-trend aria-label="Daily process score"></canvas><p data-trend-note></p><h3>Top mistakes</h3><div data-mistakes></div></section></div>
     <section class="n-out ws-card report-ai"><h2>AI review</h2><div class="ws-actions" data-ai-tabs></div><div class="ws-stack" data-review></div></section>
     <section class="n-out ws-card"><h2>Past reviews</h2><div class="ws-stack" data-past></div></section>`,
@@ -64,7 +64,7 @@ export const reports={
       }));
       review.classList.remove('is-locked');review.replaceChildren();
       if(busy){const p=node('p','Reading your trade checks and journal days…','report-generating');p.setAttribute('role','status');review.append(p);}
-      else if(!data.enabled){const a=node('a','Open Settings','n-btn n-out dash-button');a.href='/settings#privacy';review.append(node('p','AI features are off'),a);}
+      else if(!data.enabled){const a=node('a','Open Settings','btn btn-secondary');a.href='/settings#privacy';review.append(node('p','AI features are off'),a);}
       else if(!data.pro){
         const gate=node('div','','report-gate n-out');review.classList.add('is-locked');
         if(tab==='full'){const preview=node('div','What went well · Rule breaks · Patterns · One experiment','report-preview');preview.setAttribute('aria-hidden','true');review.append(preview);}
@@ -77,7 +77,7 @@ export const reports={
         if(tab==='ask')review.append(q);
         const habit=node('select');habit.setAttribute('aria-label','Recurring mistake to work on');
         if(tab==='experiment'){for(const m of data.mistakes.filter(m=>m.n>=2))habit.append(new Option(m.kind,m.kind));if(habit.length)review.append(habit);}
-        if(tab==='plan'){const a=node('a','Edit tomorrow’s plan','n-btn n-out dash-button');a.href='/plan?day=tomorrow';review.append(a);}
+        if(tab==='plan'){const a=node('a','Edit tomorrow’s plan','btn btn-secondary');a.href='/plan?day=tomorrow';review.append(a);}
         review.append(button(tab==='ask'?'Ask':'Generate '+tabs[tab].toLowerCase(),()=>generate(tab,false,q.value,habit.value)));
       }
       el('past').replaceChildren(...data.past.map(r=>{

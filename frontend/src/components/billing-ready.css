@@ -19,7 +19,7 @@
 .billing-intro .br-card{width:min(64vw,42vh,365px);animation:billing-unfold 2.25s both}
 .billing-intro .br-folds{width:min(112vw,100vh,900px);animation:billing-fold-reveal 2.25s both}
 .billing-intro h2{position:absolute;top:73%;margin:0;max-width:min(88vw,12ch);text-align:center;color:#fff;font:550 clamp(28px,4vw,48px)/1.05 "Geist Variable",sans-serif;letter-spacing:-.047em;text-wrap:balance;animation:billing-caption .45s 1.3s both}
-.billing-intro button{position:absolute;right:1.5rem;bottom:1.5rem;border:1px solid #ffffff40;border-radius:2rem;background:#19191b;color:white;padding:.65rem 1.1rem;cursor:pointer;font:500 .9rem/1.2 "Geist Variable",sans-serif}
+.billing-intro button{position:absolute;right:1.5rem;bottom:1.5rem}
 @keyframes billing-unfold{
   0%,28%{transform:translate(10%,-65vh) rotate(-32deg) scale(5);animation-timing-function:cubic-bezier(.76,0,.22,1)}
   67%{transform:translate(0,1vh) rotate(-34deg) rotateY(-14deg) scale(1.12);animation-timing-function:cubic-bezier(.18,.74,.22,1)}

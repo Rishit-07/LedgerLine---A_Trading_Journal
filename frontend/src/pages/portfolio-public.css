@@ -69,13 +69,6 @@
   font:400 14px/1.5 var(--mgn-body); color:inherit; background:#ffffff90;
 }
 .mgn-customize textarea { resize:vertical; }
-.portfolio-page .mgn-customize-remove { justify-self:start; font-size:12px; text-decoration:underline; }
-.mgn-customize-actions { display:flex; flex-wrap:wrap; align-items:center; gap:9px; }
-.portfolio-page .mgn-customize-save,.portfolio-page .mgn-customize-secondary,.portfolio-page .mgn-customize-actions a {
-  padding:8px 13px; border:1px solid #1d203045; border-radius:999px; font:500 12px/1.45 var(--mgn-body);
-}
-.portfolio-page .mgn-customize-save { background:var(--mgn-ink); color:var(--mgn-paper); }
-.mgn-customize-save:disabled { opacity:.7; }
 .mgn-customize [role=status] { margin:0; font-size:13px; }
 .portfolio-page[data-design=sage] { --mgn-paper:#eef0e6; --mgn-night:#1c2a24; --mgn-ink:#232c27; --mgn-pen:#2f8f6b; }
 .mgn-customize .portfolio-choices,.mgn-customize .portfolio-switch-list { padding:0; border:0; margin:0; min-width:0; }

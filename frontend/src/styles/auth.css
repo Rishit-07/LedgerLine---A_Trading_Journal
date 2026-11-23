@@ -1,13 +1,4 @@
-.auth-button {
-  padding: 10px 16px;
-  border-radius: 14px;
-  font-weight: 700;
-}
 
-.auth-button:disabled {
-  opacity: 0.65;
-  cursor: wait;
-}
 
 .auth-message {
   color: var(--down);
@@ -34,9 +25,6 @@
   margin-top: 20px;
 }
 
-.verification-actions .auth-button {
-  padding: 10px 16px;
-}
 
 .verification-status:empty {
   display: none;

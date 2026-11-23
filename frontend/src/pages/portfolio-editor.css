@@ -13,7 +13,7 @@
 .pf-panel-heading h2 { font-size:20px; }
 .pf-muted,.pf-panel-heading small { color:var(--mut); font-size:13px; font-weight:600; line-height:1.55; }
 .pf-muted { margin:12px 0 0; }
-.pf-panel .pf-muted + .dash-button { margin-top:14px; }
+.pf-panel .pf-muted + .btn { margin-top:14px; }
 .pf-panel p[role=status]:empty,.pf-panel [data-qr-empty]:empty { display:none; }
 .pf-panel [hidden] { display:none!important; }
 .pf-segment { padding:5px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; border-radius:20px; }

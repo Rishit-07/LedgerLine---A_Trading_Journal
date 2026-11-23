@@ -56,9 +56,9 @@ export function renderOnboarding(landing, { initial, email, save, signOut, desti
     const rule = document.createElement('div');
     rule.className = 'onboarding-rule';
     rule.innerHTML = `<div><strong>${label}</strong><output aria-live="polite"></output></div><div class="onboarding-adjust">
-      <button class="n-btn n-out" type="button" aria-label="Decrease ${label.toLowerCase()}">−</button>
+      <button class="btn btn-secondary" type="button" aria-label="Decrease ${label.toLowerCase()}">−</button>
       <span class="n-in" aria-hidden="true"><i></i></span>
-      <button class="n-btn n-out" type="button" aria-label="Increase ${label.toLowerCase()}">+</button>
+      <button class="btn btn-secondary" type="button" aria-label="Increase ${label.toLowerCase()}">+</button>
       </div><label><input type="checkbox" aria-label="Hard rule for ${label.toLowerCase()}" /> Hard rule</label>`;
     const [decrease, increase] = rule.querySelectorAll('button');
     const hard = rule.querySelector('input');

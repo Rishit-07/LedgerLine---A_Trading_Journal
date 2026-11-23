@@ -28,18 +28,18 @@ function sequenceOdds(available,needed,p) {
 export const sizing={
   title:'Sizing lab',description:'Kelly, Sequence staking and risk of ruin, worked from your own numbers.',
   content:`<div class="ws-notice"><strong>Planning tools</strong><p>Estimates use your inputs and assume independent outcomes. They do not predict trades.</p></div>
-  <div class="n-in ws-segments" data-sizing-tabs><button type="button" class="n-btn" data-tool="kelly">Kelly</button>
-    <button type="button" class="n-btn" data-tool="sequence">Sequence</button><button type="button" class="n-btn" data-tool="ruin">Risk of ruin</button></div>
+  <div class="n-in ws-segments" data-sizing-tabs><button type="button" class="btn btn-ghost" data-tool="kelly">Kelly</button>
+    <button type="button" class="btn btn-ghost" data-tool="sequence">Sequence</button><button type="button" class="btn btn-ghost" data-tool="ruin">Risk of ruin</button></div>
   <div class="ws-columns"><section class="n-out ws-card"><h2>Your numbers</h2>
     <form class="ws-form" data-sizing-form>
       <div class="sizing-adjust"><label for="sizing-win">Win chance (%)</label><div>
-        <button class="n-btn n-out" type="button" data-size-field="win" data-size-step="-1" aria-label="Decrease win chance">−</button>
+        <button class="btn btn-secondary" type="button" data-size-field="win" data-size-step="-1" aria-label="Decrease win chance">−</button>
         <input class="n-in" id="sizing-win" name="win" type="number" min="0" max="100" step=".1" required>
-        <button class="n-btn n-out" type="button" data-size-field="win" data-size-step="1" aria-label="Increase win chance">+</button></div></div>
+        <button class="btn btn-secondary" type="button" data-size-field="win" data-size-step="1" aria-label="Increase win chance">+</button></div></div>
       <div class="sizing-adjust"><label for="sizing-payoff">Win pays (R)</label><div>
-        <button class="n-btn n-out" type="button" data-size-field="payoff" data-size-step="-.1" aria-label="Decrease win payoff">−</button>
+        <button class="btn btn-secondary" type="button" data-size-field="payoff" data-size-step="-.1" aria-label="Decrease win payoff">−</button>
         <input class="n-in" id="sizing-payoff" name="payoff" type="number" min=".01" max="100" step=".01" required>
-        <button class="n-btn n-out" type="button" data-size-field="payoff" data-size-step=".1" aria-label="Increase win payoff">+</button></div></div>
+        <button class="btn btn-secondary" type="button" data-size-field="payoff" data-size-step=".1" aria-label="Increase win payoff">+</button></div></div>
       <label data-risk-input hidden>Risk per trade (%)<input name="risk" type="number" min=".01" max="25" step=".01" required></label>
       <fieldset class="sizing-fraction" data-kelly-input><legend>Fraction of Kelly</legend>
         <label class="n-out"><input type="radio" name="fraction" value="1">Full</label>
@@ -49,7 +49,7 @@ export const sizing={
       <div class="n-in sizing-formula" data-kelly-formula>f* = p − (1 − p) / b</div>
       <fieldset data-sequence-fields hidden><legend>Series setup</legend><label>Events in the series<input type="number" name="events" min="1" max="30" required></label>
       <label>Wins you need<input type="number" name="needed" min="1" max="30" required></label></fieldset>
-      <button class="n-btn n-acc dash-button">Save preset</button>
+      <button class="btn btn-primary">Save preset</button>
     </form><p role="status" data-sizing-status></p></section>
     <section class="n-out ws-card ws-sizing-result"><h2 data-sizing-heading></h2><div data-sizing-results></div></section></div>`,
   bind(page,{data,save}){
@@ -143,12 +143,12 @@ export const forecast={
       <label>Direction<select name="direction"><option value="up">Up</option><option value="down">Down</option><option value="flat">Flat</option></select></label>
       <label>Category<select name="category"><option>Macro</option><option>Earnings</option><option>Technical</option></select></label></div>
       <div class="sizing-adjust"><label for="forecast-probability">Your probability (%)</label><div>
-        <button type="button" class="n-btn n-out" data-probability="-1" aria-label="Decrease probability">−</button>
+        <button type="button" class="btn btn-secondary" data-probability="-1" aria-label="Decrease probability">−</button>
         <input class="n-in" id="forecast-probability" name="probability" type="number" min="1" max="99" required>
-        <button type="button" class="n-btn n-out" data-probability="1" aria-label="Increase probability">+</button></div></div>
+        <button type="button" class="btn btn-secondary" data-probability="1" aria-label="Increase probability">+</button></div></div>
       <label>Review on<input name="dueOn" type="date" required></label>
 
-      <button class="n-btn n-acc dash-button">Lock this forecast</button>
+      <button class="btn btn-primary">Lock this forecast</button>
     </form><p role="status" data-forecast-status></p></section>
     <section class="n-out ws-card"><h2>Open theses</h2><div class="ws-stack" data-forecast-open></div></section></div>
   <div class="ws-columns"><section class="n-out ws-card"><h2>Resolved forecasts</h2><div class="ws-stack" data-forecast-resolved></div></section>

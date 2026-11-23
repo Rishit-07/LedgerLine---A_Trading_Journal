@@ -11,7 +11,7 @@
 .badge-category { margin:26px 0; }
 .badge-category h3 { display:inline-block; font-size:17px; margin-right:12px; }
 .badge-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-top:12px; }
-.bd-tile.n-btn { min-width:0; display:flex; flex-direction:column; align-items:center; gap:10px; padding:18px 8px 16px; border-radius:22px; text-align:center; font-size:14px; line-height:1.25; white-space:normal; transition:transform .16s cubic-bezier(.23,1,.32,1); }
+.bd-tile.btn { min-width:0; display:flex; flex-direction:column; align-items:center; gap:10px; padding:18px 8px 16px; border-radius:22px; text-align:center; font-size:14px; line-height:1.25; white-space:normal; transition:transform .16s cubic-bezier(.23,1,.32,1); }
 .bd-tile:hover { transform:translateY(-3px); }
 .bd-tile:active { transform:scale(.97); }
 .bd-m { position:relative; width:min(84px,100%); aspect-ratio:1; flex:none; }
@@ -44,12 +44,12 @@
   .bd-ring circle+circle { animation:badge-ring .5s cubic-bezier(.23,1,.32,1) both; }
   @keyframes badge-ring { from { stroke-dasharray:0 1; } }
 }
-@media(prefers-reduced-motion:reduce) { .bd-tile.n-btn { transition:none; transform:none; } }
+@media(prefers-reduced-motion:reduce) { .bd-tile.btn { transition:none; transform:none; } }
 .badge-shelf .account-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:28px; }
 .badge-shelf .account-summary .ws-stat { display:grid; gap:6px; padding:22px 24px; border-radius:24px; }
 .badge-shelf .account-summary .ws-stat:first-child strong { color:var(--acc); font-family:'IBM Plex Mono',monospace; font-size:clamp(20px,3vw,32px); }
 .badge-shelf .account-summary .ws-stat span,.badge-shelf .account-summary .ws-stat small { color:var(--mut); font-size:12px; font-weight:700; }
-.badge-filters .n-btn,[data-badge-closest] .n-btn { padding:9px 13px; border-radius:14px; }
+.badge-filters .btn,[data-badge-closest] .btn { padding:9px 14px; }
 @media(max-width:760px) {
   .badge-shelf .account-summary { grid-template-columns:minmax(0,1fr); gap:12px; }
   .badge-shelf .account-summary .ws-stat { padding:14px 18px; }

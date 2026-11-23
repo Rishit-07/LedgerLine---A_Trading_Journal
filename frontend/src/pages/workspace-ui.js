@@ -13,7 +13,7 @@ export function node(tag, value = '', className = '') {
   return item;
 }
 export const button = (text, callback) => {
-  const item = node('button',text,'n-btn n-out dash-button');
+  const item = node('button',text,'btn btn-secondary');
   item.type = 'button';
   item.addEventListener('click', callback);
   return item;

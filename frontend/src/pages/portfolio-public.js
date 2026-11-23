@@ -26,7 +26,7 @@ const contentFields = [
 function addOwnerActions(page, slug, data) {
   const nav = node('nav', '', 'portfolio-owner-actions');
   nav.setAttribute('aria-label','Manage portfolio');
-  const customize = node('button','Customize','n-btn');
+  const customize = node('button','Customize','btn btn-ghost');
   customize.type = 'button';
   customize.setAttribute('aria-haspopup','dialog');
   nav.append(customize);
@@ -35,7 +35,7 @@ function addOwnerActions(page, slug, data) {
   const head = node('header');
   const title = node('h2','Your portfolio','mgn-display');
   title.id = 'portfolio-customize-title';
-  const close = node('button','Close','mgn-customize-secondary');
+  const close = node('button','Close','btn btn-secondary');
   close.type = 'button';
   close.onclick = () => drawer.close();
   head.append(title,close);
@@ -67,7 +67,7 @@ function addOwnerActions(page, slug, data) {
       field.append(detail);
     }
     if (!control.required) {
-      const clear = node('button','Remove ' + label.toLowerCase(),'mgn-customize-remove');
+      const clear = node('button','Remove ' + label.toLowerCase(),'btn btn-danger');
       clear.type = 'button';
       clear.hidden = !control.value;
       control.oninput = () => { clear.hidden = !control.value; };
@@ -79,17 +79,17 @@ function addOwnerActions(page, slug, data) {
   form.append(extra);
   const design=portfolioDesignControls(form,data);
   form.prepend(form.querySelector('.portfolio-choices'));
-  const actions = node('div','','mgn-customize-actions');
-  const save = node('button','Apply and replay','mgn-customize-save');
+  const actions = node('div','','form-actions mgn-customize-actions');
+  const save = node('button','Apply and replay','btn btn-primary');
   save.type = 'submit';
   actions.append(save);
-  const reset=node('button','Reset edits','mgn-customize-secondary');
+  const reset=node('button','Reset edits','btn btn-secondary');
   reset.type='button';reset.onclick=()=>{const url=new URL(location.href);url.searchParams.set('edit','1');location.replace(url);};
   actions.append(reset);
   const links = [['Manage badges','/badges'],['Sharing and stats','/portfolio'],['Settings','/settings#portfolio']];
   if (data.visibility !== 'private') links.push(['View as visitor',portfolioPath(slug) + '?view=visitor']);
   for (const [label,href] of links) {
-    const link = node('a', label, 'n-btn');
+    const link = node('a', label, 'btn btn-ghost');
     link.href = href;
     actions.append(link);
   }

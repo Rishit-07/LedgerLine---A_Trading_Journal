@@ -61,8 +61,7 @@
 .ll-success-copy h2 { margin:0; font-size:clamp(28px,5vw,52px); letter-spacing:-.055em; line-height:1.06; }
 .ll-success-copy p { margin:10px 0 0; color:#d2d7dd; }
 .ll-success-continue {
-  width:min(80vw,270px); min-height:48px; border:0; border-radius:30px;
-  margin-top:8px; font:inherit; font-weight:650; cursor:pointer; color:#151a20; background:#f3f7f6;
+  width:min(80vw,270px); margin-top:8px;
 }
 @media(prefers-reduced-motion:no-preference) {
   .ll-verify-scene .ll-insignia { animation:ll-facets 1.65s both; }

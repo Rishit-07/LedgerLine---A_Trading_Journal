@@ -7,7 +7,7 @@ export const badgeMarkup = `
     <img src="/tally-cheer.svg" alt="" width="130" height="130" />
     <p>Badge unlocked</p>
     <h2 id="streak-badge-title" data-badge-title></h2>
-    <button type="button" class="n-btn n-acc streak-btn">Continue</button>
+    <button type="button" class="btn btn-primary">Continue</button>
     <p role="status" class="streak-message" data-badge-message></p>
   </dialog>`;
 
@@ -138,7 +138,7 @@ export function notifyStreak(page, state) {
     element('strong', protectedDay ? 'Your streak is safe!' : 'Yay, keep it going!'),
     element('span', protectedDay ? count + ' protected while your market is closed.' : count + ' · Today counts.'),
   );
-  const dismiss = element('button', '×', 'n-btn');
+  const dismiss = element('button', '×', 'btn btn-ghost');
   dismiss.type = 'button';
   dismiss.setAttribute('aria-label', 'Dismiss streak notification');
   dismiss.onclick = () => toast.remove();

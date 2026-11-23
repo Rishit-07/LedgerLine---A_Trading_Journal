@@ -76,15 +76,15 @@ export const shareMarkup = `
     <section class="n-out streak-share-sheet">
       <header>
         <h2 id="streak-share-title"><img src="/ledgerline-icon.svg" alt="" width="24" height="24" /> Share streak</h2>
-        <form method="dialog"><button class="n-btn streak-btn" aria-label="Close share sheet">×</button></form>
+        <form method="dialog"><button class="btn btn-ghost" aria-label="Close share sheet">×</button></form>
       </header>
       <canvas width="720" height="840" role="img" aria-label="Your Ledgerline journal streak card"></canvas>
       <div data-share-themes class="streak-share-themes" aria-label="Share card theme"></div>
       <div class="streak-share-targets">
-        <button type="button" class="n-btn" data-share-choice="whatsapp"><span class="share-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.6a8.5 8.5 0 0 1-12.5 7.5L4 20l.9-3.9a8.5 8.5 0 1 1 15.6-4.5Z"/><path d="M9 8.5c-.8 1 .7 4.9 4.1 6.4 1.5.7 2.5.2 2.8-.7l-2.2-1.4-1 .8a6 6 0 0 1-2.3-2.5l.6-.9L10 8.3Z"/></svg></span>WhatsApp</button>
-        <button type="button" class="n-btn" data-share-choice="instagram"><span class="share-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3.5"/><path d="M16.5 7.5h.01"/></svg></span>Instagram</button>
-        <button type="button" class="n-btn" data-share-choice="copy"><span class="share-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 13 4-4m-6 7-1 1a3.5 3.5 0 0 1-5-5l4-4a3.5 3.5 0 0 1 5 0m2 8a3.5 3.5 0 0 0 5 0l4-4a3.5 3.5 0 0 0-5-5l-1 1" transform="translate(0 1)"/></svg></span>Copy link</button>
-        <button type="button" class="n-btn" data-share-choice="save"><span class="share-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 16v3h14v-3"/></svg></span>Save image</button>
+        <button type="button" class="btn btn-ghost" data-share-choice="whatsapp"><span class="share-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.6a8.5 8.5 0 0 1-12.5 7.5L4 20l.9-3.9a8.5 8.5 0 1 1 15.6-4.5Z"/><path d="M9 8.5c-.8 1 .7 4.9 4.1 6.4 1.5.7 2.5.2 2.8-.7l-2.2-1.4-1 .8a6 6 0 0 1-2.3-2.5l.6-.9L10 8.3Z"/></svg></span>WhatsApp</button>
+        <button type="button" class="btn btn-ghost" data-share-choice="instagram"><span class="share-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3.5"/><path d="M16.5 7.5h.01"/></svg></span>Instagram</button>
+        <button type="button" class="btn btn-ghost" data-share-choice="copy"><span class="share-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 13 4-4m-6 7-1 1a3.5 3.5 0 0 1-5-5l4-4a3.5 3.5 0 0 1 5 0m2 8a3.5 3.5 0 0 0 5 0l4-4a3.5 3.5 0 0 0-5-5l-1 1" transform="translate(0 1)"/></svg></span>Copy link</button>
+        <button type="button" class="btn btn-ghost" data-share-choice="save"><span class="share-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 16v3h14v-3"/></svg></span>Save image</button>
       </div>
       <p class="streak-message" role="status" data-share-message></p>
     </section>
@@ -182,7 +182,7 @@ export async function renderSharedStreak(landing) {
   document.title = title + ' — Ledgerline';
   const page = mountPage(landing, `
     <main class="n-root streak-shared-page">
-      <header><a href="/">Ledgerline</a><button type="button" class="n-btn n-out streak-btn" data-page-theme>Dark mode</button></header>
+      <header><a href="/">Ledgerline</a><button type="button" class="btn btn-secondary" data-page-theme>Dark mode</button></header>
       <canvas width="720" height="840" role="img" aria-label="A shared Ledgerline journal streak card" hidden></canvas>
       <p data-share-error role="status">Loading streak card…</p>
     </main>`);

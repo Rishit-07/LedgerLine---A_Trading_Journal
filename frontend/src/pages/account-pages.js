@@ -22,7 +22,7 @@ const shelfRows = state => catalog.map(item => ({
 export const profileMarkup = `<div class="account-board"><article class="n-out account-card">
   <div class="account-banner"><svg aria-hidden="true" viewBox="0 0 1100 176" preserveAspectRatio="xMaxYMid slice"><g fill="none" stroke="white" opacity=".16" stroke-width="2"><circle cx="930" cy="150" r="60"/><circle cx="930" cy="150" r="110"/><circle cx="930" cy="150" r="165"/><circle cx="930" cy="150" r="225"/></g><path d="M0 150 C120 140 180 96 270 112 S420 60 520 84 S690 128 780 70 S980 40 1100 24" fill="none" stroke="white" stroke-opacity=".38" stroke-width="3"/></svg><strong>Ledgerline trader card</strong><div data-card-chips></div></div>
   <div class="account-identity"><div class="account-portrait" data-avatar></div><div class="account-person"><div class="account-name-line"><h2 data-person></h2><span class="n-out account-process-tag" data-process-tag hidden></span></div><small data-profile-meta></small><p data-bio></p><div class="account-tags" data-markets></div></div>
-  <div class="account-card-side"><div class="account-card-stats" data-card-stats></div><div class="account-actions"><button type="button" class="n-btn n-acc dash-button" data-share-profile>Share card</button><a href="/settings#account">Edit</a><a data-visitor href="/portfolio">My portfolio</a></div></div></div></article>
+  <div class="account-card-side"><div class="account-card-stats" data-card-stats></div><div class="account-actions"><button type="button" class="btn btn-primary" data-share-profile>Share card</button><a href="/settings#account">Edit</a><a data-visitor href="/portfolio">My portfolio</a></div></div></div></article>
   <nav class="account-tabs" aria-label="Profile sections"></nav><div class="account-overview" data-profile-body></div></div>`;
 
 function panel(title) {
@@ -31,7 +31,7 @@ function panel(title) {
   return section;
 }
 function link(label,path) {
-  const a = node('a',label,'n-btn n-out dash-button');
+  const a = node('a',label,'btn btn-secondary');
   a.href=path;
   return a;
 }
@@ -132,7 +132,7 @@ export function paintProfile(page,state,dashboard,portfolio,name,photoUrl,friend
       activity.append(link('Trade history','/history')); body.append(activity);
     }
   }
-  tabs.replaceChildren(...['Overview','Performance','Activity'].map(tab=>{const button=node('button',tab,'n-btn');button.onclick=()=>view(tab);return button;}));
+  tabs.replaceChildren(...['Overview','Performance','Activity'].map(tab=>{const button=node('button',tab,'btn btn-ghost');button.onclick=()=>view(tab);return button;}));
   view(current);
 }
 

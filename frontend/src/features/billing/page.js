@@ -13,7 +13,7 @@ const money=v=>'₹'+Number(v).toLocaleString('en-IN');
 const section=(key,title)=>'<section class="ws-card n-out bill-section"><h2>'+title+'</h2><div data-bill="'+key+'"></div></section>';
 export const billing={
  title:'Billing',description:'Your plan, how you pay, and your invoices.',endpoint:'/api/billing/overview',
- content:'<div class="bill-board n-out"><div data-bill="notice" role="status"></div><header class="bill-head"><h2>Plans and billing</h2><div class="bill-period n-in" data-bill="period"></div></header><p class="bill-sample">Sample prices in rupees.</p><div class="bill-plans" data-bill="plans"></div>'+section('compare','What each plan includes')+'<div class="bill-columns"><aside>'+section('usage','Usage this month')+section('profile','Billing details')+'</aside></div>'+section('invoices','Invoices')+'<p class="n-in bill-free"><strong>Never behind a paywall</strong> · Loss limits, cooldowns, pre-trade checklist, export and delete account.</p><footer class="bill-footer"><div data-bill="actions"></div><small>Renewal reminders by email. Cancel in two taps.</small></footer><dialog class="bill-payment n-out" aria-labelledby="bill-payment-title"><header><h2 id="bill-payment-title">How you pay</h2><button class="n-btn n-out dash-button" type="button" data-close-payment>Close</button></header><p data-bill="payment-plan"></p><div data-bill="methods"></div><div data-bill="crypto"></div><div data-bill="payment-status"><span data-bill="payment-message" role="status"></span></div><div data-bill="confirm-payment"></div></dialog></div>',
+ content:'<div class="bill-board n-out"><div data-bill="notice" role="status"></div><header class="bill-head"><h2>Plans and billing</h2><div class="bill-period n-in" data-bill="period"></div></header><p class="bill-sample">Sample prices in rupees.</p><div class="bill-plans" data-bill="plans"></div>'+section('compare','What each plan includes')+'<div class="bill-columns"><aside>'+section('usage','Usage this month')+section('profile','Billing details')+'</aside></div>'+section('invoices','Invoices')+'<p class="n-in bill-free"><strong>Never behind a paywall</strong> · Loss limits, cooldowns, pre-trade checklist, export and delete account.</p><footer class="bill-footer"><div data-bill="actions"></div><small>Renewal reminders by email. Cancel in two taps.</small></footer><dialog class="bill-payment n-out" aria-labelledby="bill-payment-title"><header><h2 id="bill-payment-title">How you pay</h2><button class="btn btn-secondary" type="button" data-close-payment>Close</button></header><p data-bill="payment-plan"></p><div data-bill="methods"></div><div data-bill="crypto"></div><div data-bill="payment-status"><span data-bill="payment-message" role="status"></span></div><div data-bill="confirm-payment"></div></dialog></div>',
  async bind(page,{data,request,uid}){
   const el=k=>page.querySelector('[data-bill="'+k+'"]');
   const params=new URLSearchParams(location.search);
@@ -21,7 +21,7 @@ export const billing={
   const orderKey='ledgerline.billing.'+uid;
   let plan=params.get('plan')==='mentor'?'mentor':'pro',term='monthly',method='UPI',coin='USDC',network='Polygon',months=1,busy=false,activeOrder=null,quoteTimer,pollTimer,cardOpen=false;
   if(!sessionStorage.getItem(orderKey)){const board=el('period').closest('.bill-board');board.hidden=true;await playBillingIntro();board.hidden=false;}
-  const toolbar=page.querySelector('.dash-actions');if(toolbar){const notifications=node('a','Notifications','n-btn n-out dash-button');notifications.href='/settings#notifications';toolbar.insertBefore(notifications,toolbar.lastElementChild);}
+  const toolbar=page.querySelector('.dash-actions');if(toolbar){const notifications=node('a','Notifications','btn btn-secondary');notifications.href='/settings#notifications';toolbar.insertBefore(notifications,toolbar.lastElementChild);}
   const payment=page.querySelector('.bill-payment');
   const paymentStatus=el('payment-status');
   const note=text=>{(payment.open?el('payment-message'):el('notice')).textContent=text;};
@@ -59,11 +59,11 @@ export const billing={
    }
    el('payment-plan').textContent=labels[plan]+' · '+(method==='Crypto'?months+' month'+(months===1?'':'s'):term==='yearly'?'Yearly':'Monthly');
    const confirm=button(method==='Crypto'?'Get payment quote':method==='Card'?'Pay with card':'Continue with '+methods[method],checkout);
-   confirm.classList.add('n-acc');confirm.disabled=busy||plan==='free'||plan===data.current&&method!=='Crypto';
+   confirm.classList.replace('btn-secondary','btn-primary');confirm.disabled=busy||plan==='free'||plan===data.current&&method!=='Crypto';
    el('confirm-payment').replaceChildren(confirm);
    const actions=el('actions');
    const start=button(busy?'View payment':labels[plan]===labels[data.current]?'Extend '+labels[plan]:'Start '+labels[plan],openPayment);
-   start.classList.add('n-acc','bill-start');start.disabled=plan==='free'&&!busy;
+   start.classList.replace('btn-secondary','btn-primary');start.classList.add('bill-start');start.disabled=plan==='free'&&!busy;
    start.setAttribute('aria-haspopup','dialog');
    actions.replaceChildren(start);
    const manage=button('Cancel or pause',managePlan);manage.disabled=!data.orders.some(o=>o.method!=='Crypto'&&!o.renewal_action);actions.append(manage);
@@ -96,7 +96,7 @@ export const billing={
     catch(error){cardOpen=false;action.disabled=false;note(error.message);}
    });
    action.dataset.cardCheckout='';
-   action.classList.add('n-acc');
+   action.classList.replace('btn-secondary','btn-primary');
    paymentStatus.append(action);
    return action;
   }
@@ -111,7 +111,7 @@ export const billing={
      const cardAction=showCardAction(order.cardCheckout);
      if(payment.open)cardAction.click();
     }
-    else if(order.url){const link=node('a','Open secure payment','n-btn n-acc dash-button');link.href=order.url;link.target='_blank';link.rel='noopener';paymentStatus.append(link);}
+    else if(order.url){const link=node('a','Open secure payment','btn btn-primary');link.href=order.url;link.target='_blank';link.rel='noopener';paymentStatus.append(link);}
     poll();
    }catch(e){busy=false;paint();note(e.message);}
   }
@@ -130,7 +130,7 @@ export const billing={
     if(state.confirmed&&cardOpen){pollTimer=setTimeout(poll,1200);return;}
     if(state.confirmed){const saved=JSON.parse(sessionStorage.getItem(orderKey)||'{}');reset();payment.close();showConfirmation('payment','Your '+labels[state.plan]+' access is active.',()=>planReadyScreen(state.plan,data.plans[state.plan].features,()=>location.assign(saved.destination==='/reports'?'/reports?welcome=pro':saved.destination==='/spaces'?'/spaces':'/billing')));return;}
     if(state.cardCheckout&&!paymentStatus.querySelector('[data-card-checkout]'))showCardAction(state.cardCheckout);
-    if(!state.cardCheckout&&state.hosted_url&&!paymentStatus.querySelector('a')){const link=node('a','Resume secure checkout','n-btn n-out dash-button');link.href=state.hosted_url;link.target='_blank';link.rel='noopener';paymentStatus.append(link);}
+    if(!state.cardCheckout&&state.hosted_url&&!paymentStatus.querySelector('a')){const link=node('a','Resume secure checkout','btn btn-secondary');link.href=state.hosted_url;link.target='_blank';link.rel='noopener';paymentStatus.append(link);}
     if(state.quote&&!page.querySelector('.bill-quote canvas')){method='Crypto';coin=state.quote.coin;network=state.quote.network;paint();await displayQuote(state.quote);}
     if(['expired','failed'].includes(state.payment_state)){reset();note('Payment '+state.payment_state+'. Start again for a fresh checkout.');return;}
     if(state.payment_state==='underpaid')note('Payment is short. Top up the original payment on the same network.');
@@ -144,7 +144,7 @@ export const billing={
   Object.values(labels).forEach((label,i)=>{const details=node('details','','bill-mobile');details.append(node('summary',label));for(const row of rows)details.append(node('p',(row[i+1]?'✓ ':'— ')+row[0]));el('compare').append(details);});
   const meter=node('meter');meter.min=0;meter.max=Math.max(1,data.usage);meter.value=data.usage;el('usage').append(node('strong',String(data.usage)),node('p','Replays used this month'),meter);
   const form=node('form','','ws-form');for(const [name,label] of [['billing_name','Name on invoice'],['gstin','GSTIN (optional)'],['address','Billing address']]){const field=node('label',label),input=node('input');input.name=name;input.value=data.profile[name]??'';input.required=name==='billing_name';field.append(input);form.append(field);}
-  const save=node('button','Save details','n-btn n-out dash-button');form.append(node('p','Invoices are sent to '+data.profile.email),save);el('profile').append(form);
+  const save=node('button','Save details','btn btn-secondary');form.append(node('p','Invoices are sent to '+data.profile.email),save);el('profile').append(form);
   form.onsubmit=async e=>{e.preventDefault();save.disabled=true;try{await request('/api/billing/profile','PUT',Object.fromEntries(new FormData(form)));note('Invoice details saved.');}catch(err){note(err.message);}finally{save.disabled=false;}};
   for(const row of data.invoices){const entry=node('div','','bill-invoice');entry.append(node('strong','LL-'+String(row.id).padStart(6,'0')),node('span',formatDate(row.created_at)),node('span',row.method+' · '+money(row.amount_paise/100)),button('PDF',async()=>{try{const {pdf}=await request('/api/billing/invoice?id='+row.id,'GET');const a=node('a');a.download='Ledgerline-'+row.id+'.pdf';a.href='data:application/pdf;base64,'+pdf;a.click();}catch(e){note(e.message);}}));el('invoices').append(entry);}
   if(!data.invoices.length)el('invoices').append(node('p','Your first invoice appears here after payment.'));

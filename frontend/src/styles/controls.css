@@ -1,0 +1,181 @@
+/* Shared buttons and form fields. Every page uses these; pages only add layout, never colour or borders.
+   Five button styles: primary, secondary, ghost, danger, disabled. Fields: visible border, accent focus ring,
+   red glow when a required field is empty (behaviour in ../controls.js). */
+
+:root {
+  --field-border: color-mix(in srgb, var(--ink) 45%, var(--bg));
+  --on-acc: #ffffff;
+  --neg-text: #b0402a;
+  --btn-shadow: 5px 5px 11px var(--sd), -5px -5px 11px var(--sl);
+  --btn-shadow-accent: 6px 6px 14px var(--sd), -4px -4px 10px var(--sl);
+  --btn-shadow-press: inset 4px 4px 9px var(--sd), inset -4px -4px 9px var(--sl);
+  /* One z-index scale for everything that floats. */
+  --z-content: 0;
+  --z-sticky: 20;
+  --z-bot: 30;
+  --z-dialog: 100;
+  --z-toast: 110;
+}
+:root.dark {
+  --field-border: color-mix(in srgb, var(--ink) 40%, var(--bg));
+  --on-acc: #14161a;
+  --neg-text: var(--neg);
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+/* ---------- Buttons ---------- */
+:where(.btn) {
+  position: relative;
+  box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-width: 44px; min-height: 44px; max-width: 100%;
+  padding: 10px 18px;
+  border: 0; border-radius: 14px;
+  background: var(--bg); color: var(--ink);
+  font: inherit; font-size: 14px; font-weight: 700; line-height: 1.25; text-align: center; text-decoration: none;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: box-shadow .18s ease, transform .15s ease, background-color .18s ease, opacity .18s ease;
+}
+.btn-primary { background: var(--acc); color: var(--on-acc); box-shadow: var(--btn-shadow-accent); }
+.btn-secondary { background: var(--bg); color: var(--ink); box-shadow: var(--btn-shadow); }
+.btn-ghost { background: transparent; color: var(--acc); box-shadow: none; padding-inline: 14px; }
+.btn-danger { background: var(--bg); color: var(--neg-text); box-shadow: var(--btn-shadow); }
+.btn-icon { padding: 10px; width: 44px; }
+.btn:focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; }
+.btn-primary:focus-visible { outline-color: var(--acc2); }
+:root.dark .btn-primary:focus-visible { outline-color: var(--ink); }
+
+@media (hover: hover) {
+  .btn:not(:disabled, [aria-disabled="true"], .is-loading):hover { transform: translateY(-1px); }
+  .btn-ghost:not(:disabled, [aria-disabled="true"]):hover { background: var(--glow); text-decoration: underline; text-underline-offset: .2em; }
+}
+.btn:not(:disabled, [aria-disabled="true"], .is-loading):active { transform: none; }
+.btn-primary:not(:disabled, [aria-disabled="true"]):active,
+.btn-secondary:not(:disabled, [aria-disabled="true"]):active,
+.btn-danger:not(:disabled, [aria-disabled="true"]):active { box-shadow: var(--btn-shadow-press); }
+.btn-ghost:not(:disabled, [aria-disabled="true"]):active { background: var(--track); }
+
+/* A selected toggle, tab or filter chip. */
+.btn[aria-pressed="true"], .btn[aria-current="true"], .btn.on { color: var(--acc); box-shadow: var(--btn-shadow-press); }
+.btn-primary[aria-pressed="true"] { color: var(--on-acc); }
+
+/* Disabled: not available right now. Say why in a title or helper line. */
+.btn:disabled, .btn[aria-disabled="true"] {
+  opacity: .45; box-shadow: none; cursor: not-allowed; transform: none;
+}
+/* Loading: request in flight. Label stays, spinner appears, not clickable. */
+.btn.is-loading, .btn[aria-busy="true"] { pointer-events: none; cursor: progress; opacity: 1; }
+.btn.is-loading::after, .btn[aria-busy="true"]::after {
+  content: ""; flex: none; width: 14px; height: 14px; box-sizing: border-box;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+  animation: btn-spin .7s linear infinite;
+}
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .btn, .btn:hover { transition: none; transform: none; }
+  .btn.is-loading::after, .btn[aria-busy="true"]::after { animation: none; }
+}
+
+/* ---------- Placement ---------- */
+/* Action row: never sibling-dependent margins, never absolute positioning. */
+.btn-row, .form-actions, .btn-group {
+  display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; min-width: 0;
+}
+.btn-row, .btn-group { align-items: center; }
+.btn-row > .btn, .form-actions > .btn { align-self: stretch; }
+.btn-row--end, .form-actions { justify-content: flex-end; }
+.btn-row--start { justify-content: flex-start; }
+/* Dialog and form footers: destructive far left, secondary then primary on the right. */
+.form-actions > .btn-danger { margin-inline-end: auto; }
+.form-actions > .btn-primary { order: 2; }
+.form-actions > .btn-secondary, .form-actions > .btn-ghost { order: 1; }
+.form-actions > .btn-danger { order: 0; }
+/* Card header: title left, one action right, wraps instead of overlapping. */
+.card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; min-width: 0; }
+.card-head > :first-child { min-width: 0; overflow-wrap: anywhere; }
+/* Phone: action row becomes a full-width column, primary on top. */
+@media (max-width: 639.98px) {
+  .btn-row:not(.btn-group), .form-actions { flex-direction: column; align-items: stretch; }
+  .btn-row:not(.btn-group) > .btn, .form-actions > .btn { width: 100%; max-width: none; }
+  .btn-row:not(.btn-group) > .btn-primary, .form-actions > .btn-primary { order: -1; }
+  .btn-row:not(.btn-group) > .btn-danger { order: 3; }
+  .form-actions > .btn-danger { margin-inline-end: 0; order: 3; }
+  .form-actions > .btn-secondary, .form-actions > .btn-ghost { order: 1; }
+  .form-actions.is-sticky {
+    position: sticky; bottom: 0; z-index: var(--z-sticky); padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+    background: var(--bg);
+  }
+}
+
+/* ---------- Fields ---------- */
+.field { display: grid; gap: 6px; min-width: 0; }
+
+/* Text-like controls: always a visible border. The control is the box, or its .n-in/.n-out wrapper is. */
+html:root body :is(input, textarea, select):not(:is([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="hidden"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"])) {
+  box-sizing: border-box;
+  border: 1.5px solid var(--field-border);
+  scroll-margin-top: 96px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+html:root body :is(.n-in, .n-out, .field__box):has(> :is(input, textarea, select):not(:is([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="hidden"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"]))) {
+  box-sizing: border-box;
+  position: relative;
+  border: 1.5px solid var(--field-border);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+html:root body :is(.n-in, .n-out, .field__box) > :is(input, textarea, select):not(:is([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="hidden"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"])) {
+  border: 0; box-shadow: none; background: transparent; outline: 0;
+}
+html:root body :is(input, textarea, select):not(:is([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="hidden"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"])):not(:disabled):hover,
+html:root body :is(.n-in, .n-out, .field__box):has(> :is(input, textarea, select):not(:disabled)):hover {
+  border-color: color-mix(in srgb, var(--ink) 65%, var(--bg));
+}
+/* Focus: accent border and a soft ring. */
+html:root body :is(input, textarea, select):not(:is([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="hidden"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"])):focus-visible,
+html:root body :is(.n-in, .n-out, .field__box):has(> :is(input, textarea, select):focus-visible),
+html:root body :is(.n-in, .n-out, .field__box):focus-within:has(> :is(input, textarea, select)) {
+  border-color: var(--acc);
+  outline: 0;
+  box-shadow: var(--surface-inset), 0 0 0 3px color-mix(in srgb, var(--acc) 28%, transparent);
+}
+html:root body :is(.n-in, .n-out, .field__box) > :is(input, textarea, select):focus-visible { box-shadow: none; }
+/* Disabled: dashed border. */
+html:root body :is(input, textarea, select):disabled,
+html:root body :is(.n-in, .n-out, .field__box):has(> :is(input, textarea, select):disabled) {
+  border-style: dashed; opacity: .6; cursor: not-allowed;
+}
+html:root body :is(.n-in, .n-out, .field__box) > :is(input, textarea, select):disabled { opacity: 1; border-style: none; }
+/* Other controls keep their native look but get a visible focus ring. */
+:is(input[type="checkbox"], input[type="radio"], input[type="range"], input[type="file"]):focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--acc); }
+
+/* Required and empty (after leaving it or pressing the primary button): red glow, message, icon. */
+html:root body :is(input, textarea, select)[aria-invalid="true"]:not(:is([type="checkbox"], [type="radio"])),
+html:root body [data-invalid="true"] {
+  border-color: var(--neg);
+  box-shadow: var(--surface-inset), 0 0 0 3px color-mix(in srgb, var(--neg) 30%, transparent), 0 0 14px color-mix(in srgb, var(--neg) 35%, transparent);
+  animation: field-pulse .4s ease-out;
+}
+html:root body :is(.n-in, .n-out, .field__box)[data-invalid="true"] > :is(input, textarea, select) { box-shadow: none; animation: none; }
+input[type="checkbox"][aria-invalid="true"], input[type="radio"][aria-invalid="true"], input[type="file"][aria-invalid="true"] { outline: 2px solid var(--neg); outline-offset: 3px; }
+@keyframes field-pulse { from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--neg) 55%, transparent); } }
+@media (prefers-reduced-motion: reduce) {
+  html:root body :is(input, textarea, select)[aria-invalid="true"], html:root body [data-invalid="true"] { animation: none; }
+}
+.field__msg {
+  display: flex; align-items: flex-start; gap: 6px; margin: 6px 0 0; color: var(--neg-text);
+  font-size: 12px; font-weight: 600; line-height: 1.4; text-align: start;
+}
+.field__msg > span[aria-hidden] {
+  flex: none; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--neg-text); color: var(--bg); font-size: 11px; font-weight: 800; line-height: 1;
+}
+/* Required marker, beside the label text or inside the box when there is only a placeholder. */
+.field__req { color: var(--neg-text); font-weight: 800; }
+.field__box--req > :is(input, textarea, select) { padding-inline-end: 30px; }
+.field__req--inline { position: absolute; top: 10px; inset-inline-end: 12px; pointer-events: none; }
+.field-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }

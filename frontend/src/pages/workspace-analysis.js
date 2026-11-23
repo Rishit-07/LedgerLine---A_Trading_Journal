@@ -22,7 +22,7 @@ function setups(list, trades) {
   list.replaceChildren(...groups.map(([label,value]) => stat(label,signedR(value.total/value.count),value.count + ' closed')));
   if (!groups.length) list.append(message('Close trades to compare setups.'));
 }
-const log = '<a class="n-btn n-acc dash-button" href="/dashboard#log-trade">Log a trade</a>';
+const log = '<a class="btn btn-primary" href="/dashboard#log-trade">Log a trade</a>';
 const tradeOptions = Object.entries(markets).map(([value,name]) => `<option value="${value}">${name}</option>`).join('');
 export const history = {
   title:'Trade history', description:'Every trade you have logged. Filter it, chart it, and open any one to review.', action:log,
@@ -35,22 +35,22 @@ export const history = {
     <div class="ws-filter-grid"><label>Search<input data-history-search type="search" placeholder="Symbol or setup"></label>
       <label>Market<select data-history-market><option value="">All markets</option>${tradeOptions}</select></label></div>
     <div class="ws-actions ws-history-filters" aria-label="Trade result">
-      <button class="n-btn n-out dash-button" type="button" data-history-result="all">All</button>
-      <button class="n-btn n-out dash-button" type="button" data-history-result="wins">Wins</button>
-      <button class="n-btn n-out dash-button" type="button" data-history-result="losses">Losses</button>
-      <button class="n-btn n-out dash-button" type="button" data-history-result="open">Open</button></div>
+      <button class="btn btn-secondary" type="button" data-history-result="all">All</button>
+      <button class="btn btn-secondary" type="button" data-history-result="wins">Wins</button>
+      <button class="btn btn-secondary" type="button" data-history-result="losses">Losses</button>
+      <button class="btn btn-secondary" type="button" data-history-result="open">Open</button></div>
   </section>
   <section class="n-out ws-card history-review" data-history-detail aria-label="Selected trade"><div data-detail-trade></div></section>
-  <section class="n-out ws-card"><div class="ws-section-head"><h2>All trades</h2><div class="ws-actions"><button class="n-btn n-out dash-button" type="button" data-trades-import>Import CSV</button><button class="n-btn n-out dash-button" type="button" data-trades-export>Export CSV</button></div></div>
+  <section class="n-out ws-card"><div class="ws-section-head"><h2>All trades</h2><div class="ws-actions"><button class="btn btn-secondary" type="button" data-trades-import>Import CSV</button><button class="btn btn-secondary" type="button" data-trades-export>Export CSV</button></div></div>
     <p class="ws-empty" data-trade-empty></p>
     <div class="ws-table-wrap"><table class="history-trades" data-trade-table><thead><tr><th>Date</th><th>Symbol</th><th>Setup</th><th>Result</th><th>Rules kept</th><th>Review</th></tr></thead><tbody></tbody></table></div>
     <div class="ws-actions" data-history-pager></div>
   </section>
   <dialog class="n-out dash-dialog" data-import-dialog aria-labelledby="ws-import-title">
-    <div class="dash-dialog-header"><h2 id="ws-import-title">Import CSV</h2><form method="dialog"><button class="n-btn n-out dash-button" aria-label="Close import">×</button></form></div>
+    <div class="dash-dialog-header"><h2 id="ws-import-title">Import CSV</h2><form method="dialog"><button class="btn btn-secondary" aria-label="Close import">×</button></form></div>
     <p class="dash-muted">Import up to 100 trades from the last 48 hours using the Ledgerline export columns. A blank Result R keeps a position open.</p>
     <form class="ws-form" data-import-form><label>Trade CSV<input name="file" type="file" accept=".csv,text/csv" required></label>
-      <button class="n-btn n-acc dash-button">Import trades</button></form><p role="status" data-import-status></p>
+      <button class="btn btn-primary">Import trades</button></form><p role="status" data-import-status></p>
   </dialog>`,
   bind(page,{data,request,reload}) {
     const market = select(page,'[data-history-market]');
@@ -100,7 +100,7 @@ export const history = {
       if (!trade.closedAt) links.append(button('Close trade',()=>openCloseTrade(page,trade,request,async()=>{
         Object.assign(data,await reload());paint();
       })));
-      const journal = node('a','Open journal','n-btn n-acc dash-button');
+      const journal = node('a','Open journal','btn btn-primary');
       journal.href='/journal?'+new URLSearchParams({tradeId:trade.id});links.append(journal);
       if (trade.closedAt) {
       }
@@ -224,7 +224,7 @@ export const mistake = {
     <section class="n-out ws-card"><h2>Tag a trade</h2>
       <form class="ws-form" data-mistake-form><label>Closed trade<select name="tradeId" required></select></label>
       <label>Habit<input name="kind" list="mistake-labels" maxlength="50" required></label><datalist id="mistake-labels"><option value="Moved stop"><option value="Chased entry"><option value="Oversized"><option value="Early exit"></datalist>
-      <label>Review note<textarea name="note" maxlength="500" rows="3"></textarea></label><button class="n-btn n-acc dash-button">Save tag</button></form>
+      <label>Review note<textarea name="note" maxlength="500" rows="3"></textarea></label><button class="btn btn-primary">Save tag</button></form>
       <p role="status" data-mistake-status></p></section></div></div>`,
   bind(page,{data,save}) {
     const form=select(page,'[data-mistake-form]');

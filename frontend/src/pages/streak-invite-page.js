@@ -10,7 +10,7 @@ const markup = `
   <main class="n-root invite-page">
     <header class="invite-header">
       <a class="invite-brand" href="/"><span class="n-out"><img src="/ledgerline-icon.svg" alt="" width="22" height="22" /></span><span><b>Ledger</b>line</span></a>
-      <button class="n-btn n-out invite-theme" type="button" data-page-theme>Dark mode</button>
+      <button class="btn btn-secondary invite-theme" type="button" data-page-theme>Dark mode</button>
     </header>
     <div class="n-out invite-card">
       <div class="invite-story">
@@ -23,7 +23,7 @@ const markup = `
       <div class="invite-actions">
         <p data-invite-state role="status">Checking your session…</p>
         <section class="invite-options" data-invite-options hidden aria-label="How to continue">
-          <a class="n-btn n-acc invite-primary" data-invite-existing><span>Sign in</span><span class="invite-arrow" aria-hidden="true">→</span></a>
+          <a class="btn btn-primary invite-primary" data-invite-existing><span>Sign in</span><span class="invite-arrow" aria-hidden="true">→</span></a>
           <a class="n-out invite-secondary" data-invite-new><span><strong>Create an account</strong><small>New to Ledgerline</small></span><span class="invite-arrow" aria-hidden="true">→</span></a>
         </section>
         <a class="invite-home" href="/" data-invite-home hidden>Back to Ledgerline</a>

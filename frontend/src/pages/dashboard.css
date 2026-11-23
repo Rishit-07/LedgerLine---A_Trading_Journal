@@ -12,8 +12,6 @@
 .dash-brand { display: flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; font-size: 22px; letter-spacing: -0.03em; }
 .dash-brand b { color: var(--acc); }
 .dash-brand .n-out { display: grid; width: 43px; height: 43px; place-items: center; border-radius: 15px; color: var(--acc); }
-.dash-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 10px 16px; border-radius: 14px; font-size: 14px; font-weight: 700; white-space: nowrap; text-decoration: none; }
-.dash-button:disabled { opacity: .55; cursor: wait; }
 .dash-navigation { display: grid; gap: 13px; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--dn) transparent; padding: 3px; margin: -3px; }
 .dash-navigation div { display: grid; gap: 2px; }
 .dash-navigation p, .dash-label { margin: 0 0 5px; padding-inline: 14px; color: var(--mut); font-size: 12px; font-weight: 750; }
@@ -99,12 +97,6 @@
 .close-trade-dialog form { gap:14px; }
 .close-trade-dialog input { padding:10px 14px; border:0; border-radius:14px; background:var(--bg); box-shadow:var(--surface-inset); color:var(--ink); font:inherit; }
 .close-trade-dialog form > div { display:flex; justify-content:flex-end; gap:12px; }
-.dashboard-page :where(button,.n-btn) { border-radius:14px; transition: translate .15s ease, box-shadow .18s ease, background-color .18s ease; }
-@media(hover:hover) and (prefers-reduced-motion:no-preference) {
-  .dashboard-page :where(button,.n-btn):not(:disabled):hover { translate:0 -1px; }
-  .dashboard-page :where(button,.n-btn):not(:disabled):active { translate:0 1px; }
-}
-@media(prefers-reduced-motion:reduce) { .dashboard-page :where(button,.n-btn) { transition:none; } }
 .dash-mini-tile { display: grid; gap: 6px; padding: 15px 12px; border-radius: 19px; }
 .dash-mini-tile strong { font: 650 clamp(16px, 2vw, 24px) var(--font-mono); }
 .dash-mini-tile span { color: var(--sub); font-size: 12px; font-weight: 700; }
@@ -154,7 +146,7 @@
 .dash-calendar-header, .dash-month-nav { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
 .dash-month-nav { justify-content: flex-start; margin: 12px 0 16px; }
 .dash-month-nav h3 { min-width: 9ch; margin: 0; text-align: center; font-size: clamp(16px, 2vw, 21px); }
-.dash-month-nav .dash-button { min-width: 40px; padding: 0 10px; font-size: 23px; }
+.dash-month-nav .btn { padding-inline: 10px; font-size: 23px; }
 .dash-month-nav button:disabled { cursor: default; }
 .dash-month-metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
 .dash-month-metric { min-width: 0; display: grid; align-content: start; gap: 6px; padding: 12px; border: 1px solid var(--track); border-radius: 13px; background: color-mix(in srgb, var(--track) 27%, var(--bg)); }
@@ -187,7 +179,7 @@
 .dash-calendar-rollups ul { margin: 8px 0 0; padding: 0; list-style: none; }
 .dash-calendar-rollups li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px 14px; padding: 8px 0; border-bottom: 1px solid var(--track); }
 .dash-pager { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 9px; margin-top: 14px; color: var(--sub); font-size: 12px; }
-.dash-pager .dash-button { padding-inline: 10px; font-size: 12px; }
+.dash-pager .btn { padding-inline: 12px; font-size: 13px; }
 .dash-pager button:disabled { cursor: default; }
 .dash-calendar-dialog { width: min(calc(100% - 28px), 690px); }
 .dash-calendar-controls { display: flex; flex-wrap: wrap; gap: 12px; padding-block: 16px; }

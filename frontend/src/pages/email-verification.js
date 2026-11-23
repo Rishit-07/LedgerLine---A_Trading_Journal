@@ -10,9 +10,9 @@ export function renderEmailVerification(previous, auth, user, { authPath, sendAu
         <h1 tabindex="-1">Verify your email</h1>
         <p>We’ll send a verification link to <strong data-verification-email></strong>. Open it, then return here to continue.</p>
         <div class="verification-actions">
-          <button type="button" class="n-btn n-acc auth-button" data-check-verification>I’ve verified my email</button>
-          <button type="button" class="n-btn n-out auth-button" data-send-verification>Send verification email</button>
-          <button type="button" class="n-btn auth-button" data-switch-account>Use another account</button>
+          <button type="button" class="btn btn-primary" data-check-verification>I’ve verified my email</button>
+          <button type="button" class="btn btn-secondary" data-send-verification>Send verification email</button>
+          <button type="button" class="btn btn-ghost" data-switch-account>Use another account</button>
         </div>
         <p class="verification-status" role="status"></p>
       </div>

@@ -46,8 +46,8 @@ export function bindQuickTrade(page, { save, getDashboard, marketNames, onSaved 
     const broken = checked < rules.length;
     [...progress.children].forEach((pip, index) => pip.classList.toggle('is-filled', index < checked));
     score.textContent = rules.length ? checked + ' of ' + rules.length + ' rules followed. Trade results do not affect this check.' : 'No active rules to check.';
-    submit.classList.toggle('n-acc', !broken);
-    submit.classList.toggle('n-out', broken);
+    submit.classList.toggle('btn-primary', !broken);
+    submit.classList.toggle('btn-secondary', broken);
     submit.classList.toggle('ql-warn', broken);
     submitLabel.textContent = broken ? 'Save with broken rule' : 'Save trade';
   }

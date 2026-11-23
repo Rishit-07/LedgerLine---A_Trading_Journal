@@ -2,7 +2,7 @@ import {confirmationCard,showConfirmation} from '../../components/confirmation-m
 import { houseRules, roomMarkup, bindRoom } from '../community/room.js';
 import { button, submit } from '../../pages/workspace-ui.js';
 
-const createPanel = `<section class="n-out ws-card community-create" data-create hidden><header class="ws-section-head"><h2>Create a space</h2><button type="button" class="n-btn n-out dash-button" data-close-create>Back</button></header><div class="mentor-create-steps" data-mentor-steps>Verify → Unlock plan → Create</div><div data-mentor-gate></div>
+const createPanel = `<section class="n-out ws-card community-create" data-create hidden><header class="ws-section-head"><h2>Create a space</h2><button type="button" class="btn btn-secondary" data-close-create>Back</button></header><div class="mentor-create-steps" data-mentor-steps>Verify → Unlock plan → Create</div><div data-mentor-gate></div>
   <form class="ws-form" data-club-form><label>Space name<input name="name" required maxlength="60"></label>
   <label>About<textarea name="description" required maxlength="400" rows="3"></textarea></label>
   <label>City or region (optional)<input name="location" maxlength="60"></label>
@@ -10,16 +10,16 @@ const createPanel = `<section class="n-out ws-card community-create" data-create
   <label>Access<select name="joinMode"><option value="invite">Invite only</option><option value="request">Request to join</option></select></label><label>Member cap<input name="memberCap" type="number" min="1" max="50" value="50" required></label>
   <label>Cohort start (optional)<input name="cohortStart" type="date"></label><label>Cohort end (optional)<input name="cohortEnd" type="date"></label>
   <label>Space rules<textarea name="spaceRules" maxlength="1200" required>Keep discussions educational. Respect privacy and give constructive feedback.</textarea></label>
-  <button class="n-btn n-acc dash-button">Create space</button></form></section>`;
+  <button class="btn btn-primary">Create space</button></form></section>`;
 export const spaces={
   title:'Mentor spaces',
   description:'Lead a space or join one.',
   endpoint:'/api/spaces',
   content:houseRules+`<section class="n-out ws-card community-hero"><div><small>Mentorship</small>
       <h2>Work on your process together.</h2><p>Set a goal, check in and discuss what you learned.</p></div>
-      <div class="community-hero-actions"><button type="button" class="n-btn n-acc dash-button" data-start>Create a space</button></div></section>`+roomMarkup('space')+createPanel+'<p role="status" data-club-status></p>',
+      <div class="community-hero-actions"><button type="button" class="btn btn-primary" data-start>Create a space</button></div></section>`+roomMarkup('space')+createPanel+'<p role="status" data-club-status></p>',
   bind(page,context){
-    const manage=document.createElement('a');manage.className='n-btn n-out dash-button';manage.href='/mentor-verification';manage.textContent='Mentor verification';page.querySelector('.community-hero-actions').append(manage);
+    const manage=document.createElement('a');manage.className='btn btn-secondary';manage.href='/mentor-verification';manage.textContent='Mentor verification';page.querySelector('.community-hero-actions').append(manage);
     if(context.data.mentor?.admin){const a=manage.cloneNode();a.href='/mentor-review';a.textContent='Reviewer queue';manage.after(a);}
     const joinNote=document.createElement('p');joinNote.textContent='Process stats are private. After joining, you can share them with this mentor and turn sharing off anytime.';page.querySelector('[data-code-form]').append(joinNote);
     bindRoom(page,context,{

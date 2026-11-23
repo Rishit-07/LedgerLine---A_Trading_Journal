@@ -8,8 +8,8 @@ export function openCloseTrade(page, trade, request, refresh) {
     <form><label>Realized result in R<input name="result" type="number" min="-10000" max="10000" step="0.0001" required></label>
       <small>Enter a loss as a negative number. One R is the amount you originally risked.</small>
       <label>Exit price (optional)<input name="exit" type="number" min="0.00000001" max="999999999999" step="any"></label>
-      <p role="status"></p><div><button class="n-btn n-out dash-button" type="button">Cancel</button>
-      <button class="n-btn n-acc dash-button" type="submit">Close trade</button></div></form>`;
+      <p role="status"></p><div><button class="btn btn-secondary" type="button">Cancel</button>
+      <button class="btn btn-primary" type="submit">Close trade</button></div></form>`;
   dialog.querySelector('[data-position]').textContent = trade.symbol + ' · This records the exit in your journal.';
   const form = dialog.querySelector('form');
   const submit = form.querySelector('[type=submit]');

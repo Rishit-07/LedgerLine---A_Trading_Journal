@@ -8,7 +8,7 @@ export const streakPanelMarkup = `
   <dialog class="n-out streak-panel" id="streak" aria-labelledby="streak-title">
     <header class="streak-panel-header">
       <h2 id="streak-title">Journal streak</h2>
-      <form method="dialog"><button class="n-btn n-out streak-btn" aria-label="Close streak">×</button></form>
+      <form method="dialog"><button class="btn btn-secondary" aria-label="Close streak">×</button></form>
     </header>
     <p data-streak-load class="streak-message" role="status"></p>
     <div data-streak-content hidden>
@@ -30,7 +30,7 @@ export const streakPanelMarkup = `
         <summary>I sat out today</summary>
         <form class="streak-action-form" data-streak-rest>
           <label>Rest note (optional)<textarea class="n-in" name="note" maxlength="1000" rows="2"></textarea></label>
-          <button class="n-btn n-acc streak-btn">Log rest day</button>
+          <button class="btn btn-primary">Log rest day</button>
         </form>
         <p class="streak-message" data-streak-rest-status role="status"></p>
       </details>
@@ -38,8 +38,8 @@ export const streakPanelMarkup = `
         <div class="streak-heading">
           <h3 id="streak-friends-title">Streak together</h3>
           <div class="streak-invite-actions">
-            <button type="button" class="n-btn n-out streak-btn" data-copy-invite>Copy invite link</button>
-            <button type="button" class="n-btn n-out streak-btn" aria-expanded="false" aria-controls="streak-invite-qr" data-show-invite-qr>Show QR code</button>
+            <button type="button" class="btn btn-secondary" data-copy-invite>Copy invite link</button>
+            <button type="button" class="btn btn-secondary" aria-expanded="false" aria-controls="streak-invite-qr" data-show-invite-qr>Show QR code</button>
           </div>
         </div>
         <figure class="streak-invite-qr" id="streak-invite-qr" hidden>
@@ -51,7 +51,7 @@ export const streakPanelMarkup = `
         <label class="streak-invite-fallback" hidden>Your invite link<input type="text" class="n-out" data-invite-link readonly /></label>
         <form class="streak-action-form" data-invite-form>
           <label>Friend’s invite link or code<input class="n-out" name="invite" required maxlength="512" /></label>
-          <button class="n-btn n-acc streak-btn">Send invite</button>
+          <button class="btn btn-primary">Send invite</button>
         </form>
         <p class="streak-message" role="status" data-invite-status></p>
         <div class="streak-connected" data-streak-connected hidden>
@@ -68,19 +68,19 @@ export const streakPanelMarkup = `
         <h3 id="streak-battle-title">Streak battle</h3>
         <div data-battle-empty>
           <p class="streak-message">Battles are available once a friend invite is accepted.</p>
-          <button type="button" class="n-btn n-out streak-btn" data-go-to-invite>Go to invites</button>
+          <button type="button" class="btn btn-secondary" data-go-to-invite>Go to invites</button>
         </div>
         <form class="streak-action-form" data-battle-form hidden>
           <label>Friend<select name="friendId" class="n-out" required></select></label>
           <label>Length<select name="lengthDays" class="n-out"><option value="3">3 days</option><option value="7">7 days</option><option value="14">14 days</option></select></label>
-          <button class="n-btn n-acc streak-btn">Send challenge</button>
+          <button class="btn btn-primary">Send challenge</button>
         </form>
         <p class="streak-message" role="status" data-battle-status></p>
         <div data-battles></div>
       </section>
       <footer class="streak-panel-footer">
-        <button type="button" class="n-btn n-acc streak-btn" data-share-streak>Share streak</button>
-        <a class="n-btn n-out streak-btn" href="/journal">Open journal</a>
+        <button type="button" class="btn btn-primary" data-share-streak>Share streak</button>
+        <a class="btn btn-secondary" href="/journal">Open journal</a>
       </footer>
       <p class="streak-footnote">${streakRule}</p>
     </div>
@@ -164,7 +164,7 @@ export function bindStreakDialog(page, { request, getState, onState }) {
   }
 
   function friendButton(label, route, friend, success) {
-    const button = element('button', label, 'n-btn n-out streak-btn');
+    const button = element('button', label, 'btn btn-secondary');
     button.type = 'button';
     button.addEventListener('click', () => action(button, inviteStatus, 'Updating connection…', async () => {
       await request('/api/streak/friends/' + route, 'POST', { id: friend.id });
