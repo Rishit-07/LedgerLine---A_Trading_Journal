@@ -116,12 +116,24 @@ export function marginaliaProps(data, {url='',owner=false}={}) {
   const letter = (content.closing || '').trim();
 
   const sections = ['cover'];
+  const placeholders = {};
+  const hint = (key, tone, label, title, action, field, href) => {
+    if (!owner || hidden.includes(key)) return;
+    placeholders[key] = {tone, label, title, action, field, href};
+    sections.push('ph:' + key);
+  };
   if ((data.about && show('hello')) || photo) sections.push('hello');
+  else hint('hello','paper','hello','Hello.','Add your introduction','about');
   if (education.length || languages.length) sections.push('education');
+  else hint('education','paper','badges','Badges','Add a course','courses');
   if (process.length) sections.push('process');
+  else hint('process','night','process','Process','Choose stats to share',null,'/portfolio#pf-sections-heading');
   if (tools.length || skills.length || books.length) sections.push('skills');
+  else hint('skills','paper','skills','Skills','Add your tools and rules','tools');
   if (projects.length) sections.push('projects','cases');
+  else hint('projects','night','playbook',(content.playbookTitle || 'Playbook').trim(),'Add a setup','setup:0');
   if (facts.length) sections.push('facts');
+  else hint('facts','night','lessons','Lessons','Add a lesson','lessons');
   sections.push('thanks');
 
   return {
@@ -131,7 +143,7 @@ export function marginaliaProps(data, {url='',owner=false}={}) {
     tools,toolNote:'',skillsIntro:'',skills,books,booksNote:books.length ? 'my reading list' : '',
     projectsNote:'',projects,facts,factsNote:'',process,
     thanks:'Thank you',email:'',links:[],letter,signature:name,
-    colors:theme,sections,fonts:{href:'',hand:"'Caveat Variable', Caveat, 'Bradley Hand', 'Segoe Print', cursive"},inkTrail:true,
+    colors:theme,sections,placeholders,fonts:{href:'',hand:"'Caveat Variable', Caveat, 'Bradley Hand', 'Segoe Print', cursive"},inkTrail:true,
     className:'mgn-live',
   };
 }

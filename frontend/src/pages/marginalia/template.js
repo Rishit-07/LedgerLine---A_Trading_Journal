@@ -1227,10 +1227,10 @@ function Cover({ info, title, name, role, year, location, docLabel, inkTrail }) 
                         React.createElement("path", { className: "mgn-draw", pathLength: 1, d: "M146 14C128 34 104 30 101 17C98 4 120 2 117 24C114 48 70 74 24 96" }),
                         React.createElement("path", { className: "mgn-draw", pathLength: 1, d: "M30 80L22 97L41 99" })),
                     React.createElement("span", { className: "mgn-write" }, name))),
-            React.createElement("div", { className: "mgn-pill-wrap" },
+            role ? React.createElement("div", { className: "mgn-pill-wrap" },
                 React.createElement("span", { className: "mgn-pill" },
                     role,
-                    React.createElement(PenMark, { kind: "oval", seed: 9, padX: 12, padY: 9 })))),
+                    React.createElement(PenMark, { kind: "oval", seed: 9, padX: 12, padY: 9 }))) : null),
         React.createElement("div", { className: "mgn-cover-meta" },
             React.createElement("span", null,
                 location,
@@ -1349,6 +1349,20 @@ function Process({ info, stats }) {
                     s.suffix,
                     React.createElement(PenMark, { kind: "oval", seed: 170 + k, padX: 8, padY: 3 })),
                 React.createElement("span", { className: "mgn-stat-l" }, s.label + (s.detail ? " · " + s.detail : "")))))))));
+}
+function Placeholder({ info, ph }) {
+    const act = (e) => {
+        if (ph.href) {
+            window.location.href = ph.href;
+            return;
+        }
+        e.currentTarget.dispatchEvent(new CustomEvent("portfolio-edit", { bubbles: true, detail: ph.field }));
+    };
+    return (React.createElement(Sheet, { info: info },
+        React.createElement("div", { className: "mgn-skills" },
+            React.createElement(Heading, { text: ph.title, seed: 18 }),
+            React.createElement("p", { className: "mgn-p mgn-muted", style: { marginTop: "1.4em" } }, "Only visible to you until you add content."),
+            React.createElement("button", { onClick: act, style: { marginTop: "1.2em", border: "1px solid currentColor", borderRadius: 999, padding: "10px 18px", color: "var(--fg)", font: "500 14px/1.4 var(--mgn-body)" } }, ph.action))));
 }
 function Deal({ info, projects, note, onOpen }) {
     return (React.createElement(Sheet, { info: info, className: "mgn-deal" },
@@ -1548,6 +1562,11 @@ export function MarginaliaPortfolioTemplate(props) {
         else if (s === "projects") {
             if (projects.length)
                 push(s, s, SECTION_LABEL[s], "night");
+        }
+        else if (s.indexOf("ph:") === 0) {
+            const h = props.placeholders && props.placeholders[s.slice(3)];
+            if (h)
+                push("ph", s, h.label, h.tone);
         }
         else if (s === "process") {
             if (props.process && props.process.length)
@@ -1792,6 +1811,8 @@ export function MarginaliaPortfolioTemplate(props) {
                     return React.createElement(Deal, { key: info.id, info: info, projects: projects, note: projectsNote, onOpen: (k) => jump("case-" + k) });
                 case "cases":
                     return React.createElement(Case, { key: info.id, info: info, p: projects[i], i: i, flip: caseN++ % 2 === 1 });
+                case "ph":
+                    return React.createElement(Placeholder, { key: info.id, info: info, ph: props.placeholders[info.id.slice(3)] });
                 case "process":
                     return React.createElement(Process, { key: info.id, info: info, stats: props.process });
                 case "facts":
