@@ -93,3 +93,6 @@
 .mgn-customize details.portfolio-setup-copy { border-block-start:1px solid #1d203028; padding-block-start:10px; }
 .portfolio-setup-copy summary { cursor:pointer; font-weight:600; }
 .portfolio-setup-copy .mgn-customize-field { margin-top:10px; }
+
+.portfolio-setup-help { margin:8px 0; font-size:12px; line-height:1.5; }
+.portfolio-setup-help summary { cursor:pointer; font-weight:600; }

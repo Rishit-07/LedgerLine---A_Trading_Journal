@@ -117,9 +117,9 @@ export function marginaliaProps(data, {url='',owner=false}={}) {
 
   const sections = ['cover'];
   const placeholders = {};
-  const hint = (key, tone, label, title, action, field, href) => {
+  const hint = (key, tone, label, title, action, field, href, about) => {
     if (!owner || hidden.includes(key)) return;
-    placeholders[key] = {tone, label, title, action, field, href};
+    placeholders[key] = {tone, label, title, action, field, href, about};
     sections.push('ph:' + key);
   };
   if ((data.about && show('hello')) || photo) sections.push('hello');
@@ -131,7 +131,7 @@ export function marginaliaProps(data, {url='',owner=false}={}) {
   if (tools.length || skills.length || books.length) sections.push('skills');
   else hint('skills','paper','skills','Skills','Add your tools and rules','tools');
   if (projects.length) sections.push('projects','cases');
-  else hint('projects','night','playbook',(content.playbookTitle || 'Playbook').trim(),'Add a setup','setup:0');
+  else hint('projects','night','playbook',(content.playbookTitle || 'Playbook').trim(),'Add a setup','setup:0',undefined,'A setup is one repeatable way you take a trade, like an opening range breakout or a VWAP pullback. Add one and it gets its own page here with your rules and what you learned. Give it the same name as in your journal and your real trade count and rules followed fill in on their own.');
   if (facts.length) sections.push('facts');
   else hint('facts','night','lessons','Lessons','Add a lesson','lessons');
   sections.push('thanks');
