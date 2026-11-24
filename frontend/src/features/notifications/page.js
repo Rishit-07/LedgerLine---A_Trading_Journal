@@ -1,7 +1,8 @@
 import { node } from '../../pages/workspace-ui.js';
 import { onNotifications, setUnread } from './store.js';
 import { toast } from './toast.js';
-import { dotState, enterRows, flashText, pressFeel, removeRow, ringBell, slideInRow } from './motion.js';
+import { buildSettings } from './settings.js';
+import { dotState, swapPanels, enterRows, flashText, pressFeel, removeRow, ringBell, slideInRow } from './motion.js';
 import './notifications.css';
 
 const path = '/api/notifications';
@@ -23,11 +24,35 @@ const html = (tag, className, text) => node(tag, text ?? '', className);
 
 export const notificationsPage = {
   title: 'Notifications',
-  description: 'What needs you, how you hear about it, and the newsletter.',
+  description: 'What needs you, and how you hear about it.',
   endpoint: path,
-  content: '<div class="notif-grid"><section class="n-out ws-card notif-inbox" data-inbox aria-labelledby="notif-title"></section><aside class="n-out ws-card notif-kinds" data-kinds></aside></div>',
+  content: '<div class="notif-tabs" role="tablist" aria-label="Notifications" data-tabs></div><div data-panel="inbox"><div class="notif-grid"><section class="n-out ws-card notif-inbox" data-inbox aria-labelledby="notif-title"></section><aside class="n-out ws-card notif-kinds" data-kinds></aside></div></div><section class="n-out ws-card notif-set" data-panel="settings" hidden></section>',
   bind(page, { data, request }) {
     const inbox = page.querySelector('[data-inbox]');
+    const panels = { inbox: page.querySelector('[data-panel=inbox]'), settings: page.querySelector('[data-panel=settings]') };
+    const tabs = page.querySelector('[data-tabs]');
+    const tabButtons = {};
+    let settingsLoaded = false;
+    let current = 'inbox';
+    panels.settings.hidden = true;
+    const show = async (name) => {
+      for (const [key, button] of Object.entries(tabButtons)) { button.setAttribute('aria-selected', String(key === name)); button.tabIndex = key === name ? 0 : -1; }
+      const other = name === 'inbox' ? 'settings' : 'inbox';
+      if (current === name) return;
+      if (name === 'settings' && !settingsLoaded) {
+        settingsLoaded = true;
+        try { await buildSettings(panels.settings, { request }); } catch { settingsLoaded = false; toast('Could not do that. Try again.'); return; }
+      }
+      current = name;
+      swapPanels(panels[other], panels[name]);
+      history.replaceState(null, '', name === 'settings' ? '#settings' : location.pathname);
+    };
+    for (const [key, label] of [['inbox', 'Inbox'], ['settings', 'Settings']]) {
+      const button = html('button', 'btn btn-secondary', label); button.type = 'button'; button.setAttribute('role', 'tab');
+      button.addEventListener('click', () => show(key));
+      tabButtons[key] = button; tabs.append(button);
+    }
+    tabs.addEventListener('keydown', (event) => { if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { const next = document.activeElement === tabButtons.inbox ? 'settings' : 'inbox'; tabButtons[next].focus(); void show(next); } });
     const side = page.querySelector('[data-kinds]');
     let filter = 'all';
     let next = null;
@@ -201,5 +226,7 @@ export const notificationsPage = {
     enterRows(first);
     next = data.next; sentinel.hidden = !next;
     setUnread(data.unread); paintHead(data.unread); checkEmpty();
+    tabButtons.inbox.setAttribute('aria-selected', 'true'); tabButtons.settings.setAttribute('aria-selected', 'false'); tabButtons.settings.tabIndex = -1;
+    if (location.hash === '#settings') void show('settings');
   },
 };

@@ -22,6 +22,9 @@ import { groupHandler } from './group-api.js';
 import { createCalendarHandlers } from './calendar.js';
 import { createOnboardingHandler } from './onboarding.js';
 import { createNotificationApi, notify } from './notifications.js';
+import { createNotificationSettingsApi } from './notification-settings.js';
+import { configureDelivery, createSenders, flushPending } from './notification-delivery.js';
+import { getMessaging } from 'firebase-admin/messaging';
 import { createTicketApi } from './support-tickets.js';
 import { createStreakStore } from './streak-store.js';
 import { createStreakApi } from './streak-api.js';
@@ -167,6 +170,8 @@ const identify = async (request) => {
 };
 const tickets = createTicketApi(pool, mailConfig, { authenticate: authenticateRequest, identify, auth, notify: (uid, kind, details) => notify(pool, uid, kind, details).catch(() => null) });
 const notifications = createNotificationApi(pool, authenticateRequest);
+const notificationSettings = createNotificationSettingsApi(pool, authenticateRequest);
+configureDelivery(createSenders({ pool, mail: mailConfig, messaging: getMessaging(firebaseApp) }));
 const accountData = createAccountDataApi(pool, authenticateRequest, auth);
 const twoStepRaw = createTwoStepApi(pool, authenticateRequest);
 const twoStep = Object.fromEntries(Object.entries(twoStepRaw).map(([name, handler]) => [name, async (request, response) => { await handler(request, response); twoStepCache.clear(); }]));
@@ -209,6 +214,8 @@ const routes = new Map([
   ['/api/newsletter', { methods: ['POST'], handler: subscribe }],
   ['/api/support', { methods: ['POST'], handler: tickets.create }],
   ['/api/notifications', { methods: ['GET', 'POST'], handler: notifications.main }],
+  ['/api/notification-settings', { methods: ['GET', 'PUT'], handler: notificationSettings.main }],
+  ['/api/notification-settings/push', { methods: ['POST', 'DELETE'], handler: notificationSettings.push }],
   ['/api/notifications/count', { methods: ['GET'], handler: notifications.count }],
   ['/api/notifications/stream', { methods: ['GET'], handler: notifications.stream }],
   ['/api/tickets', { methods: ['GET', 'POST'], handler: tickets.mine }],
@@ -302,6 +309,7 @@ if (process.env.STREAK_NEON_SCHEDULE !== 'true') {
   setInterval(async () => {
     if (running) return;
     running = true;
+    try { await flushPending(pool); } catch { console.error('Held notifications could not be sent.'); }
     try { await runStreakMaintenance(pool, mailConfig); }
     catch (error) { console.error('Streak maintenance failed (' + (error.code ?? 'unknown') + ').'); }
     finally { running = false; }

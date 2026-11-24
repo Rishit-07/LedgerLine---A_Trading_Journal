@@ -42,3 +42,14 @@ export function popIn(el) {
   if (still()) return;
   gsap.fromTo(el, { y: 22, opacity: 0, scale: .96 }, { y: 0, opacity: 1, scale: 1, duration: .45, ease: 'back.out(1.6)' });
 }
+export function moveKnob(knob, on, instant = false) {
+  const x = on ? (innerWidth <= 640 ? 16 : 24) : 0;
+  if (instant || still()) { gsap.set(knob, { x }); return; }
+  gsap.to(knob, { x, duration: .35, ease: 'back.out(1.8)' });
+  gsap.fromTo(knob, { scale: .8 }, { scale: 1, duration: .3, ease: 'power2.out', delay: .05 });
+}
+export function swapPanels(out, into) {
+  out.hidden = true; into.hidden = false;
+  if (still()) return;
+  gsap.fromTo(into, { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: .45, ease: 'power3.out', clearProps: 'transform,opacity' });
+}

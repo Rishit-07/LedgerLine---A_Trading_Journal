@@ -16,3 +16,15 @@ Each control, the test that covers it, and the result. API tests run on a real P
 | Live arrival | New row slides in, bell rings, count updates | `bus` emit on `notify()` | Not tested end to end (needs a signed-in session and the stream) |
 
 Open items are listed in `NOTIFICATIONS.md`.
+
+## Notifications: Settings
+
+| Control | What it does | API check | Browser check |
+|---|---|---|---|
+| Tab pill (Inbox, Settings) | Switches panels, keyboard arrows move between tabs | n/a | Pass |
+| Channel switches (6 kinds by in-app, push, email) | Saves the switch; first change starts from the defaults | `PUT {kind,channel,value}`; first change persists; unknown or always-on kinds are ignored | Pass |
+| Push switch on | Asks the browser for permission, saves this device's token; on denial or missing setup the switch returns to off with a toast | device token save, 10 device cap | Missing-setup path only (no VAPID key in test) |
+| Quiet hours chips | Saves the window; no push or email inside it | `PUT {quiet}`, bad value 400, schedule unit tests | Pass |
+| Delivery chips | Instant, or one summary at 8 pm | `PUT {delivery}`; held rows flush at 8 pm as one email | Pass |
+| Reminders chips | Sets the existing streak reminder time (or off) through `/api/streak/preferences` | existing streak tests | Pass (stub) |
+| Always-on card | Display only, no switches | locked kinds ignore any change; security email bypasses quiet hours | Pass |

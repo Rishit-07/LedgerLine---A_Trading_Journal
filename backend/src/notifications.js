@@ -3,6 +3,8 @@
 import { EventEmitter } from 'node:events';
 import { readJson, send } from './http.js';
 import { KINDS, lockedKinds, switchableKinds } from './notification-kinds.js';
+import { deliver } from './notification-delivery.js';
+import { DEFAULTS } from './notification-settings.js';
 
 export const bus = new EventEmitter();
 bus.setMaxListeners(0);
@@ -39,6 +41,7 @@ export async function notify(pool, userId, kind, { title, body = '', target = '/
     [userId, kind, meta.category, cleanTitle, cleanBody, safeTarget(target), dedupe ? clip(dedupe, 120) : null]);
   if (!row) return null;
   bus.emit(userId, row);
+  await deliver(pool, userId, { ...row, kind }).catch(() => {});
   return row;
 }
 
@@ -82,9 +85,12 @@ export function createNotificationApi(pool, authenticate) {
       const category = Number(data.category);
       const kinds = Number.isInteger(category) ? switchableKinds(category) : [];
       if (!kinds.length) return send(response, 400, { error: 'This kind cannot be muted.' });
-      await pool.query(
-        `INSERT INTO notification_prefs(user_id,kind,in_app) SELECT $1,k,false FROM unnest($2::text[]) AS k
-         ON CONFLICT (user_id,kind) DO UPDATE SET in_app=false, updated_at=now()`, [claims.uid, kinds]);
+      for (const kind of kinds) {
+        const start = DEFAULTS[kind] ?? { push: false, email: false };
+        await pool.query(
+          `INSERT INTO notification_prefs(user_id,kind,in_app,push,email) VALUES($1,$2,false,$3,$4)
+           ON CONFLICT (user_id,kind) DO UPDATE SET in_app=false, updated_at=now()`, [claims.uid, kind, start.push, start.email]);
+      }
     } else {
       return send(response, 400, { error: 'Unknown action.' });
     }
