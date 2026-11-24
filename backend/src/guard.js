@@ -1,6 +1,7 @@
 /* Request guards shared by the HTTP server: rate limiting, client address, safe handler wrapper.
    Kept free of database and Firebase imports so it can be unit tested. */
 import { send } from './http.js';
+import { reportError } from './error-report.js';
 
 /** Fixed-window counter per key. In memory, so it limits one server process; use the host's limiter for several. */
 export function createRateLimiter({ windowMs, max, now = Date.now, maxKeys = 10_000 }) {
@@ -18,6 +19,29 @@ export function createRateLimiter({ windowMs, max, now = Date.now, maxKeys = 10_
     }
     entry.count += 1;
     return { allowed: entry.count <= max, retryAfter: Math.max(1, Math.ceil((entry.reset - time) / 1000)) };
+  };
+}
+
+/** Shared limits across servers and restarts, using Upstash Redis over HTTPS (no extra package).
+    If the store is unreachable it falls back to the in-memory limiter, so the API never goes down with it. */
+export function createSharedLimiter({ url, token, windowMs, max, fallback, fetchImpl = fetch }) {
+  const ttl = Math.ceil(windowMs / 1000);
+  return async function check(key) {
+    const slot = Math.floor(Date.now() / windowMs);
+    const name = 'rl:' + key + ':' + slot;
+    try {
+      const response = await fetchImpl(url.replace(/\/$/, '') + '/pipeline', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify([['INCR', name], ['EXPIRE', name, String(ttl), 'NX']]),
+        signal: AbortSignal.timeout(800),
+      });
+      if (!response.ok) throw new Error('store');
+      const [{ result }] = await response.json();
+      return { allowed: Number(result) <= max, retryAfter: Math.max(1, ttl - Math.floor((Date.now() % windowMs) / 1000)) };
+    } catch {
+      return fallback(key);
+    }
   };
 }
 
@@ -53,6 +77,7 @@ export function safely(handler) {
       await handler(request, response);
     } catch (error) {
       console.error('A request failed (' + (error?.code ?? error?.name ?? 'unknown error') + ').');
+      reportError(error, 'request');
       if (!response.headersSent) send(response, 500, { error: 'Something went wrong. Try again in a moment.' });
       else response.end();
     }

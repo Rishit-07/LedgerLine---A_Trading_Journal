@@ -21,6 +21,7 @@ import { animatePageEntry, bindPageNavigation } from './pages/navigation.js';
 import { bindPublicAccount } from './pages/public-account.js';
 
 initControls();
+if (import.meta.env.VITE_APPCHECK_SITE_KEY) void import('./app-check.js').then((module) => module.startAppCheck());
 const landing = document.querySelector('#landing');
 const root = document.documentElement;
 const themeToggle = document.querySelector('[data-action="toggleTheme"]');

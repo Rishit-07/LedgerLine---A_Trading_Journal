@@ -2,6 +2,7 @@
    Both discover tables from the database catalogue, so a table added later is covered without editing this file. */
 import { createHash } from 'node:crypto';
 import { readJson, send } from './http.js';
+import { decryptField } from './field-crypto.js';
 
 export const TERMS_VERSION = '2026-11';
 const OWNER_COLUMNS = ['user_id', 'firebase_uid', 'owner_id', 'author_id'];
@@ -24,9 +25,17 @@ export async function exportAccount(db, uid) {
       `SELECT to_jsonb(t) - ARRAY(SELECT c.column_name FROM information_schema.columns c
           WHERE c.table_schema='public' AND c.table_name=$3 AND c.data_type='bytea') AS row
        FROM public.${quote(table)} t WHERE t.${quote(column)} = $1 LIMIT $2`, [uid, MAX_ROWS_PER_TABLE, table]);
-    if (rows.length) out.tables[table] = [...(out.tables[table] ?? []), ...rows.map((r) => r.row)];
+    if (rows.length) out.tables[table] = [...(out.tables[table] ?? []), ...rows.map((r) => unlock(r.row))];
   }
   return out;
+}
+
+/** Give people their own billing details in readable form, including ones inside invoice records. */
+function unlock(value) {
+  if (typeof value === 'string') { try { return decryptField(value); } catch { return value; } }
+  if (Array.isArray(value)) return value.map(unlock);
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, unlock(v)]));
+  return value;
 }
 
 const quote = (name) => '"' + String(name).replace(/"/g, '""') + '"';

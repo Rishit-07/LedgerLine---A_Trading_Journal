@@ -1,11 +1,12 @@
 import {screenshotData} from '../components/trade-screenshots.js';
+import { enrolTotp, hasTotp, removeTotp } from '../mfa.js';
 import {avatarUrl} from './profile-picture.js';
 import { portfolioPath, portfolioVisibilityMarkup, fillPortfolioVisibility, readPortfolioVisibility } from './portfolio-preferences.js';
 import { markets, submit, formValues } from './workspace-ui.js';
 
 const sections = [
   ['account','Account','user'],['brokers','Brokers','briefcase-business'],['rules','Trading rules','list-checks'],
-  ['notifications','Notifications','bell'],['appearance','Appearance','sun'],['portfolio','Portfolio','user'],['privacy','Data and privacy','shield'],['billing','Plans and billing','credit-card']
+  ['notifications','Notifications','bell'],['appearance','Appearance','sun'],['portfolio','Portfolio','user'],['security','Two-step sign-in','shield'],['privacy','Data and privacy','shield'],['billing','Plans and billing','credit-card']
 ];
 const providers = [
   ['zerodha','Zerodha','Kite Connect'],['upstox','Upstox','Upstox API'],['angel-one','Angel One','SmartAPI'],
@@ -32,6 +33,7 @@ export function settingsMarkup(notifications) {
     ${panel('rules','Trading rules',`<form class="ws-form" data-edit="rules">${ruleDefinitions.map(([key,label,values,unit])=>`<div class="account-rule"><label>${label}<select name="${key}" class="n-in">${values.map(v=>`<option value="${v}">${v}${unit}</option>`).join('')}</select></label><label><input type="checkbox" name="hardRules" value="${key}"> Hard rule</label></div>`).join('')}${saveButton}</form>`)}
     <div data-preference="notifications" hidden>${notifications}</div>
     ${panel('appearance','Appearance','<p>Choose a light or dark workspace on this device.</p><button class="btn btn-secondary" data-change-theme>Switch theme</button>')}
+    ${panel('security','Two-step sign-in','<p>Ask for a 6-digit code from an authenticator app each time you sign in. This protects your journal even if your password leaks.</p><p data-mfa-state role="status"></p><div class="btn-row"><button type="button" class="btn btn-primary" data-mfa-on hidden>Turn on two-step sign-in</button><button type="button" class="btn btn-danger" data-mfa-off hidden>Turn off</button></div>')}
     ${panel('privacy','Data and privacy','<label><input type="checkbox" data-report-consent disabled> Allow AI reviews to use my aggregated trading records</label><p data-consent-status role="status"></p><p>Choose what visitors can see on your portfolio or export your trades.</p><div class="account-actions"><a href="/settings#portfolio">Portfolio visibility</a><a href="/history#export">Export trades as CSV</a></div><h3>Your data</h3><p>Download a copy of everything Ledgerline holds about you, or delete your account. Deleting removes your journal, settings and community activity and cannot be undone.</p><div class="btn-row"><button type="button" class="btn btn-secondary" data-export-data>Download my data</button><button type="button" class="btn btn-danger" data-delete-account>Delete my account…</button></div><p data-data-status role="status"></p>')}
     ${panel('portfolio','Portfolio',`<form class="ws-form" data-portfolio-settings>${portfolioVisibilityMarkup}<button class="btn btn-primary" disabled>Save portfolio settings</button><p role="status"></p></form><div class="account-actions"><a data-own-portfolio href="/portfolio">Open my portfolio</a></div>`)}
     ${panel('billing','Plans and billing','<p>Billing has its own page now: your plan, payment method (UPI, card or crypto), crypto period and invoices all live there.</p><a class="btn btn-primary" href="/billing">Open billing</a>')}
@@ -72,6 +74,11 @@ export async function bindAccountSettings(page,request) {
     consent.checked=prefs.enabled;consent.disabled=false;
     consent.onchange=async()=>{consent.disabled=true;try{await request('/api/reports/preferences','PUT',{enabled:consent.checked});message.textContent='Preference saved.';}catch(e){consent.checked=!consent.checked;message.textContent=e.message;}finally{consent.disabled=false;}};
   }catch(e){message.textContent=e.message;}
+  const mfaState=page.querySelector('[data-mfa-state]'),mfaOn=page.querySelector('[data-mfa-on]'),mfaOff=page.querySelector('[data-mfa-off]');
+  const showMfa=()=>{const on=hasTotp();mfaState.textContent=on?'Two-step sign-in is on.':'Two-step sign-in is off.';mfaOn.hidden=on;mfaOff.hidden=!on;};
+  showMfa();
+  mfaOn.onclick=async()=>{try{if(await enrolTotp())showMfa();}catch(error){mfaState.textContent=error.code==='auth/requires-recent-login'?'Sign out and sign in again, then turn this on.':'Could not start setup. Try again.';}};
+  mfaOff.onclick=async()=>{if(!confirm('Turn off two-step sign-in?'))return;try{await removeTotp();showMfa();}catch(error){mfaState.textContent=error.code==='auth/requires-recent-login'?'Sign out and sign in again, then turn this off.':'Could not turn it off. Try again.';}};
   const dataStatus=page.querySelector('[data-data-status]');
   page.querySelector('[data-export-data]').onclick=async event=>{
     const button=event.currentTarget;button.setAttribute('aria-disabled','true');button.classList.add('is-loading');dataStatus.textContent='';

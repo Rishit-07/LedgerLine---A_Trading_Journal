@@ -7,7 +7,9 @@ const keys=fields.flat().map(([name])=>name);
 const editable=['draft','needs_info','rejected','revoked'];
 // The one address allowed to review mentor applications. Set REVIEWER_EMAIL to change it without editing code.
 const adminEmail=(process.env.REVIEWER_EMAIL||'sairishitsunku@gmail.com').toLowerCase();
-export const eligibleReviewer=u=>u.email_verified===true&&u.email?.toLowerCase()===adminEmail;
+// With REQUIRE_REVIEWER_MFA=true the reviewer must have signed in with an authenticator code (Firebase two-step sign-in).
+const needsMfa=()=>process.env.REQUIRE_REVIEWER_MFA==='true';
+export const eligibleReviewer=u=>u.email_verified===true&&u.email?.toLowerCase()===adminEmail&&(!needsMfa()||u.firebase?.sign_in_second_factor==='totp');
 export async function reviewer(u,auth){
  if(!eligibleReviewer(u))return false;
  if(u.admin===true||u.reviewer===true)return true;

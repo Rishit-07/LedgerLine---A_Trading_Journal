@@ -187,3 +187,9 @@ input[type="checkbox"][aria-invalid="true"], input[type="radio"][aria-invalid="t
   font-weight: 700; text-decoration: none; transform: translateY(-200%);
 }
 .skip-link:focus { transform: none; outline: 3px solid var(--ink); outline-offset: 2px; }
+
+/* Two-step sign-in dialog */
+.mfa-dialog { max-width: min(420px, calc(100vw - 32px)); }
+.mfa-qr { display: block; margin: 8px auto; border-radius: 12px; background: #fff; padding: 6px; }
+.mfa-key { font-size: 13px; overflow-wrap: anywhere; }
+.mfa-key code { user-select: all; font-weight: 700; }

@@ -39,3 +39,34 @@ Second pass after `AUDIT_REPORT.md`. This one looked at who can reach what, not 
 - **Incident plan:** `INCIDENT_PLAN.md`.
 
 Still needs an account or console setting from you: two-step sign-in and App Check in Firebase, website security headers at your host, a shared rate-limit store, error tracking, and column encryption.
+
+## Added in `security-hardening-4`: the rest of the list, code side
+
+All of these are off or harmless until you set the matching switch, so merging does not change behaviour by itself.
+
+### Two-step sign-in (2FA) with an authenticator app
+**In the app:** Settings has a new "Two-step sign-in" section. People turn it on, scan a QR code with Google Authenticator, Authy or 1Password, and confirm one code. Sign-in then asks for a 6-digit code. Accounts without it sign in as before.
+
+**One-time Firebase setup (you do this):**
+1. Firebase console > Authentication > Settings > **Upgrade to Identity Platform** (needed for multi-factor; it has a free tier, billing must be enabled on the project).
+2. Authentication > Sign-in method > **Multi-factor authentication** > enable, then enable **TOTP**.
+3. Make sure your site's domain is under Authentication > Settings > Authorized domains.
+
+**Force it for the reviewer:** set `REQUIRE_REVIEWER_MFA=true` on the backend, but only after the reviewer account has turned 2FA on, otherwise it is locked out of reviews. The check reads Firebase's `sign_in_second_factor` claim, so a password-only session cannot approve mentors.
+
+Notes: enrolling needs a recent sign-in (the app says so if not), a verified email, and people should save the setup key somewhere safe because losing the phone otherwise needs you to remove the factor in the Firebase console.
+
+### Firebase App Check
+Frontend: set `VITE_APPCHECK_SITE_KEY` (a reCAPTCHA Enterprise key registered under Firebase > App Check). Every `/api` call then carries a token. Backend: after you see tokens arriving (App Check > Metrics), set `APP_CHECK_ENFORCE=true`. Webhooks and `/api/health` are exempt.
+
+### Website security headers
+`npm run build` now also writes `frontend/dist/_headers` (Netlify and Cloudflare Pages use it automatically): HSTS, nosniff, referrer and permissions policies, and a Content-Security-Policy that hashes the one inline script. It ships as **Report-Only**. Open the site, check the browser console for "Content Security Policy" reports, then build with `CSP_MODE=enforce`. I tested the enforced policy on the home, About, sign-in, Support and dashboard pages with no violations; Razorpay checkout and Google sign-in pop-ups were not exercised. Other hosts: copy the header lines into the host's settings.
+
+### Shared rate limits
+Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` (a free Upstash Redis database). Limits then hold across restarts and several servers; if Redis is unreachable it falls back to per-process limits.
+
+### Error tracking
+Set `SENTRY_DSN`. Reports carry only the error name, code and top stack frames: no request data, emails or message text (tested). No package added.
+
+### Column encryption
+Set `FIELD_ENCRYPTION_KEY` (generate with the command in `.env.example`), then run `npm run encrypt-existing --workspace @ledgerline/backend` once to protect addresses and GST numbers already saved. New values are encrypted automatically; invoices and "download my data" decrypt them for the owner. **Back the key up separately from the database**: without it those fields cannot be recovered. Deleting an account removes them as before.
