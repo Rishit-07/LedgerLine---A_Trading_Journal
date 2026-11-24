@@ -44,17 +44,21 @@ Still needs an account or console setting from you: two-step sign-in and App Che
 
 All of these are off or harmless until you set the matching switch, so merging does not change behaviour by itself.
 
-### Two-step sign-in (2FA) with an authenticator app
-**In the app:** Settings has a new "Two-step sign-in" section. People turn it on, scan a QR code with Google Authenticator, Authy or 1Password, and confirm one code. Sign-in then asks for a 6-digit code. Accounts without it sign in as before.
+### Two-step sign-in (2FA) with an authenticator app, free, for everyone
+Checked by our own server, so it needs **no Firebase upgrade, no billing and no domain**.
 
-**One-time Firebase setup (you do this):**
-1. Firebase console > Authentication > Settings > **Upgrade to Identity Platform** (needed for multi-factor; it has a free tier, billing must be enabled on the project).
-2. Authentication > Sign-in method > **Multi-factor authentication** > enable, then enable **TOTP**.
-3. Make sure your site's domain is under Authentication > Settings > Authorized domains.
+**For people using the app:** Settings has a "Two-step sign-in" section. They scan a QR code with Google Authenticator, Authy or 1Password, confirm one code, and are shown 8 one-time recovery codes. After that, each new sign-in asks for a code before anything loads. It works for password and Google sign-in alike.
 
-**Force it for the reviewer:** set `REQUIRE_REVIEWER_MFA=true` on the backend, but only after the reviewer account has turned 2FA on, otherwise it is locked out of reviews. The check reads Firebase's `sign_in_second_factor` claim, so a password-only session cannot approve mentors.
+**How it is enforced:** every API request from an account with 2FA on must carry a signed "code entered for this sign-in" token. It is tied to the person and to the Firebase sign-in time, lasts 12 hours, and a fresh sign-in asks again. Without it the API answers 401 and the app shows the code dialog.
 
-Notes: enrolling needs a recent sign-in (the app says so if not), a verified email, and people should save the setup key somewhere safe because losing the phone otherwise needs you to remove the factor in the Firebase console.
+**Protections:** each code works once (replays are refused), five wrong tries lock the account for 15 minutes (the lock survives restarts), recovery codes are stored only as hashes and work once, secrets are stored encrypted, and the secrets and recovery hashes are never included in "download my data". Turning 2FA off needs a valid code.
+
+**To switch it on (you do this):**
+1. Set `FIELD_ENCRYPTION_KEY` on the backend (generate with the command in `.env.example`). Without it the 2FA settings show "not switched on for this server yet" and nothing is enforced.
+2. Run `npm run db:migrate` (adds migration `026`).
+3. Optionally set `REQUIRE_REVIEWER_MFA=true`, but only after the reviewer account has turned 2FA on.
+
+**If someone loses their phone and recovery codes:** an admin can run `DELETE FROM user_totp WHERE user_id = '<uid>'` in the database after confirming who they are.
 
 ### Firebase App Check
 Frontend: set `VITE_APPCHECK_SITE_KEY` (a reCAPTCHA Enterprise key registered under Firebase > App Check). Every `/api` call then carries a token. Backend: after you see tokens arriving (App Check > Metrics), set `APP_CHECK_ENFORCE=true`. Webhooks and `/api/health` are exempt.

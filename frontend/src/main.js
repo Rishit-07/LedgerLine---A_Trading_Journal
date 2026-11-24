@@ -12,6 +12,7 @@ import './styles/responsive.css';
 import './styles/controls.css';
 import './styles/skeleton.css';
 import { initControls } from './controls.js';
+import { installTwoStep } from './mfa.js';
 import { initMotion } from './motion.js';
 import { initSectionRail } from './section-rail.js';
 import { initToolWheel } from './tool-wheel.js';
@@ -21,6 +22,7 @@ import { animatePageEntry, bindPageNavigation } from './pages/navigation.js';
 import { bindPublicAccount } from './pages/public-account.js';
 
 initControls();
+installTwoStep();
 if (import.meta.env.VITE_APPCHECK_SITE_KEY) void import('./app-check.js').then((module) => module.startAppCheck());
 const landing = document.querySelector('#landing');
 const root = document.documentElement;

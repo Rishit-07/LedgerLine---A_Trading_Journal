@@ -1,5 +1,5 @@
 import {screenshotData} from '../components/trade-screenshots.js';
-import { enrolTotp, hasTotp, removeTotp } from '../mfa.js';
+import { enrolTotp, removeTotp, twoStepStatus } from '../mfa.js';
 import {avatarUrl} from './profile-picture.js';
 import { portfolioPath, portfolioVisibilityMarkup, fillPortfolioVisibility, readPortfolioVisibility } from './portfolio-preferences.js';
 import { markets, submit, formValues } from './workspace-ui.js';
@@ -75,10 +75,17 @@ export async function bindAccountSettings(page,request) {
     consent.onchange=async()=>{consent.disabled=true;try{await request('/api/reports/preferences','PUT',{enabled:consent.checked});message.textContent='Preference saved.';}catch(e){consent.checked=!consent.checked;message.textContent=e.message;}finally{consent.disabled=false;}};
   }catch(e){message.textContent=e.message;}
   const mfaState=page.querySelector('[data-mfa-state]'),mfaOn=page.querySelector('[data-mfa-on]'),mfaOff=page.querySelector('[data-mfa-off]');
-  const showMfa=()=>{const on=hasTotp();mfaState.textContent=on?'Two-step sign-in is on.':'Two-step sign-in is off.';mfaOn.hidden=on;mfaOff.hidden=!on;};
-  showMfa();
-  mfaOn.onclick=async()=>{try{if(await enrolTotp())showMfa();}catch(error){mfaState.textContent=error.code==='auth/requires-recent-login'?'Sign out and sign in again, then turn this on.':'Could not start setup. Try again.';}};
-  mfaOff.onclick=async()=>{if(!confirm('Turn off two-step sign-in?'))return;try{await removeTotp();showMfa();}catch(error){mfaState.textContent=error.code==='auth/requires-recent-login'?'Sign out and sign in again, then turn this off.':'Could not turn it off. Try again.';}};
+  const showMfa=async()=>{
+    try{
+      const state=await twoStepStatus();
+      if(!state.available){mfaState.textContent='Two-step sign-in is not switched on for this server yet.';mfaOn.hidden=mfaOff.hidden=true;return;}
+      mfaState.textContent=state.enabled?'Two-step sign-in is on. Recovery codes left: '+state.recoveryLeft+'.':'Two-step sign-in is off.';
+      mfaOn.hidden=state.enabled;mfaOff.hidden=!state.enabled;
+    }catch{mfaState.textContent='Could not load this setting. Try again.';}
+  };
+  void showMfa();
+  mfaOn.onclick=async()=>{try{if(await enrolTotp())await showMfa();}catch(error){mfaState.textContent=error.message;}};
+  mfaOff.onclick=async()=>{try{if(await removeTotp())await showMfa();}catch(error){mfaState.textContent=error.message;}};
   const dataStatus=page.querySelector('[data-data-status]');
   page.querySelector('[data-export-data]').onclick=async event=>{
     const button=event.currentTarget;button.setAttribute('aria-disabled','true');button.classList.add('is-loading');dataStatus.textContent='';

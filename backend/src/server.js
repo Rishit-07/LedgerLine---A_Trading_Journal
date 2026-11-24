@@ -7,6 +7,7 @@ import {mentorVerification} from './mentor-verification.js';
 import {reportApi} from './reports.js';
 import { createServer } from 'node:http';
 import { initializeApp } from 'firebase-admin/app';
+import { checkSession, createTwoStepApi, createTwoStepStore } from './two-step.js';
 import { configureErrorReport, reportError } from './error-report.js';
 import { createAppCheckGate } from './app-check.js';
 import { getAuth } from 'firebase-admin/auth';
@@ -70,7 +71,19 @@ async function subscribe(request, response) {
   }
 }
 
-async function authenticateRequest(request, response) {
+// Which accounts have two-step sign-in on. Remembered briefly so ordinary requests do not each query the database.
+const twoStepCache = new Map();
+const twoStepEnabled = async (uid) => {
+  const hit = twoStepCache.get(uid);
+  if (hit && hit.until > Date.now()) return hit.enabled;
+  const enabled = await createTwoStepStore(async (sql, params) => (await pool.query(sql, params)).rows).enabled(uid);
+  if (twoStepCache.size > 5000) twoStepCache.clear();
+  twoStepCache.set(uid, { enabled, until: Date.now() + 15_000 });
+  return enabled;
+};
+export const forgetTwoStep = (uid) => twoStepCache.delete(uid);
+
+async function authenticateRequest(request, response, { skipSecondStep = false } = {}) {
   const token = request.headers.authorization?.match(/^Bearer (\S+)$/i)?.[1];
   if (!token) {
     send(response, 401, { error: 'Sign in to continue.' });
@@ -89,6 +102,15 @@ async function authenticateRequest(request, response) {
   if (claims.email_verified !== true) {
     send(response, 403, { error: 'Verify your email address to continue.' });
     return;
+  }
+  // Accounts that turned on two-step sign-in need the code entered for this sign-in before anything else.
+  claims.mfa = false;
+  if (process.env.FIELD_ENCRYPTION_KEY && await twoStepEnabled(claims.uid)) {
+    if (checkSession(request.headers['x-mfa-session'], claims.uid, claims.auth_time)) claims.mfa = true;
+    else if (!skipSecondStep) {
+      send(response, 401, { error: 'Enter your two-step code to continue.', mfaRequired: true });
+      return;
+    }
   }
   return claims;
 }
@@ -134,6 +156,8 @@ async function loadAccount(request, response) {
 }
 
 const accountData = createAccountDataApi(pool, authenticateRequest, auth);
+const twoStepRaw = createTwoStepApi(pool, authenticateRequest);
+const twoStep = Object.fromEntries(Object.entries(twoStepRaw).map(([name, handler]) => [name, async (request, response) => { await handler(request, response); twoStepCache.clear(); }]));
 const calendar = createCalendarHandlers(pool, authenticateRequest);
 const streaks = createStreakStore(pool);
 const streak = createStreakApi(pool, authenticateRequest, streaks, { remindersAvailable: Boolean(mailConfig) });
@@ -164,6 +188,11 @@ const routes = new Map([
   ['/api/clubs', {methods:['GET','POST'],handler:groupHandler(pool,authenticateRequest,'club')}],
   ['/api/spaces', {methods:['GET','POST'],handler:groupHandler(pool,authenticateRequest,'space')}],
   ['/api/account', { methods: ['PUT', 'DELETE'], handler: (request, response) => (request.method === 'DELETE' ? accountData.remove : loadAccount)(request, response) }],
+  ['/api/mfa/status', { methods: ['GET'], handler: (request, response) => twoStep.status(request, response) }],
+  ['/api/mfa/setup', { methods: ['POST'], handler: (request, response) => twoStep.setup(request, response) }],
+  ['/api/mfa/enable', { methods: ['POST'], handler: (request, response) => twoStep.enable(request, response) }],
+  ['/api/mfa/verify', { methods: ['POST'], handler: (request, response) => twoStep.verify(request, response) }],
+  ['/api/mfa/disable', { methods: ['POST'], handler: (request, response) => twoStep.disable(request, response) }],
   ['/api/account/export', { methods: ['GET'], handler: (request, response) => accountData.export(request, response) }],
   ['/api/newsletter', { methods: ['POST'], handler: subscribe }],
   ['/api/support', { methods: ['POST'], handler: createSupportHandler(mailConfig) }],

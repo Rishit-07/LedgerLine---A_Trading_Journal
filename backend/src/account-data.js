@@ -7,6 +7,7 @@ import { decryptField } from './field-crypto.js';
 export const TERMS_VERSION = '2026-11';
 const OWNER_COLUMNS = ['user_id', 'firebase_uid', 'owner_id', 'author_id'];
 const MAX_ROWS_PER_TABLE = 50_000;
+const SECRET_TABLES = new Set(['user_totp', 'totp_recovery_codes']);
 
 /** Tables and columns that hold this account's id. Schema and table names come from the catalogue, never from the request. */
 async function ownedColumns(db) {
@@ -21,6 +22,7 @@ async function ownedColumns(db) {
 export async function exportAccount(db, uid) {
   const out = { exportedAt: new Date().toISOString(), format: 'ledgerline-export-1', tables: {}, note: 'Images such as your profile picture and trade screenshots are binary and are left out of this file.' };
   for (const { table_name: table, column_name: column } of await ownedColumns(db)) {
+    if (SECRET_TABLES.has(table)) continue; // authenticator secrets and recovery code hashes are never exported
     const { rows } = await db.query(
       `SELECT to_jsonb(t) - ARRAY(SELECT c.column_name FROM information_schema.columns c
           WHERE c.table_schema='public' AND c.table_name=$3 AND c.data_type='bytea') AS row
