@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "node --env-file-if-exists=.env.local src/server.js",
     "migrate": "node --env-file-if-exists=.env.local src/migrate.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "revoke-sessions": "node --env-file-if-exists=.env.local src/revoke-sessions.js",
+    "encrypt-existing": "node --env-file-if-exists=.env.local src/encrypt-existing.js"
   },
   "dependencies": {
     "firebase-admin": "13.10.0",

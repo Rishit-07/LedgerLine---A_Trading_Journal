@@ -7,7 +7,9 @@ const keys=fields.flat().map(([name])=>name);
 const editable=['draft','needs_info','rejected','revoked'];
 // The one address allowed to review mentor applications. Set REVIEWER_EMAIL to change it without editing code.
 const adminEmail=(process.env.REVIEWER_EMAIL||'sairishitsunku@gmail.com').toLowerCase();
-export const eligibleReviewer=u=>u.email_verified===true&&u.email?.toLowerCase()===adminEmail;
+// With REQUIRE_REVIEWER_MFA=true the reviewer must have signed in with an authenticator code (Firebase two-step sign-in).
+const needsMfa=()=>process.env.REQUIRE_REVIEWER_MFA==='true';
+export const eligibleReviewer=u=>u.email_verified===true&&u.email?.toLowerCase()===adminEmail&&(!needsMfa()||u.firebase?.sign_in_second_factor==='totp');
 export async function reviewer(u,auth){
  if(!eligibleReviewer(u))return false;
  if(u.admin===true||u.reviewer===true)return true;
@@ -53,6 +55,7 @@ export function mentorVerification(pool,authenticate,auth,admin=false){
     if(typeof data.reason!=='string'||data.reason.length>600||(!data.reason.trim()&&data.action!=='approved'))reject('Enter the reason or question.');
     await db.query("UPDATE mentor_verifications SET status=$2,reviewer_id=$3,reviewed_at=now(),reviewer_note=$4,next_review_at=CASE WHEN $2='approved' THEN now()+interval '12 months' END WHERE id=$1",[r.id,data.action,user.uid,data.reason]);
     await db.query("UPDATE mentor_reports SET status='reviewed' WHERE mentor_id=$1",[r.user_id]);
+    await db.query("INSERT INTO admin_audit_log(actor_id,action,target,detail) VALUES($1,$2,$3,$4)",[user.uid,'mentor_'+data.action,String(r.id),JSON.stringify({previous_status:r.status,subject:r.user_id})]);
    }else{
     await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,19))',[user.uid]);
     await db.query("INSERT INTO mentor_verifications(user_id,status,email) VALUES($1,'draft',$2) ON CONFLICT DO NOTHING",[user.uid,user.email]);

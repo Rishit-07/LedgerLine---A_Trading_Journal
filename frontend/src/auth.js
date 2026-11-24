@@ -9,6 +9,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { auth } from './firebase-session.js';
+import { MFA_REQUIRED, completeMfaSignIn } from './mfa.js';
 import { streakInviteCode, streakInvitePath } from './streak-invite.js';
 import { mountPage, bindPageTheme } from './pages/shared.js';
 import { animatePageEntry } from './pages/navigation.js';
@@ -174,7 +175,11 @@ function renderSignIn(landing, next, startWithSignup = false) {
     });
     form.setAttribute('aria-busy', 'true');
     try {
-      const credential = await action();
+      // Accounts with two-step sign-in switched on throw first; finish with the authenticator code.
+      const credential = await action().catch((error) => {
+        if (error?.code === MFA_REQUIRED) return completeMfaSignIn(error);
+        throw error;
+      });
       const { user } = credential;
       const isNewUser = getAdditionalUserInfo(credential)?.isNewUser === true;
       accepted = true;

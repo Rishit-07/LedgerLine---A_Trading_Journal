@@ -7,11 +7,13 @@ import {mentorVerification} from './mentor-verification.js';
 import {reportApi} from './reports.js';
 import { createServer } from 'node:http';
 import { initializeApp } from 'firebase-admin/app';
+import { configureErrorReport, reportError } from './error-report.js';
+import { createAppCheckGate } from './app-check.js';
 import { getAuth } from 'firebase-admin/auth';
 import pg from 'pg';
 import { isEmail, readJson, send } from './http.js';
 import { TERMS_VERSION, createAccountDataApi, recordTerms } from './account-data.js';
-import { LIMITS, clientAddress, createRateLimiter, limitClassFor, safely } from './guard.js';
+import { LIMITS, clientAddress, createRateLimiter, createSharedLimiter, limitClassFor, safely } from './guard.js';
 import { createDashboardHandler, createTradeHandler } from './dashboard.js';
 import { createPlanHandler } from './plan.js';
 import { createWorkspaceApi } from './workspace.js';
@@ -30,7 +32,9 @@ if (!projectId || !connectionString) {
   throw new Error('Set FIREBASE_PROJECT_ID and DATABASE_URL in backend/.env.local.');
 }
 
-const auth = getAuth(initializeApp({ projectId }));
+const firebaseApp = initializeApp({ projectId });
+const auth = getAuth(firebaseApp);
+const appCheckGate = createAppCheckGate(firebaseApp);
 const pool = new pg.Pool({
   connectionString,
   connectionTimeoutMillis: 5000,
@@ -193,7 +197,14 @@ const routes = new Map([
     (request.method === 'GET' ? streak.preferences : streak.savePreferences)(request, response) }],
 ]);
 
-const limiters = Object.fromEntries(Object.entries(LIMITS).map(([name, options]) => [name, createRateLimiter(options)]));
+const sharedStore = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
+const limiters = Object.fromEntries(Object.entries(LIMITS).map(([name, options]) => {
+  const local = createRateLimiter(options);
+  return [name, sharedStore
+    ? createSharedLimiter({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN, ...options, fallback: local })
+    : local];
+}));
+configureErrorReport();
 
 async function health(request, response) {
   try {
@@ -205,7 +216,7 @@ async function health(request, response) {
 }
 routes.set('/api/health', { methods: ['GET'], handler: health });
 
-const server = createServer((request, response) => {
+const server = createServer(async (request, response) => {
   const url = request.url ?? '/';
   const pathname = url.split('?', 1)[0];
   const route = routes.get(pathname);
@@ -220,13 +231,14 @@ const server = createServer((request, response) => {
   }
   if (pathname !== '/api/health') {
     const cls = limitClassFor(pathname, request.method);
-    const verdict = limiters[cls](cls + ':' + pathname + ':' + clientAddress(request));
+    const verdict = await limiters[cls](cls + ':' + pathname + ':' + clientAddress(request));
     if (!verdict.allowed) {
       response.setHeader('Retry-After', String(verdict.retryAfter));
       send(response, 429, { error: 'Too many requests. Try again in ' + verdict.retryAfter + ' seconds.' });
       return;
     }
   }
+  if (!(await appCheckGate(request, response, pathname))) return;
   void safely(route.handler)(request, response);
 });
 // Slow or half-open connections must not pile up.
@@ -251,8 +263,9 @@ if (process.env.STREAK_NEON_SCHEDULE !== 'true') {
 }
 
 // A background failure should be logged, not take the whole API down with a raw stack trace.
-process.on('unhandledRejection', (reason) => console.error('An unhandled promise rejection occurred (' + (reason?.code ?? reason?.name ?? 'unknown') + ').'));
+process.on('unhandledRejection', (reason) => { reportError(reason, 'rejection'); console.error('An unhandled promise rejection occurred (' + (reason?.code ?? reason?.name ?? 'unknown') + ').'); });
 process.on('uncaughtException', (error) => {
+  reportError(error, 'exception');
   console.error('An uncaught exception occurred (' + (error?.code ?? error?.name ?? 'unknown') + '). Shutting down.');
   shutdown(1);
 });
