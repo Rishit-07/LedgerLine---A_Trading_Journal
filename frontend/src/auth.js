@@ -359,6 +359,7 @@ export async function renderAccountPage(path, landing, appPages) {
 
 
   const request = (route, method, body) => authenticatedRequest(user, route, method, body);
+  void import('./features/notifications/store.js').then(({ startNotifications }) => { startNotifications(user); return import('./features/notifications/bell.js'); }).then(({ installBell }) => installBell()).catch(() => {});
   if(roomPath(path)){
     const [,section,id]=path.split('/');
     if(section==='community'){
@@ -368,7 +369,7 @@ export async function renderAccountPage(path, landing, appPages) {
     }
     path='/'+section;
   }
-  if (['/billing','/history','/plan','/mentor-verification','/mentor-review','/tickets','/ticket-admin','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach','/calendar'].includes(path)) {
+  if (['/billing','/history','/plan','/mentor-verification','/mentor-review','/tickets','/ticket-admin','/notifications','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach','/calendar'].includes(path)) {
     const { renderWorkspace } = await import('./pages/workspace.js');
     await renderWorkspace(landing, { path, request, uid:user.uid, name:account.displayName || user.displayName,
       photoUrl:avatarUrl(account.avatar)||user.photoURL, signOut:() => signOut(auth) });

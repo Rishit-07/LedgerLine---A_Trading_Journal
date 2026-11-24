@@ -44,6 +44,7 @@ const appPages = {
   '/mentor-verification':'Verify you teach',
   '/mentor-review':'Mentor reviews',
   '/tickets':'My tickets',
+  '/notifications':'Notifications',
   '/ticket-admin':'Ticket queue',
   '/journal': 'Trade journal',
   '/history': 'Trade history',
