@@ -11,7 +11,7 @@
     "encrypt-existing": "node --env-file-if-exists=.env.local src/encrypt-existing.js"
   },
   "dependencies": {
-    "firebase-admin": "13.10.0",
+    "firebase-admin": "14.5.1",
     "nodemailer": "10.6.0",
     "pdfkit": "^0.21.0",
     "pg": "8.23.1",
