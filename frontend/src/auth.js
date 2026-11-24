@@ -9,7 +9,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { auth } from './firebase-session.js';
-import { MFA_REQUIRED, completeMfaSignIn } from './mfa.js';
+import { clearTwoStepSession } from './mfa.js';
 import { streakInviteCode, streakInvitePath } from './streak-invite.js';
 import { mountPage, bindPageTheme } from './pages/shared.js';
 import { animatePageEntry } from './pages/navigation.js';
@@ -175,11 +175,7 @@ function renderSignIn(landing, next, startWithSignup = false) {
     });
     form.setAttribute('aria-busy', 'true');
     try {
-      // Accounts with two-step sign-in switched on throw first; finish with the authenticator code.
-      const credential = await action().catch((error) => {
-        if (error?.code === MFA_REQUIRED) return completeMfaSignIn(error);
-        throw error;
-      });
+      const credential = await action();
       const { user } = credential;
       const isNewUser = getAdditionalUserInfo(credential)?.isNewUser === true;
       accepted = true;
@@ -352,7 +348,7 @@ export async function renderAccountPage(path, landing, appPages) {
     else renderOnboarding(landing, {
       initial, email: user.email, destination: dashboardDestination,
       save: (data) => authenticatedRequest(user, '/api/onboarding', 'PUT', data),
-      signOut: () => signOut(auth),
+      signOut: () => { clearTwoStepSession(); return signOut(auth); },
     });
     return;
   }
@@ -382,7 +378,7 @@ export async function renderAccountPage(path, landing, appPages) {
 
   if (['/journal', '/profile', '/badges', '/settings'].includes(path)) {
     const { renderStreakPage } = await import('./pages/streak-pages.js');
-    await renderStreakPage(landing, { path, request, name: account.displayName || user.displayName, photoUrl:avatarUrl(account.avatar)||user.photoURL, signOut: () => signOut(auth) });
+    await renderStreakPage(landing, { path, request, name: account.displayName || user.displayName, photoUrl:avatarUrl(account.avatar)||user.photoURL, signOut: () => { clearTwoStepSession(); return signOut(auth); } });
     addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
     return;
   }
@@ -396,7 +392,7 @@ export async function renderAccountPage(path, landing, appPages) {
       loadCalendar: () => authenticatedRequest(user, '/api/calendar', 'GET'),
       loadCalendarMonth: (month) => authenticatedRequest(user, '/api/calendar/month?month=' + encodeURIComponent(month), 'GET'),
       loadCalendarDay: (day, market) => authenticatedRequest(user, '/api/calendar/day?date=' + encodeURIComponent(day) + (market ? '&view=market' : ''), 'GET'),
-      signOut: () => signOut(auth),
+      signOut: () => { clearTwoStepSession(); return signOut(auth); },
     });
     addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
     return;
