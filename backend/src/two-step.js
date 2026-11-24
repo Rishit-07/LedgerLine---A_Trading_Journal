@@ -15,22 +15,24 @@ const hash = (text) => createHash('sha256').update(text.toLowerCase()).digest('h
 export const available = (env = process.env) => Boolean(env.FIELD_ENCRYPTION_KEY);
 const signingKey = (env) => createHmac('sha256', Buffer.from(env.FIELD_ENCRYPTION_KEY, 'base64')).update('ledgerline-two-step-session').digest();
 
+/* The session is "<expiry>.<MAC>". The MAC covers the signed-in uid, the sign-in time and the expiry, so it only
+   verifies for this person's current sign-in. The uid and sign-in time come from the verified Firebase token,
+   never from the header; only the expiry number is read back out of it. */
+const proof = (uid, authTime, expires, env) => createHmac('sha256', signingKey(env)).update(`${uid}|${authTime}|${expires}`).digest();
+
 export function mintSession(uid, authTime, env = process.env, now = Date.now()) {
-  const body = Buffer.from(JSON.stringify({ u: uid, a: authTime, e: now + SESSION_HOURS * 3600_000 })).toString('base64url');
-  return body + '.' + createHmac('sha256', signingKey(env)).update(body).digest('base64url');
+  const expires = now + SESSION_HOURS * 3600_000;
+  return expires + '.' + proof(uid, authTime, expires, env).toString('base64url');
 }
 
 export function checkSession(token, uid, authTime, env = process.env, now = Date.now()) {
   if (typeof token !== 'string' || !available(env)) return false;
-  const [body, mac] = token.split('.');
-  if (!body || !mac) return false;
-  const good = createHmac('sha256', signingKey(env)).update(body).digest();
+  const [stamp, mac, extra] = token.split('.');
+  if (!stamp || !mac || extra !== undefined || !/^\d{10,16}$/.test(stamp)) return false;
+  const expires = Number(stamp);
+  const good = proof(uid, authTime, expires, env);
   const given = Buffer.from(mac, 'base64url');
-  if (given.length !== good.length || !timingSafeEqual(given, good)) return false;
-  try {
-    const claim = JSON.parse(Buffer.from(body, 'base64url').toString());
-    return claim.u === uid && claim.a === authTime && claim.e > now;
-  } catch { return false; }
+  return given.length === good.length && timingSafeEqual(given, good) && expires > now;
 }
 
 export function newRecoveryCodes(count = 8) {
