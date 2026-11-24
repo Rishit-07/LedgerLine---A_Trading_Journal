@@ -30,3 +30,12 @@ Second pass after `AUDIT_REPORT.md`. This one looked at who can reach what, not 
 8. **Automate the checks:** Dependabot or Renovate, `npm audit` and secret scanning (gitleaks) in CI, CodeQL, and required reviews on `main`.
 9. **Secrets:** a different key set for development and production, stored in the host's secret manager, rotated on a schedule and whenever someone leaves.
 10. **A short incident plan:** who to call, how to revoke all sessions (`auth.revokeRefreshTokens`), how to rotate keys, how to restore from backup, and what to tell users within 72 hours if personal data leaks.
+
+## Added afterwards (branch `security-hardening-3`)
+- **Reviewer audit log:** every mentor decision is written to `admin_audit_log` (migration `025`), which cannot be edited or deleted.
+- **Least-privilege database role:** `database/roles.sql` creates `ledgerline_app` (read and write rows only). Run it once, then point `DATABASE_URL` at that role. Migrations keep using the owner.
+- **Sign someone out everywhere:** `npm run revoke-sessions --workspace @ledgerline/backend -- <uid or email>`. Needs a Firebase service account (`FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`) or Google application default credentials.
+- **Automatic checks:** `.github/workflows/ci.yml` runs tests, the build, a dependency audit and secret scanning on every pull request. `codeql.yml` scans the code weekly. `dependabot.yml` opens update pull requests.
+- **Incident plan:** `INCIDENT_PLAN.md`.
+
+Still needs an account or console setting from you: two-step sign-in and App Check in Firebase, website security headers at your host, a shared rate-limit store, error tracking, and column encryption.
