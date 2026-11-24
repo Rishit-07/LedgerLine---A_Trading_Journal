@@ -1,4 +1,5 @@
 import {startedDownload} from '../components/file-actions.js';
+import { showSkeleton } from '../skeleton.js';
 import { bindPublicAccount } from './public-account.js';
 import { bindPageTheme, mountPage } from './shared.js';
 import './streak.css';
@@ -189,6 +190,7 @@ export async function renderSharedStreak(landing) {
   bindPageTheme(page);
   bindPublicAccount(page);
   const status = page.querySelector('[data-share-error]');
+  const hideSkeleton = showSkeleton(status, 'chart');
   try {
     const token = /^#([a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12})$/i.exec(location.hash)?.[1];
     if (!token) throw new Error('Invalid token');
@@ -202,5 +204,5 @@ export async function renderSharedStreak(landing) {
     status.hidden = true;
   } catch {
     status.textContent = 'This streak link is unavailable.';
-  }
+  } finally { hideSkeleton(); }
 }

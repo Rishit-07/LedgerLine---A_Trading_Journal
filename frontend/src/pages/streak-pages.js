@@ -1,4 +1,5 @@
 import { badgesMarkup, paintBadges } from './badge-shelf.js';
+import { showSkeleton } from '../skeleton.js';
 import { profileMarkup, paintProfile } from './account-pages.js';
 import { settingsMarkup, bindAccountSettings } from './account-settings.js';
 import { paginate } from './pagination.js';
@@ -152,6 +153,7 @@ export async function renderStreakPage(landing, { path, request, name, photoUrl,
   if (mode !== 'journal') {
     page.querySelector('[data-log-trade]').addEventListener('click', () => location.assign('/journal#log'));
   }
+  const hideSkeleton = showSkeleton(pageStatus, 'cards');
   try {
     if (mode === 'journal') await bindJournal(page, request, showBadge);
     else if (mode === 'settings') {
@@ -176,6 +178,7 @@ export async function renderStreakPage(landing, { path, request, name, photoUrl,
     }
     pageStatus.textContent = '';
   } catch (error) { pageStatus.textContent = error.message; }
+  finally { hideSkeleton(); }
 }
 
 async function bindJournal(page, request, showBadge) {

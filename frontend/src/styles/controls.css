@@ -179,3 +179,11 @@ input[type="checkbox"][aria-invalid="true"], input[type="radio"][aria-invalid="t
 .field__box--req > :is(input, textarea, select) { padding-inline-end: 30px; }
 .field__req--inline { position: absolute; top: 10px; inset-inline-end: 12px; pointer-events: none; }
 .field-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+/* Skip link: off screen until it receives keyboard focus. */
+.skip-link {
+  position: fixed; top: 8px; inset-inline-start: 8px; z-index: var(--z-toast);
+  padding: 10px 16px; border-radius: 12px; background: var(--acc); color: var(--on-acc);
+  font-weight: 700; text-decoration: none; transform: translateY(-200%);
+}
+.skip-link:focus { transform: none; outline: 3px solid var(--ink); outline-offset: 2px; }

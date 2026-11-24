@@ -1,0 +1,56 @@
+/* Skeleton loading: grey shapes that match the page layout while data or the page itself loads.
+   One set of primitives for every page. Motion stops when the person prefers reduced motion. */
+.skel, .skel-line, .skel-block, .skel-circle {
+  display: block; position: relative; overflow: hidden; border-radius: 10px;
+  background: color-mix(in srgb, var(--ink, #1f1f1c) 9%, transparent);
+}
+.skel-line { height: 12px; }
+.skel-line--title { height: 28px; width: min(320px, 70%); border-radius: 8px; }
+.skel-line--short { width: 40%; }
+.skel-line--mid { width: 65%; }
+.skel-block { min-height: 120px; border-radius: 18px; }
+.skel-circle { width: 44px; height: 44px; border-radius: 50%; flex: none; }
+.skel::after, .skel-line::after, .skel-block::after, .skel-circle::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--ink, #1f1f1c) 8%, transparent) 50%, transparent 80%);
+  transform: translateX(-100%); animation: skel-sweep 1.4s ease-in-out infinite;
+}
+@keyframes skel-sweep { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .skel::after, .skel-line::after, .skel-block::after, .skel-circle::after { animation: none; display: none; } }
+
+/* Section placeholder used inside pages while their data loads. */
+.skel-section { display: grid; gap: 16px; padding: 4px 0; min-width: 0; }
+.skel-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.skel-row > :last-child:not(.skel-circle) { flex: 1; }
+.skel-stack { display: grid; gap: 8px; flex: 1; min-width: 0; }
+.skel-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); }
+.skel-grid .skel-block { min-height: 96px; }
+
+/* Whole-page placeholder, shown from the first paint until the real page mounts. */
+#route-skeleton { display: none; }
+html[data-page-loading] #route-skeleton {
+  display: grid; gap: 24px; min-height: 100vh; box-sizing: border-box; padding: 24px clamp(16px, 4vw, 40px);
+  background: var(--bg, #f3f2ec); align-content: start;
+}
+html[data-page-loading] #route-skeleton .skel-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+html[data-page-loading] #route-skeleton .skel-topbar > .skel-line { width: 140px; height: 22px; }
+html[data-page-loading] #route-skeleton .skel-topbar > .skel-circle { width: 36px; height: 36px; }
+html[data-page-loading] #route-skeleton .skel-app { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; }
+html[data-page-loading] #route-skeleton .skel-nav { display: grid; gap: 12px; align-content: start; }
+html[data-page-loading] #route-skeleton .skel-nav .skel-line { height: 36px; border-radius: 12px; }
+html[data-page-loading] #route-skeleton .skel-main { display: grid; gap: 20px; align-content: start; min-width: 0; }
+html[data-page-loading] #route-skeleton .skel-article { width: min(760px, 100%); margin-inline: auto; display: grid; gap: 14px; }
+html[data-page-loading] #route-skeleton .skel-auth { width: min(420px, 100%); margin: 8vh auto 0; display: grid; gap: 14px; }
+html[data-page-loading] #route-skeleton .skel-auth .skel-block { min-height: 44px; border-radius: 14px; }
+html[data-page-loading] #route-skeleton .skel-hero { width: min(960px, 100%); margin: 6vh auto 0; display: grid; gap: 16px; justify-items: start; }
+html[data-page-loading] #route-skeleton .skel-hero .skel-block { min-height: 240px; width: 100%; }
+/* Each layout is shown only for its page kind (data-skel is set before first paint). */
+#route-skeleton > [data-skel-kind] { display: none; }
+html[data-skel="app"] #route-skeleton > [data-skel-kind="app"],
+html[data-skel="article"] #route-skeleton > [data-skel-kind="article"],
+html[data-skel="auth"] #route-skeleton > [data-skel-kind="auth"],
+html[data-skel="landing"] #route-skeleton > [data-skel-kind="landing"] { display: grid; gap: 20px; }
+@media (max-width: 767.98px) {
+  html[data-page-loading] #route-skeleton .skel-app { grid-template-columns: minmax(0, 1fr); }
+  html[data-page-loading] #route-skeleton .skel-nav { display: none; }
+}

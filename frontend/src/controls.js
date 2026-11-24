@@ -214,9 +214,27 @@ function validateNear(button) {
   return true;
 }
 
+/** "Skip to main content" for keyboard users: first thing reached by Tab, jumps past the navigation. */
+function addSkipLink() {
+  const link = document.createElement('a');
+  link.className = 'skip-link';
+  link.href = '#main-content';
+  link.textContent = 'Skip to main content';
+  link.addEventListener('click', (event) => {
+    const main = document.querySelector('main, [role="main"]');
+    if (!main) return;
+    event.preventDefault();
+    main.id = main.id || 'main-content';
+    main.tabIndex = -1;
+    main.focus();
+  });
+  document.body.prepend(link);
+}
+
 export function initControls() {
   if (initControls.done) return;
   initControls.done = true;
+  addSkipLink();
   enhance(document);
 
   // Native validation fires `invalid` for each bad field when a form is submitted. Replace the browser bubble.

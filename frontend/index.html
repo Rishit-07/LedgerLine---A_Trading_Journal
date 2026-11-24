@@ -17,6 +17,14 @@
       .startup-message { margin: 2rem; font: 1rem/1.5 system-ui, sans-serif; }
     </style>
     <script>
+      (function () {
+        var p = location.pathname.replace(/\/$/, '') || '/';
+        var kind = p === '/' ? 'landing'
+          : p === '/auth' || p === '/onboarding' ? 'auth'
+          : /^\/(about|support|terms|privacy|legal|streak|p\/)/.test(p) ? 'article'
+          : 'app';
+        document.documentElement.setAttribute('data-skel', kind);
+      })();
       try {
         document.documentElement.classList.toggle('dark', localStorage.getItem('ledgerline-theme') === 'dark');
       } catch {}
@@ -29,6 +37,31 @@
     <script type="module" src="/src/main.js"></script>
   </head>
   <body>
+    <div id="route-skeleton" role="status" aria-label="Loading Ledgerline">
+      <div data-skel-kind="app">
+        <div class="skel-topbar"><span class="skel-line"></span><span class="skel-circle"></span></div>
+        <div class="skel-app">
+          <div class="skel-nav"><span class="skel-line"></span><span class="skel-line"></span><span class="skel-line"></span><span class="skel-line"></span><span class="skel-line"></span><span class="skel-line"></span></div>
+          <div class="skel-main">
+            <span class="skel-line skel-line--title"></span><span class="skel-line skel-line--mid"></span>
+            <div class="skel-grid"><span class="skel-block"></span><span class="skel-block"></span><span class="skel-block"></span></div>
+            <span class="skel-block" style="min-height:220px"></span>
+          </div>
+        </div>
+      </div>
+      <div data-skel-kind="article">
+        <div class="skel-topbar"><span class="skel-line"></span><span class="skel-circle"></span></div>
+        <div class="skel-article"><span class="skel-line skel-line--title"></span><span class="skel-line"></span><span class="skel-line"></span><span class="skel-line skel-line--mid"></span><span class="skel-block" style="min-height:160px"></span><span class="skel-line"></span><span class="skel-line skel-line--short"></span></div>
+      </div>
+      <div data-skel-kind="auth">
+        <div class="skel-auth"><span class="skel-line skel-line--title"></span><span class="skel-line skel-line--mid"></span><span class="skel-block"></span><span class="skel-block"></span><span class="skel-block"></span></div>
+      </div>
+      <div data-skel-kind="landing">
+        <div class="skel-topbar"><span class="skel-line"></span><span class="skel-circle"></span></div>
+        <div class="skel-hero"><span class="skel-line skel-line--title"></span><span class="skel-line skel-line--mid"></span><span class="skel-block"></span></div>
+      </div>
+      <span class="sr-only">Loading…</span>
+    </div>
     <p class="startup-message" id="startup-status" role="status" hidden>Ledgerline is taking longer to load. You can reload the page to try again.</p>
     <noscript><p class="startup-message">Enable JavaScript to open Ledgerline.</p></noscript>
     <div class="n-root" id="landing"

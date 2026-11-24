@@ -10,6 +10,8 @@ import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import pg from 'pg';
 import { isEmail, readJson, send } from './http.js';
+import { TERMS_VERSION, createAccountDataApi, recordTerms } from './account-data.js';
+import { LIMITS, clientAddress, createRateLimiter, limitClassFor, safely } from './guard.js';
 import { createDashboardHandler, createTradeHandler } from './dashboard.js';
 import { createPlanHandler } from './plan.js';
 import { createWorkspaceApi } from './workspace.js';
@@ -29,7 +31,15 @@ if (!projectId || !connectionString) {
 }
 
 const auth = getAuth(initializeApp({ projectId }));
-const pool = new pg.Pool({ connectionString, connectionTimeoutMillis: 5000 });
+const pool = new pg.Pool({
+  connectionString,
+  connectionTimeoutMillis: 5000,
+  max: Number(process.env.DATABASE_POOL_MAX ?? 10),
+  idleTimeoutMillis: 30_000,
+  // A stuck query must not hold a connection (and a request) forever.
+  statement_timeout: 15_000,
+  idle_in_transaction_session_timeout: 30_000,
+});
 pool.on('error', () => console.error('An idle database connection failed.'));
 const mailConfig = readMailConfig(process.env);
 startMentorMail(pool,mailConfig);
@@ -64,7 +74,10 @@ async function authenticateRequest(request, response) {
   }
   let claims;
   try {
-    claims = await auth.verifyIdToken(token);
+    // Changes and data downloads also check that the sign-in was not revoked or its account deleted.
+    // Plain reads skip that extra Firebase round trip to stay fast.
+    const sensitive = !['GET', 'HEAD'].includes(request.method) || (request.url ?? '').startsWith('/api/account/export');
+    claims = await auth.verifyIdToken(token, sensitive);
   } catch {
     send(response, 401, { error: 'Sign in again to continue.' });
     return;
@@ -80,6 +93,11 @@ async function loadAccount(request, response) {
   const claims = await authenticateRequest(request, response);
   if (!claims) return;
   const { uid } = claims;
+  // Sign-up sends which terms version was ticked; the server records it with its own clock.
+  if (request.headers['content-type']) {
+    const { data } = await readJson(request, 1024);
+    if (data?.terms === TERMS_VERSION) await recordTerms(pool, uid, data.terms).catch(() => console.error('Could not record the terms acceptance.'));
+  }
   const find = `SELECT a.created_at AS "createdAt", p.display_name AS "displayName",
     p.onboarded_at IS NOT NULL AS "onboardingCompleted", encode(p.profile_picture,'base64') AS avatar FROM ledgerline_accounts a
     LEFT JOIN user_profile p ON p.user_id = a.firebase_uid WHERE a.firebase_uid = $1`;
@@ -111,6 +129,7 @@ async function loadAccount(request, response) {
   }
 }
 
+const accountData = createAccountDataApi(pool, authenticateRequest, auth);
 const calendar = createCalendarHandlers(pool, authenticateRequest);
 const streaks = createStreakStore(pool);
 const streak = createStreakApi(pool, authenticateRequest, streaks, { remindersAvailable: Boolean(mailConfig) });
@@ -140,7 +159,8 @@ const routes = new Map([
   ['/api/mentor-review',{methods:['GET','POST'],handler:mentorVerification(pool,authenticateRequest,auth,true)}],
   ['/api/clubs', {methods:['GET','POST'],handler:groupHandler(pool,authenticateRequest,'club')}],
   ['/api/spaces', {methods:['GET','POST'],handler:groupHandler(pool,authenticateRequest,'space')}],
-  ['/api/account', { methods: ['PUT'], handler: loadAccount }],
+  ['/api/account', { methods: ['PUT', 'DELETE'], handler: (request, response) => (request.method === 'DELETE' ? accountData.remove : loadAccount)(request, response) }],
+  ['/api/account/export', { methods: ['GET'], handler: (request, response) => accountData.export(request, response) }],
   ['/api/newsletter', { methods: ['POST'], handler: subscribe }],
   ['/api/support', { methods: ['POST'], handler: createSupportHandler(mailConfig) }],
   ['/api/onboarding', { methods: ['GET', 'PUT'], handler: createOnboardingHandler(pool, authenticateRequest) }],
@@ -173,8 +193,22 @@ const routes = new Map([
     (request.method === 'GET' ? streak.preferences : streak.savePreferences)(request, response) }],
 ]);
 
+const limiters = Object.fromEntries(Object.entries(LIMITS).map(([name, options]) => [name, createRateLimiter(options)]));
+
+async function health(request, response) {
+  try {
+    await pool.query('SELECT 1');
+    send(response, 200, { status: 'ok' });
+  } catch {
+    send(response, 503, { status: 'database unavailable' });
+  }
+}
+routes.set('/api/health', { methods: ['GET'], handler: health });
+
 const server = createServer((request, response) => {
-  const route = routes.get(request.url.split('?', 1)[0]);
+  const url = request.url ?? '/';
+  const pathname = url.split('?', 1)[0];
+  const route = routes.get(pathname);
   if (!route) {
     send(response, 404, { error: 'Route not found.' });
     return;
@@ -184,8 +218,21 @@ const server = createServer((request, response) => {
     send(response, 405, { error: 'Method not available for this route.' });
     return;
   }
-  void route.handler(request, response);
+  if (pathname !== '/api/health') {
+    const cls = limitClassFor(pathname, request.method);
+    const verdict = limiters[cls](cls + ':' + pathname + ':' + clientAddress(request));
+    if (!verdict.allowed) {
+      response.setHeader('Retry-After', String(verdict.retryAfter));
+      send(response, 429, { error: 'Too many requests. Try again in ' + verdict.retryAfter + ' seconds.' });
+      return;
+    }
+  }
+  void safely(route.handler)(request, response);
 });
+// Slow or half-open connections must not pile up.
+server.requestTimeout = 30_000;
+server.headersTimeout = 10_000;
+server.keepAliveTimeout = 5_000;
 
 const port = Number(process.env.PORT ?? 8787);
 server.listen(port, process.env.HOST ?? '127.0.0.1', () => {
@@ -202,3 +249,21 @@ if (process.env.STREAK_NEON_SCHEDULE !== 'true') {
     finally { running = false; }
   }, 5 * 60_000).unref();
 }
+
+// A background failure should be logged, not take the whole API down with a raw stack trace.
+process.on('unhandledRejection', (reason) => console.error('An unhandled promise rejection occurred (' + (reason?.code ?? reason?.name ?? 'unknown') + ').'));
+process.on('uncaughtException', (error) => {
+  console.error('An uncaught exception occurred (' + (error?.code ?? error?.name ?? 'unknown') + '). Shutting down.');
+  shutdown(1);
+});
+
+// Finish in-flight requests and release database connections on deploy or restart.
+let closing = false;
+function shutdown(code = 0) {
+  if (closing) return;
+  closing = true;
+  setTimeout(() => process.exit(code || 1), 10_000).unref();
+  server.close(() => pool.end().finally(() => process.exit(code)));
+}
+process.on('SIGTERM', () => shutdown(0));
+process.on('SIGINT', () => shutdown(0));

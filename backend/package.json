@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "node --env-file-if-exists=.env.local src/server.js",
-    "migrate": "node --env-file-if-exists=.env.local src/migrate.js"
+    "migrate": "node --env-file-if-exists=.env.local src/migrate.js",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "firebase-admin": "13.10.0",

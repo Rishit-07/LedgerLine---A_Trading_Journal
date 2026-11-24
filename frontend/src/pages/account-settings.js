@@ -32,7 +32,7 @@ export function settingsMarkup(notifications) {
     ${panel('rules','Trading rules',`<form class="ws-form" data-edit="rules">${ruleDefinitions.map(([key,label,values,unit])=>`<div class="account-rule"><label>${label}<select name="${key}" class="n-in">${values.map(v=>`<option value="${v}">${v}${unit}</option>`).join('')}</select></label><label><input type="checkbox" name="hardRules" value="${key}"> Hard rule</label></div>`).join('')}${saveButton}</form>`)}
     <div data-preference="notifications" hidden>${notifications}</div>
     ${panel('appearance','Appearance','<p>Choose a light or dark workspace on this device.</p><button class="btn btn-secondary" data-change-theme>Switch theme</button>')}
-    ${panel('privacy','Data and privacy','<label><input type="checkbox" data-report-consent disabled> Allow AI reviews to use my aggregated trading records</label><p data-consent-status role="status"></p><p>Choose what visitors can see on your portfolio or export your trades.</p><div class="account-actions"><a href="/settings#portfolio">Portfolio visibility</a><a href="/history#export">Export trades as CSV</a></div>')}
+    ${panel('privacy','Data and privacy','<label><input type="checkbox" data-report-consent disabled> Allow AI reviews to use my aggregated trading records</label><p data-consent-status role="status"></p><p>Choose what visitors can see on your portfolio or export your trades.</p><div class="account-actions"><a href="/settings#portfolio">Portfolio visibility</a><a href="/history#export">Export trades as CSV</a></div><h3>Your data</h3><p>Download a copy of everything Ledgerline holds about you, or delete your account. Deleting removes your journal, settings and community activity and cannot be undone.</p><div class="btn-row"><button type="button" class="btn btn-secondary" data-export-data>Download my data</button><button type="button" class="btn btn-danger" data-delete-account>Delete my account…</button></div><p data-data-status role="status"></p>')}
     ${panel('portfolio','Portfolio',`<form class="ws-form" data-portfolio-settings>${portfolioVisibilityMarkup}<button class="btn btn-primary" disabled>Save portfolio settings</button><p role="status"></p></form><div class="account-actions"><a data-own-portfolio href="/portfolio">Open my portfolio</a></div>`)}
     ${panel('billing','Plans and billing','<p>Billing has its own page now: your plan, payment method (UPI, card or crypto), crypto period and invoices all live there.</p><a class="btn btn-primary" href="/billing">Open billing</a>')}
     </div></div>`;
@@ -72,6 +72,31 @@ export async function bindAccountSettings(page,request) {
     consent.checked=prefs.enabled;consent.disabled=false;
     consent.onchange=async()=>{consent.disabled=true;try{await request('/api/reports/preferences','PUT',{enabled:consent.checked});message.textContent='Preference saved.';}catch(e){consent.checked=!consent.checked;message.textContent=e.message;}finally{consent.disabled=false;}};
   }catch(e){message.textContent=e.message;}
+  const dataStatus=page.querySelector('[data-data-status]');
+  page.querySelector('[data-export-data]').onclick=async event=>{
+    const button=event.currentTarget;button.setAttribute('aria-disabled','true');button.classList.add('is-loading');dataStatus.textContent='';
+    try{
+      const data=await request('/api/account/export','GET');
+      const link=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})),download:'ledgerline-export.json'});
+      link.click();URL.revokeObjectURL(link.href);dataStatus.textContent='Your data was downloaded.';
+    }catch(error){dataStatus.textContent=error.message;}
+    finally{button.removeAttribute('aria-disabled');button.classList.remove('is-loading');}
+  };
+  page.querySelector('[data-delete-account]').onclick=()=>{
+    const dialog=document.createElement('dialog');
+    dialog.className='n-out dash-dialog';dialog.setAttribute('aria-label','Delete account');
+    dialog.innerHTML='<h2>Delete your account?</h2><p>This permanently removes your journal, settings, portfolio and community activity. It cannot be undone. Download your data first if you want a copy.</p><form class="ws-form"><label>Type DELETE to confirm<input name="confirm" autocomplete="off" required pattern="DELETE" data-required-message="Type DELETE to confirm"></label><p role="status"></p><div class="form-actions"><button type="button" class="btn btn-secondary" data-cancel>Cancel</button><button type="submit" class="btn btn-danger">Delete my account</button></div></form>';
+    const form=dialog.querySelector('form'),status=dialog.querySelector('[role=status]');
+    dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
+    dialog.addEventListener('close',()=>dialog.remove());
+    form.onsubmit=async event=>{
+      event.preventDefault();
+      const submitButton=form.querySelector('[type=submit]');submitButton.setAttribute('aria-disabled','true');submitButton.classList.add('is-loading');
+      try{await request('/api/account','DELETE',{confirm:form.elements.confirm.value});location.assign('/');}
+      catch(error){status.textContent=error.message;submitButton.removeAttribute('aria-disabled');submitButton.classList.remove('is-loading');}
+    };
+    page.append(dialog);dialog.showModal();
+  };
   const avatarForm=page.querySelector('[data-avatar-form]');
   const avatarStatus=avatarForm.querySelector('[role=status]');
   async function saveAvatar(remove){

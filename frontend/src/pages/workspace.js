@@ -13,6 +13,7 @@ import {application} from '../features/spaces/application.js';
 import {reviewerPage} from '../features/spaces/reviewer.js';
 import { calendar } from './workspace-calendar.js';
 import { button } from './workspace-ui.js';
+import { showSkeleton } from '../skeleton.js';
 
 const pages = { billing, history, mistake, reports, sizing, forecast, plan, coach, people, spaces, clubs, portfolio, calendar, "mentor-verification":application,"mentor-review":reviewerPage };
 
@@ -27,6 +28,7 @@ export async function renderWorkspace(landing, { path, request, uid, name, photo
   const content=[...page.querySelector('.workspace-content').children].slice(3);
   content.forEach((element)=>{element.hidden=true;});
   status.textContent='Loading your workspace…';
+  const hideSkeleton=showSkeleton(status,['people','clubs','spaces','mentor-review'].includes(mode)?'list':'cards');
   try {
     const roomId=screen.endpoint && location.pathname.split('/')[2];
     const reload=()=>request(roomId?endpoint+'?'+new URLSearchParams({id:roomId}):endpoint,'GET');
@@ -38,8 +40,10 @@ export async function renderWorkspace(landing, { path, request, uid, name, photo
     }
     content.forEach((element)=>{if(element.tagName!=='DIALOG')element.hidden=false;else element.removeAttribute('hidden');});
     await screen.bind(page,{data,request,save,reload,uid});
+    hideSkeleton();
     status.textContent='';
   } catch (error) {
+    hideSkeleton();
     content.forEach((element)=>{element.hidden=true;});
     status.textContent=error.message;
     status.append(' ',button('Try again',()=>location.reload()));

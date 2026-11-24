@@ -156,7 +156,7 @@ function renderSignIn(landing, next, startWithSignup = false) {
     ticket.classList.toggle('is-signup', creating);
     consent.required = creating;
     displayName.required = creating;
-    if (creating) password.minLength = 6;
+    if (creating) password.minLength = 10;
     else password.removeAttribute('minlength');
     message.hidden = true;
     fields.forEach(clearField);
@@ -231,7 +231,7 @@ function renderSignIn(landing, next, startWithSignup = false) {
           ? 'Enter a valid email address.'
           : field.name === 'password'
             ? field.validity.tooShort
-              ? 'Choose a password with at least 6 characters.'
+              ? 'Choose a password with at least 10 characters.'
               : 'Enter your password.'
             : 'Enter your name to create an account.';
       showError(text, [field.name]);
@@ -253,6 +253,7 @@ function renderSignIn(landing, next, startWithSignup = false) {
     }
     void authenticate(async () => {
       const result = await createUserWithEmailAndPassword(auth, email, secret);
+      rememberTerms();
       await updateProfile(result.user, { displayName: name }).catch(() => {
         // Profile naming is optional after account creation.
       });
@@ -264,6 +265,7 @@ function renderSignIn(landing, next, startWithSignup = false) {
       consent.reportValidity();
       return;
     }
+    if (creating) rememberTerms();
     void authenticate(() => signInWithPopup(auth, new GoogleAuthProvider()));
   });
   updateMode();
@@ -283,8 +285,16 @@ export async function authenticatedRequest(user, path, method, body) {
   return data;
 }
 
+// The terms version ticked at sign-up. Sent once with the first account load, so the server can record it.
+const TERMS_VERSION = '2026-11';
+function rememberTerms() {
+  try { localStorage.setItem('ledgerline-terms', TERMS_VERSION); } catch { /* storage unavailable */ }
+}
 function requestAccount(user) {
-  const load = () => authenticatedRequest(user, '/api/account', 'PUT');
+  let terms = null;
+  try { terms = localStorage.getItem('ledgerline-terms'); } catch { /* storage unavailable */ }
+  const load = () => authenticatedRequest(user, '/api/account', 'PUT', terms ? { terms } : undefined)
+    .then((account) => { try { localStorage.removeItem('ledgerline-terms'); } catch { /* ignore */ } return account; });
   return load().catch((error) => {
     if (error.status && error.status < 500) throw error;
     return load();
