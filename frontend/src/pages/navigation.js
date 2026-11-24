@@ -1,5 +1,5 @@
 const pages = new Set(['/', '/auth', '/about', '/privacy', '/terms', '/legal', '/support', '/onboarding', '/streak/invite', '/dashboard',
-  '/journal','/history','/profile','/settings','/badges','/calendar','/plan','/billing','/mentor-verification','/mentor-review','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach']);
+  '/journal','/history','/profile','/settings','/badges','/calendar','/plan','/billing','/mentor-verification','/mentor-review','/tickets','/ticket-admin','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach']);
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
 export function animatePageEntry(page) {

@@ -74,3 +74,10 @@ Set `SENTRY_DSN`. Reports carry only the error name, code and top stack frames: 
 
 ### Column encryption
 Set `FIELD_ENCRYPTION_KEY` (generate with the command in `.env.example`), then run `npm run encrypt-existing --workspace @ledgerline/backend` once to protect addresses and GST numbers already saved. New values are encrypted automatically; invoices and "download my data" decrypt them for the owner. **Back the key up separately from the database**: without it those fields cannot be recovered. Deleting an account removes them as before.
+
+## Support tickets
+
+- `POST /api/support` opens a ticket (visitors allowed; signed-in users are linked to their account and their email is taken from the verified token, not the form). `GET/POST /api/tickets` is the user's own tickets only. `GET/POST /api/ticket-admin` needs the reviewer/admin account (same check, and MFA when `REQUIRE_REVIEWER_MFA=true`). Every admin reply or status change is written to `admin_audit_log`.
+- Technical details (browser, device, screen, page, language, time zone, last 5 page errors) are sent only if the user leaves the box ticked; the server keeps a fixed whitelist of short text fields. No IP address, token, journal or trade data is stored.
+- Tickets linked to an account are exported and deleted with it. Visitor tickets (email only) are not linked to an account; delete them by email on request.
+- Run `npm run db:migrate` to apply `027_support_tickets.sql`.

@@ -21,7 +21,7 @@ import { createWorkspaceApi } from './workspace.js';
 import { groupHandler } from './group-api.js';
 import { createCalendarHandlers } from './calendar.js';
 import { createOnboardingHandler } from './onboarding.js';
-import { createSupportHandler } from './support.js';
+import { createTicketApi } from './support-tickets.js';
 import { createStreakStore } from './streak-store.js';
 import { createStreakApi } from './streak-api.js';
 import { runStreakMaintenance } from './streak-maintenance.js';
@@ -155,6 +155,16 @@ async function loadAccount(request, response) {
   }
 }
 
+// A visitor can open a ticket; if they are signed in the ticket is linked to their account.
+const identify = async (request) => {
+  const token = request.headers.authorization?.match(/^Bearer (\S+)$/i)?.[1];
+  if (!token) return null;
+  try {
+    const claims = await auth.verifyIdToken(token);
+    return claims.email_verified === true && claims.email ? claims : null;
+  } catch { return null; }
+};
+const tickets = createTicketApi(pool, mailConfig, { authenticate: authenticateRequest, identify, auth });
 const accountData = createAccountDataApi(pool, authenticateRequest, auth);
 const twoStepRaw = createTwoStepApi(pool, authenticateRequest);
 const twoStep = Object.fromEntries(Object.entries(twoStepRaw).map(([name, handler]) => [name, async (request, response) => { await handler(request, response); twoStepCache.clear(); }]));
@@ -195,7 +205,9 @@ const routes = new Map([
   ['/api/mfa/disable', { methods: ['POST'], handler: (request, response) => twoStep.disable(request, response) }],
   ['/api/account/export', { methods: ['GET'], handler: (request, response) => accountData.export(request, response) }],
   ['/api/newsletter', { methods: ['POST'], handler: subscribe }],
-  ['/api/support', { methods: ['POST'], handler: createSupportHandler(mailConfig) }],
+  ['/api/support', { methods: ['POST'], handler: tickets.create }],
+  ['/api/tickets', { methods: ['GET', 'POST'], handler: tickets.mine }],
+  ['/api/ticket-admin', { methods: ['GET', 'POST'], handler: tickets.admin }],
   ['/api/onboarding', { methods: ['GET', 'PUT'], handler: createOnboardingHandler(pool, authenticateRequest) }],
   ['/api/dashboard', { methods: ['GET'], handler: createDashboardHandler(pool, authenticateRequest) }],
   ['/api/plan', { methods: ['GET', 'PUT'], handler: createPlanHandler(pool, authenticateRequest) }],
