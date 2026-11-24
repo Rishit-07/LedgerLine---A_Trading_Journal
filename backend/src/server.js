@@ -21,6 +21,7 @@ import { createWorkspaceApi } from './workspace.js';
 import { groupHandler } from './group-api.js';
 import { createCalendarHandlers } from './calendar.js';
 import { createOnboardingHandler } from './onboarding.js';
+import { createNotificationApi, notify } from './notifications.js';
 import { createTicketApi } from './support-tickets.js';
 import { createStreakStore } from './streak-store.js';
 import { createStreakApi } from './streak-api.js';
@@ -164,7 +165,8 @@ const identify = async (request) => {
     return claims.email_verified === true && claims.email ? claims : null;
   } catch { return null; }
 };
-const tickets = createTicketApi(pool, mailConfig, { authenticate: authenticateRequest, identify, auth });
+const tickets = createTicketApi(pool, mailConfig, { authenticate: authenticateRequest, identify, auth, notify: (uid, kind, details) => notify(pool, uid, kind, details).catch(() => null) });
+const notifications = createNotificationApi(pool, authenticateRequest);
 const accountData = createAccountDataApi(pool, authenticateRequest, auth);
 const twoStepRaw = createTwoStepApi(pool, authenticateRequest);
 const twoStep = Object.fromEntries(Object.entries(twoStepRaw).map(([name, handler]) => [name, async (request, response) => { await handler(request, response); twoStepCache.clear(); }]));
@@ -206,6 +208,9 @@ const routes = new Map([
   ['/api/account/export', { methods: ['GET'], handler: (request, response) => accountData.export(request, response) }],
   ['/api/newsletter', { methods: ['POST'], handler: subscribe }],
   ['/api/support', { methods: ['POST'], handler: tickets.create }],
+  ['/api/notifications', { methods: ['GET', 'POST'], handler: notifications.main }],
+  ['/api/notifications/count', { methods: ['GET'], handler: notifications.count }],
+  ['/api/notifications/stream', { methods: ['GET'], handler: notifications.stream }],
   ['/api/tickets', { methods: ['GET', 'POST'], handler: tickets.mine }],
   ['/api/ticket-admin', { methods: ['GET', 'POST'], handler: tickets.admin }],
   ['/api/onboarding', { methods: ['GET', 'PUT'], handler: createOnboardingHandler(pool, authenticateRequest) }],

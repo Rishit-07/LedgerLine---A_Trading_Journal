@@ -32,7 +32,7 @@ const diagnosticLines = (diagnostics) => Object.entries(diagnostics).map(([key, 
 const forbid = (status, message) => { throw Object.assign(new Error(message), { status }); };
 const idFrom = (value) => /^\d{1,15}$/.test(String(value ?? '')) ? String(value) : null;
 
-export function createTicketApi(pool, mailConfig, { authenticate, identify, auth }) {
+export function createTicketApi(pool, mailConfig, { authenticate, identify, auth, notify = async () => null }) {
   let windowEnds = 0;
   let attempts = 0;
   const attemptsByEmail = new Map();
@@ -208,7 +208,7 @@ export function createTicketApi(pool, mailConfig, { authenticate, identify, auth
     const db = await pool.connect();
     try {
       await db.query('BEGIN');
-      ticket = (await db.query('SELECT id,email,subject,status FROM support_tickets WHERE id=$1 FOR UPDATE', [id])).rows[0];
+      ticket = (await db.query('SELECT id,email,subject,status,user_id FROM support_tickets WHERE id=$1 FOR UPDATE', [id])).rows[0];
       if (!ticket) { await db.query('ROLLBACK'); return send(response, 404, { error: 'Ticket not found.' }); }
       const next = action === 'status' ? data.status : (data.status ?? (ticket.status === 'open' ? 'in_progress' : ticket.status));
       if (action === 'reply') await db.query('INSERT INTO support_ticket_messages(ticket_id,author,body) VALUES($1,$2,$3)', [id, 'admin', body]);
@@ -222,6 +222,12 @@ export function createTicketApi(pool, mailConfig, { authenticate, identify, auth
       throw error;
     } finally {
       db.release();
+    }
+    if (ticket.user_id && (action === 'reply' || ticket.next === 'resolved')) {
+      await notify(ticket.user_id, 'account', {
+        title: ticket.next === 'resolved' ? `${reference(id)} was marked resolved` : `Support replied to ${reference(id)}`,
+        body: ticket.subject, target: '/tickets', dedupe: `ticket:${id}:${Date.now()}`,
+      });
     }
     let emailed = null;
     if (action === 'reply' || (data.status === 'resolved' && ticket.status !== 'resolved')) {
