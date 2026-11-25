@@ -14,12 +14,13 @@ import {reviewerPage} from '../features/spaces/reviewer.js';
 import {ticketsPage} from '../features/tickets/user.js';
 import {ticketAdminPage} from '../features/tickets/admin.js';
 import {newsletterAdminPage} from '../features/newsletter/admin.js';
+import {mentorshipPage,mentorJoinPage} from '../features/mentorship/page.js';
 import {notificationsPage} from '../features/notifications/page.js';
 import { calendar } from './workspace-calendar.js';
 import { button } from './workspace-ui.js';
 import { showSkeleton } from '../skeleton.js';
 
-const pages = { billing, history, mistake, reports, sizing, forecast, plan, coach, people, spaces, clubs, portfolio, calendar, "mentor-verification":application,"mentor-review":reviewerPage,tickets:ticketsPage,notifications:notificationsPage,"ticket-admin":ticketAdminPage,"newsletter-admin":newsletterAdminPage };
+const pages = { billing, history, mistake, reports, sizing, forecast, plan, coach, people, spaces, clubs, portfolio, calendar, "mentor-verification":application,"mentor-review":reviewerPage,tickets:ticketsPage,notifications:notificationsPage,"ticket-admin":ticketAdminPage,"newsletter-admin":newsletterAdminPage,mentorship:mentorshipPage,"mentor/join":mentorJoinPage };
 
 export async function renderWorkspace(landing, { path, request, uid, name, photoUrl, signOut }) {
   const mode=path.slice(1);
@@ -32,7 +33,7 @@ export async function renderWorkspace(landing, { path, request, uid, name, photo
   const content=[...page.querySelector('.workspace-content').children].slice(3);
   content.forEach((element)=>{element.hidden=true;});
   status.textContent='Loading your workspace…';
-  const hideSkeleton=showSkeleton(status,['people','clubs','spaces','mentor-review','tickets','ticket-admin','notifications','newsletter-admin'].includes(mode)?'list':'cards');
+  const hideSkeleton=showSkeleton(status,['people','clubs','spaces','mentor-review','tickets','ticket-admin','notifications','newsletter-admin','mentorship','mentor/join'].includes(mode)?'list':'cards');
   try {
     const roomId=screen.endpoint && location.pathname.split('/')[2];
     const reload=()=>request(roomId?endpoint+'?'+new URLSearchParams({id:roomId}):endpoint,'GET');

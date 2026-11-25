@@ -42,3 +42,19 @@ Open items are listed in `NOTIFICATIONS.md`.
 | Read (past issues) and `/newsletter/:slug` | Web version of a sent issue | public list and slug fetch | Pass (mocked API) |
 | `/newsletter/confirm?token=` | Confirms only on the page's POST, so link scanners cannot subscribe anyone | expired and forged tokens rejected | Pass (mocked API) |
 | `/newsletter-admin` (admin only) | Save draft, preview light/dark, test to me, schedule, unschedule, counts | non-admin 403, schedule audit-logged, sends once | Not run (needs admin sign-in) |
+
+## Mentorship
+
+| Control | What it does | API check | Browser check |
+|---|---|---|---|
+| I want a mentor / I want to be a mentor | Sets the role (only from "none") | `choose_role`; second choice 409 | Pass (stubbed API) |
+| Change role (label changes) | Free, Cancel mentor plan, "Change role in N days" (disabled), or close-space confirm | cooldown 403 server-side, confirm_close 409, closes 30 days read-only | Label states: Pass (stubbed API) |
+| Create space | Needs mentor role, approved verification and active mentor plan; one live space | `not_mentor`, `not_verified`, `needs_plan`, second space 409 | Not run signed in |
+| Make a personal link / Make a new link / Stop link | Claim-bound 7 day link, token shown once and stored hashed; resend kills the old one | claimed link refused for second person (410 used), email lock 403, expired 410 | Page renders: Pass |
+| Make an open-seat link | 7/14/30 days, 5/10/25 seats, new one revokes old | revoked 410 | Page renders: Pass |
+| Pause all links | Stops every link, members stay | 423 paused | Not run |
+| Find space (paste link) and Join | Preview card, consent screen, joins atomically | no Pro 402, unverified email 403, no consent 400, one live mentor, switch needs confirmation | Not run signed in |
+| Level 1 / 2 / 3 switches | Student changes what the mentor sees, logged, applies immediately | level 1 off pauses coaching and hides all data | Not run signed in |
+| Leave space | Ends access at once, clears cached numbers | live membership count stays 1 | Not run |
+| Let in / Remove | Waitlist to active; removal gives 7 days notice and a written reason | cap check | Not run |
+| Report a problem | One per issue per month, 3 reporters escalates | duplicate 409 | Not run |

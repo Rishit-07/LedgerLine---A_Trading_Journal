@@ -47,6 +47,8 @@ const appPages = {
   '/notifications':'Notifications',
   '/ticket-admin':'Ticket queue',
   '/newsletter-admin':'Newsletter',
+  '/mentorship':'Mentorship',
+  '/mentor/join':'Join a mentor',
   '/journal': 'Trade journal',
   '/history': 'Trade history',
   '/forecast': 'Forecast ledger',
