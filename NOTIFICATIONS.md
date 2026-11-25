@@ -36,3 +36,21 @@ Until the key is set, turning a push switch on shows "Push is not set up on this
 - Push and email sending were tested with fake senders only (delivery rules, quiet hours, summary collapse, dead-token removal logic), not against real Firebase or a mail server.
 - Held rows are flushed by the existing 5-minute timer. If you run `STREAK_NEON_SCHEDULE=true`, that timer is off and held notifications are not sent; tell me and I will add the same call to that scheduler.
 - Run `npm run db:migrate` for migration 029.
+
+## Stage 3: Newsletter
+Double opt-in newsletter inside the Notifications page (Newsletter tab), plus public pages `/newsletter/confirm`, `/newsletter/manage`, `/newsletter/:slug` and an admin page `/newsletter-admin`. Consent is recorded per action with the exact wording and template version; the IP is stored only as a keyed hash.
+
+### Differences from the design
+- No open or click tracking exists, so there is no "Allow email tracking" switch. This is deliberate (privacy). Tell me if you want it.
+- `/newsletter/:slug` is rendered by the app in the browser, so it is readable but not search-indexable. Server rendering would need a small change if you want it indexed.
+- Old rows in `ledgerline_newsletter_subscriptions` were not migrated: they have no proof of consent. Those people can sign up again.
+- Live notification events use an in-memory bus, so they only work on a single server.
+
+### Owner setup (needs you)
+1. `npm run db:migrate` for migration 030.
+2. Set `NEWSLETTER_POSTAL_ADDRESS` (required in every footer; sending and scheduling stay off without it), `NEWSLETTER_SECRET` (or reuse `FIELD_ENCRYPTION_KEY`), and `NEWSLETTER_WEBHOOK_SECRET` if you use Resend bounce webhooks (point it at `/api/newsletter/events`).
+3. Publish SPF, DKIM and DMARC for the sending domain, and make sure `APP_URL` routes `/api` so the one-click unsubscribe header works.
+4. Have the template and wording reviewed for your legal and SEBI obligations before the first send.
+
+### Not tested
+Real mail sending, the Resend webhook against Resend, the signed-in Newsletter tab and the admin page in a browser. API behaviour was checked on a real Postgres engine (PGlite) and in unit tests.

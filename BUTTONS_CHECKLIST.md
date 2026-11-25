@@ -21,10 +21,24 @@ Open items are listed in `NOTIFICATIONS.md`.
 
 | Control | What it does | API check | Browser check |
 |---|---|---|---|
-| Tab pill (Inbox, Settings) | Switches panels, keyboard arrows move between tabs | n/a | Pass |
+| Tab pill (Inbox, Settings, Newsletter) | Switches panels, keyboard arrows move between tabs | n/a | Pass |
 | Channel switches (6 kinds by in-app, push, email) | Saves the switch; first change starts from the defaults | `PUT {kind,channel,value}`; first change persists; unknown or always-on kinds are ignored | Pass |
 | Push switch on | Asks the browser for permission, saves this device's token; on denial or missing setup the switch returns to off with a toast | device token save, 10 device cap | Missing-setup path only (no VAPID key in test) |
 | Quiet hours chips | Saves the window; no push or email inside it | `PUT {quiet}`, bad value 400, schedule unit tests | Pass |
 | Delivery chips | Instant, or one summary at 8 pm | `PUT {delivery}`; held rows flush at 8 pm as one email | Pass |
 | Reminders chips | Sets the existing streak reminder time (or off) through `/api/streak/preferences` | existing streak tests | Pass (stub) |
 | Always-on card | Display only, no switches | locked kinds ignore any change; security email bypasses quiet hours | Pass |
+
+## Newsletter
+
+| Control | What it does | API check | Browser check |
+|---|---|---|---|
+| Landing footer form | Sends a confirmation email; message says to check the inbox | `POST /api/newsletter` returns `{pending:true}`; already subscribed looks identical | Message text only |
+| Topic chips | Toggle topics, at least one stays on; saves at once if subscribed | `update` rejects empty topics | Not run (needs sign-in) |
+| Frequency chips | Weekly, weekdays, monthly; saves at once if subscribed | `update` | Not run (needs sign-in) |
+| Subscribe / Resend / Cancel | Starts or repeats opt-in, 3 resends a day, cancel removes the pending request | resend cap 429 on the 4th | Not run (needs sign-in) |
+| Send me the latest issue | Mails the latest issue once an hour | second call within the hour 429 | Not run |
+| Unsubscribe (tab, email link, one-click header) | Stops all mail and records consent withdrawal | all three paths | Manage page: Pass (mocked API) |
+| Read (past issues) and `/newsletter/:slug` | Web version of a sent issue | public list and slug fetch | Pass (mocked API) |
+| `/newsletter/confirm?token=` | Confirms only on the page's POST, so link scanners cannot subscribe anyone | expired and forged tokens rejected | Pass (mocked API) |
+| `/newsletter-admin` (admin only) | Save draft, preview light/dark, test to me, schedule, unschedule, counts | non-admin 403, schedule audit-logged, sends once | Not run (needs admin sign-in) |

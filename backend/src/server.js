@@ -21,6 +21,7 @@ import { createWorkspaceApi } from './workspace.js';
 import { groupHandler } from './group-api.js';
 import { createCalendarHandlers } from './calendar.js';
 import { createOnboardingHandler } from './onboarding.js';
+import { createNewsletterApi } from './newsletter.js';
 import { createNotificationApi, notify } from './notifications.js';
 import { createNotificationSettingsApi } from './notification-settings.js';
 import { configureDelivery, createSenders, flushPending } from './notification-delivery.js';
@@ -54,26 +55,6 @@ const mailConfig = readMailConfig(process.env);
 startMentorMail(pool,mailConfig);
 startBillingMail(pool,mailConfig);
 const deliverWelcome = startWelcomeDelivery(pool, mailConfig);
-
-async function subscribe(request, response) {
-  const { data, error } = await readJson(request, 1024);
-  if (error) {
-    send(response, error, { error: 'Enter a valid email address.' });
-    return;
-  }
-  const email = typeof data?.email === 'string' ? data.email.trim().toLowerCase() : '';
-  if (!isEmail(email)) {
-    send(response, 400, { error: 'Enter a valid email address.' });
-    return;
-  }
-  try {
-    await pool.query('INSERT INTO ledgerline_newsletter_subscriptions (email) VALUES ($1) ON CONFLICT (email) DO NOTHING', [email]);
-    send(response, 200, { subscribed: true });
-  } catch {
-    console.error('Could not save a newsletter subscription.');
-    send(response, 503, { error: 'Subscriptions are temporarily unavailable.' });
-  }
-}
 
 // Which accounts have two-step sign-in on. Remembered briefly so ordinary requests do not each query the database.
 const twoStepCache = new Map();
@@ -171,6 +152,7 @@ const identify = async (request) => {
 const tickets = createTicketApi(pool, mailConfig, { authenticate: authenticateRequest, identify, auth, notify: (uid, kind, details) => notify(pool, uid, kind, details).catch(() => null) });
 const notifications = createNotificationApi(pool, authenticateRequest);
 const notificationSettings = createNotificationSettingsApi(pool, authenticateRequest);
+const newsletter = createNewsletterApi(pool, { authenticate: authenticateRequest, mail: mailConfig, auth });
 configureDelivery(createSenders({ pool, mail: mailConfig, messaging: getMessaging(firebaseApp) }));
 const accountData = createAccountDataApi(pool, authenticateRequest, auth);
 const twoStepRaw = createTwoStepApi(pool, authenticateRequest);
@@ -211,7 +193,14 @@ const routes = new Map([
   ['/api/mfa/verify', { methods: ['POST'], handler: (request, response) => twoStep.verify(request, response) }],
   ['/api/mfa/disable', { methods: ['POST'], handler: (request, response) => twoStep.disable(request, response) }],
   ['/api/account/export', { methods: ['GET'], handler: (request, response) => accountData.export(request, response) }],
-  ['/api/newsletter', { methods: ['POST'], handler: subscribe }],
+  ['/api/newsletter', { methods: ['POST'], handler: newsletter.subscribe }],
+  ['/api/newsletter/confirm', { methods: ['POST'], handler: newsletter.confirm }],
+  ['/api/newsletter/manage', { methods: ['GET', 'POST'], handler: newsletter.manage }],
+  ['/api/newsletter/unsubscribe', { methods: ['POST'], handler: newsletter.oneClickUnsubscribe }],
+  ['/api/newsletter/me', { methods: ['GET', 'POST'], handler: newsletter.me }],
+  ['/api/newsletter/issues', { methods: ['GET'], handler: newsletter.issues }],
+  ['/api/newsletter/events', { methods: ['POST'], handler: newsletter.events }],
+  ['/api/newsletter-admin', { methods: ['GET', 'POST'], handler: newsletter.admin }],
   ['/api/support', { methods: ['POST'], handler: tickets.create }],
   ['/api/notifications', { methods: ['GET', 'POST'], handler: notifications.main }],
   ['/api/notification-settings', { methods: ['GET', 'PUT'], handler: notificationSettings.main }],
@@ -309,6 +298,7 @@ if (process.env.STREAK_NEON_SCHEDULE !== 'true') {
   setInterval(async () => {
     if (running) return;
     running = true;
+    try { await newsletter.sendDueIssues(); } catch { console.error('Newsletter sending failed.'); }
     try { await flushPending(pool); } catch { console.error('Held notifications could not be sent.'); }
     try { await runStreakMaintenance(pool, mailConfig); }
     catch (error) { console.error('Streak maintenance failed (' + (error.code ?? 'unknown') + ').'); }

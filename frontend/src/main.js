@@ -46,6 +46,7 @@ const appPages = {
   '/tickets':'My tickets',
   '/notifications':'Notifications',
   '/ticket-admin':'Ticket queue',
+  '/newsletter-admin':'Newsletter',
   '/journal': 'Trade journal',
   '/history': 'Trade history',
   '/forecast': 'Forecast ledger',
@@ -123,6 +124,9 @@ if(legacyBillingRoute(path,location.search)){location.replace('/billing');}else 
 } else if (path === '/about') {
   landing.hidden = true;
   import('./pages/about.js').then(({ renderAbout }) => bindPublicAccount(renderAbout(landing))).catch(renderLoadError);
+} else if (path.startsWith('/newsletter/')) {
+  landing.hidden = true;
+  import('./features/newsletter/public.js').then(({ renderNewsletterPublic }) => bindPublicAccount(renderNewsletterPublic(landing, path))).catch(renderLoadError);
 } else if (path === '/support') {
   landing.hidden = true;
   import('./pages/support.js').then(({ renderSupport }) => bindPublicAccount(renderSupport(landing))).catch(renderLoadError);

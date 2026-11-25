@@ -369,7 +369,7 @@ export async function renderAccountPage(path, landing, appPages) {
     }
     path='/'+section;
   }
-  if (['/billing','/history','/plan','/mentor-verification','/mentor-review','/tickets','/ticket-admin','/notifications','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach','/calendar'].includes(path)) {
+  if (['/billing','/history','/plan','/mentor-verification','/mentor-review','/tickets','/ticket-admin','/newsletter-admin','/notifications','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach','/calendar'].includes(path)) {
     const { renderWorkspace } = await import('./pages/workspace.js');
     await renderWorkspace(landing, { path, request, uid:user.uid, name:account.displayName || user.displayName,
       photoUrl:avatarUrl(account.avatar)||user.photoURL, signOut:() => signOut(auth) });

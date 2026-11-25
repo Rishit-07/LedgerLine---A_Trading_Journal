@@ -2,6 +2,7 @@ import { node } from '../../pages/workspace-ui.js';
 import { onNotifications, setUnread } from './store.js';
 import { toast } from './toast.js';
 import { buildSettings } from './settings.js';
+import { buildNewsletter } from '../newsletter/tab.js';
 import { dotState, swapPanels, enterRows, flashText, pressFeel, removeRow, ringBell, slideInRow } from './motion.js';
 import './notifications.css';
 
@@ -26,33 +27,34 @@ export const notificationsPage = {
   title: 'Notifications',
   description: 'What needs you, and how you hear about it.',
   endpoint: path,
-  content: '<div class="notif-tabs" role="tablist" aria-label="Notifications" data-tabs></div><div data-panel="inbox"><div class="notif-grid"><section class="n-out ws-card notif-inbox" data-inbox aria-labelledby="notif-title"></section><aside class="n-out ws-card notif-kinds" data-kinds></aside></div></div><section class="n-out ws-card notif-set" data-panel="settings" hidden></section>',
+  content: '<div class="notif-tabs" role="tablist" aria-label="Notifications" data-tabs></div><div data-panel="inbox"><div class="notif-grid"><section class="n-out ws-card notif-inbox" data-inbox aria-labelledby="notif-title"></section><aside class="n-out ws-card notif-kinds" data-kinds></aside></div></div><section class="n-out ws-card notif-set" data-panel="settings" hidden></section><section class="notif-set" data-panel="newsletter" hidden></section>',
   bind(page, { data, request }) {
     const inbox = page.querySelector('[data-inbox]');
-    const panels = { inbox: page.querySelector('[data-panel=inbox]'), settings: page.querySelector('[data-panel=settings]') };
+    const panels = { inbox: page.querySelector('[data-panel=inbox]'), settings: page.querySelector('[data-panel=settings]'), newsletter: page.querySelector('[data-panel=newsletter]') };
+    const loaded = new Set();
+    const builders = { settings: buildSettings, newsletter: buildNewsletter };
     const tabs = page.querySelector('[data-tabs]');
     const tabButtons = {};
-    let settingsLoaded = false;
     let current = 'inbox';
-    panels.settings.hidden = true;
+    panels.settings.hidden = true; panels.newsletter.hidden = true;
     const show = async (name) => {
-      for (const [key, button] of Object.entries(tabButtons)) { button.setAttribute('aria-selected', String(key === name)); button.tabIndex = key === name ? 0 : -1; }
-      const other = name === 'inbox' ? 'settings' : 'inbox';
+      const other = current;
       if (current === name) return;
-      if (name === 'settings' && !settingsLoaded) {
-        settingsLoaded = true;
-        try { await buildSettings(panels.settings, { request }); } catch { settingsLoaded = false; toast('Could not do that. Try again.'); return; }
+      if (builders[name] && !loaded.has(name)) {
+        loaded.add(name);
+        try { await builders[name](panels[name], { request }); } catch { loaded.delete(name); toast('Could not do that. Try again.'); return; }
       }
       current = name;
+      for (const [key, button] of Object.entries(tabButtons)) { button.setAttribute('aria-selected', String(key === name)); button.tabIndex = key === name ? 0 : -1; }
       swapPanels(panels[other], panels[name]);
-      history.replaceState(null, '', name === 'settings' ? '#settings' : location.pathname);
+      history.replaceState(null, '', name === 'inbox' ? location.pathname : '#' + name);
     };
-    for (const [key, label] of [['inbox', 'Inbox'], ['settings', 'Settings']]) {
+    for (const [key, label] of [['inbox', 'Inbox'], ['settings', 'Settings'], ['newsletter', 'Newsletter']]) {
       const button = html('button', 'btn btn-secondary', label); button.type = 'button'; button.setAttribute('role', 'tab');
       button.addEventListener('click', () => show(key));
       tabButtons[key] = button; tabs.append(button);
     }
-    tabs.addEventListener('keydown', (event) => { if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { const next = document.activeElement === tabButtons.inbox ? 'settings' : 'inbox'; tabButtons[next].focus(); void show(next); } });
+    tabs.addEventListener('keydown', (event) => { if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { const keys = Object.keys(tabButtons); const at = keys.findIndex((k) => tabButtons[k] === document.activeElement); const next = keys[(at + (event.key === 'ArrowRight' ? 1 : keys.length - 1)) % keys.length]; tabButtons[next].focus(); void show(next); } });
     const side = page.querySelector('[data-kinds]');
     let filter = 'all';
     let next = null;
@@ -226,7 +228,7 @@ export const notificationsPage = {
     enterRows(first);
     next = data.next; sentinel.hidden = !next;
     setUnread(data.unread); paintHead(data.unread); checkEmpty();
-    tabButtons.inbox.setAttribute('aria-selected', 'true'); tabButtons.settings.setAttribute('aria-selected', 'false'); tabButtons.settings.tabIndex = -1;
-    if (location.hash === '#settings') void show('settings');
+    tabButtons.inbox.setAttribute('aria-selected', 'true'); for (const k of ['settings', 'newsletter']) { tabButtons[k].setAttribute('aria-selected', 'false'); tabButtons[k].tabIndex = -1; }
+    if (location.hash === '#settings') void show('settings'); else if (location.hash === '#newsletter') void show('newsletter');
   },
 };
