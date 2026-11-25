@@ -22,6 +22,7 @@ import { groupHandler } from './group-api.js';
 import { createCalendarHandlers } from './calendar.js';
 import { createOnboardingHandler } from './onboarding.js';
 import { createNewsletterApi } from './newsletter.js';
+import { createMentorshipApi } from './mentorship.js';
 import { createNotificationApi, notify } from './notifications.js';
 import { createNotificationSettingsApi } from './notification-settings.js';
 import { configureDelivery, createSenders, flushPending } from './notification-delivery.js';
@@ -152,6 +153,7 @@ const identify = async (request) => {
 const tickets = createTicketApi(pool, mailConfig, { authenticate: authenticateRequest, identify, auth, notify: (uid, kind, details) => notify(pool, uid, kind, details).catch(() => null) });
 const notifications = createNotificationApi(pool, authenticateRequest);
 const notificationSettings = createNotificationSettingsApi(pool, authenticateRequest);
+const mentorship = createMentorshipApi(pool, { authenticate: authenticateRequest });
 const newsletter = createNewsletterApi(pool, { authenticate: authenticateRequest, mail: mailConfig, auth });
 configureDelivery(createSenders({ pool, mail: mailConfig, messaging: getMessaging(firebaseApp) }));
 const accountData = createAccountDataApi(pool, authenticateRequest, auth);
@@ -193,6 +195,7 @@ const routes = new Map([
   ['/api/mfa/verify', { methods: ['POST'], handler: (request, response) => twoStep.verify(request, response) }],
   ['/api/mfa/disable', { methods: ['POST'], handler: (request, response) => twoStep.disable(request, response) }],
   ['/api/account/export', { methods: ['GET'], handler: (request, response) => accountData.export(request, response) }],
+  ['/api/mentorship', { methods: ['GET', 'POST'], handler: mentorship.handler }],
   ['/api/newsletter', { methods: ['POST'], handler: newsletter.subscribe }],
   ['/api/newsletter/confirm', { methods: ['POST'], handler: newsletter.confirm }],
   ['/api/newsletter/manage', { methods: ['GET', 'POST'], handler: newsletter.manage }],
@@ -298,6 +301,7 @@ if (process.env.STREAK_NEON_SCHEDULE !== 'true') {
   setInterval(async () => {
     if (running) return;
     running = true;
+    try { await mentorship.sweep(); } catch { console.error('Mentorship maintenance failed.'); }
     try { await newsletter.sendDueIssues(); } catch { console.error('Newsletter sending failed.'); }
     try { await flushPending(pool); } catch { console.error('Held notifications could not be sent.'); }
     try { await runStreakMaintenance(pool, mailConfig); }
