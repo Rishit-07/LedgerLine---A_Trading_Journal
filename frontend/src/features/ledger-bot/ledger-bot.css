@@ -1,0 +1,22 @@
+/* Ledger bot. Position and size only: the bot's own look and motion come from its SVG. */
+.lb { display: inline-block; position: relative; width: var(--lb-size, 110px); aspect-ratio: 300 / 240; outline: none; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; }
+.lb:focus-visible { outline: 3px solid var(--acc); outline-offset: 4px; border-radius: 18px; }
+.lb-lean, .lb-body, .lb-art { display: block; width: 100%; height: 100%; }
+.lb-lean { transition: transform .18s ease-out; will-change: transform; }
+.lb-body { transform-origin: 50% 85%; }
+.lb-float { position: fixed; right: 18px; bottom: 14px; z-index: 40; --lb-size: 112px; display: grid; justify-items: end; gap: 6px; width: auto; aspect-ratio: auto; pointer-events: none; }
+.lb-float > .lb { pointer-events: auto; }
+.lb-note { max-width: 240px; padding: 10px 14px; border-radius: 16px; background: var(--bg); color: var(--ink); font: 600 13px/1.4 var(--font-sans, inherit); box-shadow: 6px 6px 12px var(--sd), -6px -6px 12px var(--sl); pointer-events: auto; opacity: 0; transform: translateY(6px); transition: opacity .35s ease, transform .35s ease; }
+.lb-note[data-on] { opacity: 1; transform: none; }
+.lb-float[hidden] { display: none; }
+@media (max-width: 759px) { .lb-float { display: none; } }
+@media (prefers-reduced-motion: reduce) { .lb-lean, .lb-note { transition: none; } }
+
+/* The on/off switch used in Settings (from the design's Settings board). */
+.n-switch { width: 56px; height: 30px; border-radius: 999px; position: relative; border: 0; padding: 0; transition: background .3s; cursor: pointer; flex: none; }
+.n-knob { position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%; background: var(--mut); transition: transform .35s cubic-bezier(.3, 1.5, .5, 1), background .3s; }
+.n-switch.on .n-knob { transform: translateX(26px); background: var(--acc); box-shadow: 0 0 10px var(--glow); }
+.n-switch:focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; }
+.lb-setting { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 0; border-top: 2px solid var(--track); margin-top: 16px; }
+.lb-setting strong { display: block; font-weight: 700; }
+.lb-setting small { display: block; margin-top: 2px; color: var(--mut); font-size: 13px; font-weight: 600; max-width: 46ch; }

@@ -317,6 +317,7 @@ export async function renderAccountPage(path, landing, appPages) {
   await auth.authStateReady();
   const user = auth.currentUser;
   if (path === '/auth') {
+    void import('./features/ledger-bot/index.js').then(({ startWelcome }) => startWelcome()).catch(() => {});
     const parameters = new URLSearchParams(location.search);
     const destination = parameters.get('next');
     const invite = destination?.startsWith('/dashboard?') ? streakInviteCode(destination.slice('/dashboard'.length)) : '';
@@ -359,6 +360,7 @@ export async function renderAccountPage(path, landing, appPages) {
 
 
   const request = (route, method, body) => authenticatedRequest(user, route, method, body);
+  void import('./features/ledger-bot/index.js').then(({ startLedgerBot }) => startLedgerBot({ request, path })).catch(() => {});
   void import('./features/notifications/store.js').then(({ startNotifications }) => { startNotifications(user); return import('./features/notifications/bell.js'); }).then(({ installBell }) => installBell()).catch(() => {});
   if(roomPath(path)){
     const [,section,id]=path.split('/');

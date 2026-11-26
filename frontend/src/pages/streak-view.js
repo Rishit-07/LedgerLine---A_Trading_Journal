@@ -1,10 +1,11 @@
 import { gsap } from 'gsap';
 import './streak.css';
+import { mountInline, mountDeclared } from '../features/ledger-bot/index.js';
 
 export const streakRule = 'Log or review a trade, or note that you sat out. A scheduled market closure protects an active streak.';
 export const badgeMarkup = `
   <dialog class="n-out streak-badge-dialog" data-streak-badge aria-labelledby="streak-badge-title">
-    <img src="/tally-cheer.svg" alt="" width="130" height="130" />
+    <span data-ledger="cheer" data-size="130" data-decor></span>
     <p>Badge unlocked</p>
     <h2 id="streak-badge-title" data-badge-title></h2>
     <button type="button" class="btn btn-primary">Continue</button>
@@ -38,16 +39,15 @@ function reducedMotion() {
   return matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-function paintTally(mascot, state, previous) {
+function paintTally(bot, state, previous) {
   const grew = previous ? state.current > previous.current || state.best > previous.best : state.todayCounted;
   const mood = (state.kindToday === 'rest' || state.marketClosedToday) ? 'sleep' : state.skippedToday ? 'tuck' : grew ? 'cheer' : 'calm';
-  mascot.src = '/tally-' + mood + '.svg';
-  mascot.alt = 'Tally ' + { sleep: 'resting', tuck: 'tucking in', cheer: 'cheering', calm: 'calm' }[mood];
+  if (bot.state !== mood) bot.set(mood);
 }
 
 export function bindStreakPanel(panel) {
   const number = panel.querySelector('[data-streak-count]');
-  const mascot = panel.querySelector('[data-tally]');
+  const mascot = mountInline(panel.querySelector('[data-tally]'), { size: 110, interactive: false });
   const week = panel.querySelector('[data-streak-week]');
   const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const dateLabel = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -128,9 +128,8 @@ export function notifyStreak(page, state) {
   host.querySelector('[data-streak-notice]')?.remove();
   const toast = element('aside', '', 'streak-notice n-out');
   toast.dataset.streakNotice = '';
-  const image = document.createElement('img');
-  image.src = protectedDay ? '/tally-sleep.svg' : '/tally-cheer.svg';
-  image.alt = '';
+  const image = document.createElement('span');
+  mountInline(image, { state: protectedDay ? 'sleep' : 'cheer', size: 56, interactive: false });
   const copy = element('div');
   copy.setAttribute('role', 'status');
   const count = state.current + '-day streak';
@@ -149,6 +148,7 @@ export function notifyStreak(page, state) {
 
 export function bindBadgeUnlock(page, request) {
   const dialog = page.querySelector('[data-streak-badge]');
+  mountDeclared(dialog);
   const button = dialog.querySelector('button');
   const message = dialog.querySelector('[data-badge-message]');
   const dismissed = new Set();

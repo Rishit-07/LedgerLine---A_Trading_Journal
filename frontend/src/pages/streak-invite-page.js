@@ -1,3 +1,4 @@
+import { mountDeclared } from '../features/ledger-bot/index.js';
 import { bindPublicAccount } from './public-account.js';
 import { gsap } from 'gsap';
 import { animate } from 'motion/mini';
@@ -14,7 +15,7 @@ const markup = `
     </header>
     <div class="n-out invite-card">
       <div class="invite-story">
-        <img class="invite-tally" src="/tally-cheer.svg" alt="" width="122" height="122" />
+        <span class="invite-tally" data-ledger="cheer" data-size="122" data-decor></span>
         <section data-invite-greeting>
           <h1>You’ve been invited to streak together.</h1>
           <p>Connect with a friend and keep each other on track. Logging a trade, reviewing one, or taking a rest day can all count.</p>
@@ -36,6 +37,7 @@ export function renderStreakInvite(landing) {
   const page = mountPage(landing, markup);
   bindPageTheme(page);
   bindPublicAccount(page);
+  mountDeclared(page);
   const note = page.querySelector('[data-invite-state]');
   const options = page.querySelector('[data-invite-options]');
   const existing = page.querySelector('[data-invite-existing]');
