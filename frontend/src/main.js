@@ -12,6 +12,8 @@ import './styles/responsive.css';
 import './styles/controls.css';
 import './styles/skeleton.css';
 import { initControls } from './controls.js';
+import { startErrorCapture } from './diagnostics.js';
+startErrorCapture();
 import { installTwoStep } from './mfa.js';
 import { initMotion } from './motion.js';
 import { initSectionRail } from './section-rail.js';
@@ -41,6 +43,8 @@ const appPages = {
   '/billing':'Plans and billing',
   '/mentor-verification':'Verify you teach',
   '/mentor-review':'Mentor reviews',
+  '/tickets':'My tickets',
+  '/ticket-admin':'Ticket queue',
   '/journal': 'Trade journal',
   '/history': 'Trade history',
   '/forecast': 'Forecast ledger',

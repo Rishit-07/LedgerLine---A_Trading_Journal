@@ -210,3 +210,7 @@
 }
 .support-page.account-help{display:block;min-height:0;padding:0;overflow:visible}
 .account-help .support-content{max-width:none;width:100%}
+
+.support-diagnostics { display:flex; gap:8px; align-items:flex-start; font-size:13px; }
+.support-diagnostics-list { font-size:12px; }
+.support-diagnostics-list pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:200px; overflow:auto; margin:8px 0; }

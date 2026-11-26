@@ -1,5 +1,6 @@
 import pageMarkup from './support.html?raw';
 import { bindPageTheme, mountPage } from './shared.js';
+import { collectDiagnostics, describeDiagnostics } from '../diagnostics.js';
 import '@fontsource/instrument-serif/latin-400.css';
 import './support.css';
 
@@ -141,7 +142,7 @@ function bindContactForm(page) {
     try {
       const response = await fetch('/api/support', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(fields), signal: AbortSignal.timeout(40000),
+        body: JSON.stringify({ ...fields, ...(form.elements.diagnostics.checked ? { diagnostics: collectDiagnostics() } : {}) }), signal: AbortSignal.timeout(40000),
       });
       const data = await response.json().catch(() => null);
       if (!response.ok || data?.sent !== true) {
@@ -149,7 +150,7 @@ function bindContactForm(page) {
         return;
       }
       if (edits === submittedVersion) form.reset();
-      status.textContent = 'Message sent to Ledgerline Support. Look for a reply in your inbox.';
+      status.textContent = `Ticket ${data.ref} created. Replies come to your inbox; quote ${data.ref} if you write to ${inbox}.`;
     } catch {
       status.textContent = 'Delivery could not be confirmed. Check your connection or open an email draft.';
     } finally {
@@ -166,6 +167,8 @@ function bindContactForm(page) {
     status.textContent = 'Send the draft from your email app. If it doesn’t open, use the address below.';
     location.href = draft;
   });
+  const preview = form.querySelector('[data-diagnostics-preview]');
+  form.querySelector('.support-diagnostics-list')?.addEventListener('toggle', () => { preview.textContent = describeDiagnostics(collectDiagnostics()); });
   form.addEventListener('input', (event) => {
     edits++;
     event.target.setCustomValidity('');
@@ -189,6 +192,10 @@ async function attachAccountNavigation(page) {
   await auth.authStateReady();
   const user=auth.currentUser;
   if(!user?.emailVerified || !page.isConnected)return;
+  const email=page.querySelector('.support-form [name=email]');
+  if(email&&user.email){email.value=user.email;email.readOnly=true;}
+  const note=page.querySelector('[data-tickets-note]');
+  if(note)note.innerHTML='Every request gets a reference like LL-123. <a href="/tickets">Open My tickets</a> to follow replies.';
   const {authenticatedRequest}=await import('../auth.js');
   const request=(path,method,body)=>authenticatedRequest(user,path,method,body);
   const account=await request('/api/onboarding','GET');

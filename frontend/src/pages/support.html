@@ -68,7 +68,7 @@
       </section>
       <section id="contact" class="n-out support-panel support-rise" aria-labelledby="support-contact-title">
         <h2 id="support-contact-title">Contact support</h2>
-        <p>Leave your email address so the team can reply.</p>
+        <p>Opens a ticket the team can answer and resolve. For further queries you can also write to <a href="mailto:ledgerline.team@gmail.com">ledgerline.team@gmail.com</a>.</p>
         <form class="support-form">
           <label class="n-in support-field"><input name="email" type="email" autocomplete="email" placeholder="Your email address" aria-label="Your email address" required maxlength="254" /></label>
           <label class="n-in support-field"><input name="subject" placeholder="Subject" aria-label="Subject" required maxlength="100" /></label>
@@ -84,7 +84,9 @@
             <label><input type="radio" name="priority" value="Urgent" /><span class="n-out">Urgent</span></label>
           </fieldset>
           <label class="n-in support-field"><textarea name="message" rows="5" placeholder="Describe what happened" aria-label="Describe what happened" required maxlength="1200"></textarea></label>
-          <p>Attach screenshots in your email app if they help explain the issue.</p>
+          <label class="support-diagnostics"><input type="checkbox" name="diagnostics" checked /> <span>Include technical details to help us fix this faster</span></label>
+          <details class="support-diagnostics-list"><summary>What is sent</summary><pre data-diagnostics-preview></pre><p>Browser, device, screen size, page, language, time zone and the last few page errors. No passwords, trades or journal content.</p></details>
+          <p>Attach screenshots in your email reply if they help explain the issue.</p>
           <button type="submit" class="btn btn-primary">Send message</button>
           <button type="button" class="btn btn-secondary" data-support-draft>Open email draft</button>
           <p role="status" data-contact-status></p>
@@ -93,7 +95,7 @@
       </section>
     </div>
     <div class="support-panels support-secondary">
-      <section class="n-out support-panel support-rise"><h2>Your tickets</h2><p>Support requests and replies are handled by email.</p></section>
+      <section class="n-out support-panel support-rise"><h2>Your tickets</h2><p data-tickets-note>Every request gets a reference like LL-123. <a href="/auth">Sign in</a> to follow replies here, or watch your inbox.</p></section>
       <section class="n-out support-panel support-rise"><h2>System status</h2><p>Service status is currently unavailable.</p></section>
     </div>
     <a class="btn btn-primary support-contact-shortcut" href="#contact" aria-label="Go to contact support"><svg aria-hidden="true"><use href="#support-mail"/></svg></a>
