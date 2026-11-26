@@ -16,7 +16,7 @@ const policy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.googleusercontent.com",
   "font-src 'self' data:",
-  "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebaseappcheck.googleapis.com https://lumberjack.razorpay.com",
+  "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebaseappcheck.googleapis.com https://fcmregistrations.googleapis.com https://firebaseinstallations.googleapis.com https://lumberjack.razorpay.com",
   'frame-src https://ledger-line-d2e8c.firebaseapp.com https://accounts.google.com https://api.razorpay.com https://www.google.com/recaptcha/ https://recaptcha.google.com',
   "object-src 'none'",
   "base-uri 'self'",

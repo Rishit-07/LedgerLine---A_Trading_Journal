@@ -14,7 +14,7 @@ function bindNewsletter(form) {
     event.preventDefault();
     if (button.disabled) return;
     button.disabled = true;
-    status.textContent = 'Saving your subscription…';
+    status.textContent = 'Sending your confirmation email…';
     const email = form.elements.email.value;
     try {
       const response = await fetch(form.action, {
@@ -29,9 +29,9 @@ function bindNewsletter(form) {
       }
       if (!response.ok) throw new Error('Subscription unavailable');
       if (form.elements.email.value === email) form.reset();
-      status.textContent = 'You’re on the list for the weekly process note.';
+      status.textContent = 'Check your inbox and tap the link to confirm. Nothing is sent until you do.';
     } catch {
-      status.textContent = 'We couldn’t save your subscription. Please try again.';
+      status.textContent = 'We couldn’t send the confirmation email. Please try again.';
     } finally {
       button.disabled = false;
     }

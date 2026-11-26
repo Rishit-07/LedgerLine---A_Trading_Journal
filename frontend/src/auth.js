@@ -282,7 +282,7 @@ export async function authenticatedRequest(user, path, method, body) {
     signal: AbortSignal.timeout(path === '/api/ai/report' ? 85000 : method === 'POST' && path === '/api/workspace?page=coach' ? 40000 : 10000),
   });
   const data = await response.json();
-  if (!response.ok) throw Object.assign(new Error(data.error ?? 'Account unavailable'), { status: response.status });
+  if (!response.ok) throw Object.assign(new Error(data.error ?? 'Account unavailable'), { status: response.status, reason: data.reason });
   return data;
 }
 
@@ -359,6 +359,7 @@ export async function renderAccountPage(path, landing, appPages) {
 
 
   const request = (route, method, body) => authenticatedRequest(user, route, method, body);
+  void import('./features/notifications/store.js').then(({ startNotifications }) => { startNotifications(user); return import('./features/notifications/bell.js'); }).then(({ installBell }) => installBell()).catch(() => {});
   if(roomPath(path)){
     const [,section,id]=path.split('/');
     if(section==='community'){
@@ -368,7 +369,7 @@ export async function renderAccountPage(path, landing, appPages) {
     }
     path='/'+section;
   }
-  if (['/billing','/history','/plan','/mentor-verification','/mentor-review','/tickets','/ticket-admin','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach','/calendar'].includes(path)) {
+  if (['/billing','/history','/plan','/mentor-verification','/mentor-review','/tickets','/ticket-admin','/newsletter-admin','/mentorship','/mentor/join','/notifications','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach','/calendar'].includes(path)) {
     const { renderWorkspace } = await import('./pages/workspace.js');
     await renderWorkspace(landing, { path, request, uid:user.uid, name:account.displayName || user.displayName,
       photoUrl:avatarUrl(account.avatar)||user.photoURL, signOut:() => signOut(auth) });

@@ -71,6 +71,7 @@ export function groupStore(query,kind){
       return groups(uid);
     }
     if (action==='create') {
+      if(kind==='space')requireField(false,'Create your space from the Mentorship page.',410);
       if(kind==='space'){
         const state=await mentorState(uid);
         if(state.verification!=='approved')deny('not_verified');
@@ -104,6 +105,7 @@ export function groupStore(query,kind){
         await query("INSERT INTO mentor_reports(space_id,mentor_id,reporter_id,reason) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING",[id,group.owner_id,uid,input.reason.trim()]);
         await query("UPDATE mentor_verifications SET next_review_at=now() WHERE user_id=$1",[group.owner_id]);return groups(uid);
       }
+      if(kind==='space'&&['join','approve','decline','consent'].includes(action))requireField(false,'Spaces are joined with a personal link from your mentor. Open Mentorship.',410);
       if(kind==='space'&&['join','approve'].includes(action)){
         const count=await query('SELECT count(*)::int n FROM space_members WHERE space_id=$1',[id]);requireField(count[0].n<group.member_cap,'This space is full.',409);
       }

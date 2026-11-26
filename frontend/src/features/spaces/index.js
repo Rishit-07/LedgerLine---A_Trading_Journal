@@ -19,6 +19,7 @@ export const spaces={
       <h2>Work on your process together.</h2><p>Set a goal, check in and discuss what you learned.</p></div>
       <div class="community-hero-actions"><button type="button" class="btn btn-primary" data-start>Create a space</button></div></section>`+roomMarkup('space')+createPanel+'<p role="status" data-club-status></p>',
   bind(page,context){
+    const start=page.querySelector('[data-start]');if(start){const go=document.createElement('a');go.className='btn btn-primary';go.href='/mentorship';go.textContent='Open Mentorship';start.replaceWith(go);}
     const manage=document.createElement('a');manage.className='btn btn-secondary';manage.href='/mentor-verification';manage.textContent='Mentor verification';page.querySelector('.community-hero-actions').append(manage);
     if(context.data.mentor?.admin){const a=manage.cloneNode();a.href='/mentor-review';a.textContent='Reviewer queue';manage.after(a);}
     const joinNote=document.createElement('p');joinNote.textContent='Process stats are private. After joining, you can share them with this mentor and turn sharing off anytime.';page.querySelector('[data-code-form]').append(joinNote);

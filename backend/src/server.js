@@ -21,6 +21,13 @@ import { createWorkspaceApi } from './workspace.js';
 import { groupHandler } from './group-api.js';
 import { createCalendarHandlers } from './calendar.js';
 import { createOnboardingHandler } from './onboarding.js';
+import { createNewsletterApi } from './newsletter.js';
+import { createMentorshipApi } from './mentorship.js';
+import { createMentorToolsApi } from './mentor-tools.js';
+import { createNotificationApi, notify } from './notifications.js';
+import { createNotificationSettingsApi } from './notification-settings.js';
+import { configureDelivery, createSenders, flushPending } from './notification-delivery.js';
+import { getMessaging } from 'firebase-admin/messaging';
 import { createTicketApi } from './support-tickets.js';
 import { createStreakStore } from './streak-store.js';
 import { createStreakApi } from './streak-api.js';
@@ -50,26 +57,6 @@ const mailConfig = readMailConfig(process.env);
 startMentorMail(pool,mailConfig);
 startBillingMail(pool,mailConfig);
 const deliverWelcome = startWelcomeDelivery(pool, mailConfig);
-
-async function subscribe(request, response) {
-  const { data, error } = await readJson(request, 1024);
-  if (error) {
-    send(response, error, { error: 'Enter a valid email address.' });
-    return;
-  }
-  const email = typeof data?.email === 'string' ? data.email.trim().toLowerCase() : '';
-  if (!isEmail(email)) {
-    send(response, 400, { error: 'Enter a valid email address.' });
-    return;
-  }
-  try {
-    await pool.query('INSERT INTO ledgerline_newsletter_subscriptions (email) VALUES ($1) ON CONFLICT (email) DO NOTHING', [email]);
-    send(response, 200, { subscribed: true });
-  } catch {
-    console.error('Could not save a newsletter subscription.');
-    send(response, 503, { error: 'Subscriptions are temporarily unavailable.' });
-  }
-}
 
 // Which accounts have two-step sign-in on. Remembered briefly so ordinary requests do not each query the database.
 const twoStepCache = new Map();
@@ -164,7 +151,13 @@ const identify = async (request) => {
     return claims.email_verified === true && claims.email ? claims : null;
   } catch { return null; }
 };
-const tickets = createTicketApi(pool, mailConfig, { authenticate: authenticateRequest, identify, auth });
+const tickets = createTicketApi(pool, mailConfig, { authenticate: authenticateRequest, identify, auth, notify: (uid, kind, details) => notify(pool, uid, kind, details).catch(() => null) });
+const notifications = createNotificationApi(pool, authenticateRequest);
+const notificationSettings = createNotificationSettingsApi(pool, authenticateRequest);
+const mentorship = createMentorshipApi(pool, { authenticate: authenticateRequest });
+const mentorTools = createMentorToolsApi(pool, { authenticate: authenticateRequest });
+const newsletter = createNewsletterApi(pool, { authenticate: authenticateRequest, mail: mailConfig, auth });
+configureDelivery(createSenders({ pool, mail: mailConfig, messaging: getMessaging(firebaseApp) }));
 const accountData = createAccountDataApi(pool, authenticateRequest, auth);
 const twoStepRaw = createTwoStepApi(pool, authenticateRequest);
 const twoStep = Object.fromEntries(Object.entries(twoStepRaw).map(([name, handler]) => [name, async (request, response) => { await handler(request, response); twoStepCache.clear(); }]));
@@ -204,8 +197,22 @@ const routes = new Map([
   ['/api/mfa/verify', { methods: ['POST'], handler: (request, response) => twoStep.verify(request, response) }],
   ['/api/mfa/disable', { methods: ['POST'], handler: (request, response) => twoStep.disable(request, response) }],
   ['/api/account/export', { methods: ['GET'], handler: (request, response) => accountData.export(request, response) }],
-  ['/api/newsletter', { methods: ['POST'], handler: subscribe }],
+  ['/api/mentorship', { methods: ['GET', 'POST'], handler: mentorship.handler }],
+  ['/api/mentor-tools', { methods: ['GET', 'POST'], handler: mentorTools.handler }],
+  ['/api/newsletter', { methods: ['POST'], handler: newsletter.subscribe }],
+  ['/api/newsletter/confirm', { methods: ['POST'], handler: newsletter.confirm }],
+  ['/api/newsletter/manage', { methods: ['GET', 'POST'], handler: newsletter.manage }],
+  ['/api/newsletter/unsubscribe', { methods: ['POST'], handler: newsletter.oneClickUnsubscribe }],
+  ['/api/newsletter/me', { methods: ['GET', 'POST'], handler: newsletter.me }],
+  ['/api/newsletter/issues', { methods: ['GET'], handler: newsletter.issues }],
+  ['/api/newsletter/events', { methods: ['POST'], handler: newsletter.events }],
+  ['/api/newsletter-admin', { methods: ['GET', 'POST'], handler: newsletter.admin }],
   ['/api/support', { methods: ['POST'], handler: tickets.create }],
+  ['/api/notifications', { methods: ['GET', 'POST'], handler: notifications.main }],
+  ['/api/notification-settings', { methods: ['GET', 'PUT'], handler: notificationSettings.main }],
+  ['/api/notification-settings/push', { methods: ['POST', 'DELETE'], handler: notificationSettings.push }],
+  ['/api/notifications/count', { methods: ['GET'], handler: notifications.count }],
+  ['/api/notifications/stream', { methods: ['GET'], handler: notifications.stream }],
   ['/api/tickets', { methods: ['GET', 'POST'], handler: tickets.mine }],
   ['/api/ticket-admin', { methods: ['GET', 'POST'], handler: tickets.admin }],
   ['/api/onboarding', { methods: ['GET', 'PUT'], handler: createOnboardingHandler(pool, authenticateRequest) }],
@@ -297,6 +304,10 @@ if (process.env.STREAK_NEON_SCHEDULE !== 'true') {
   setInterval(async () => {
     if (running) return;
     running = true;
+    try { await mentorTools.sweep(); } catch { console.error('Mentor tools maintenance failed.'); }
+    try { await mentorship.sweep(); } catch { console.error('Mentorship maintenance failed.'); }
+    try { await newsletter.sendDueIssues(); } catch { console.error('Newsletter sending failed.'); }
+    try { await flushPending(pool); } catch { console.error('Held notifications could not be sent.'); }
     try { await runStreakMaintenance(pool, mailConfig); }
     catch (error) { console.error('Streak maintenance failed (' + (error.code ?? 'unknown') + ').'); }
     finally { running = false; }
