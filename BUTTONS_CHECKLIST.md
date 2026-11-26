@@ -58,3 +58,5 @@ Open items are listed in `NOTIFICATIONS.md`.
 | Leave space | Ends access at once, clears cached numbers | live membership count stays 1 | Not run |
 | Let in / Remove | Waitlist to active; removal gives 7 days notice and a written reason | cap check | Not run |
 | Report a problem | One per issue per month, 3 reporters escalates | duplicate 409 | Not run |
+| Mentor tools: Post, Pin, Delete, Schedule session, Create a Meet, Open Meet, Cancel session, Give assignment, Mark reviewed, Save agenda, Add resource, Save rules, Export CSV, Send feedback, Save note | Mentor page > Mentor tools | /api/mentor-tools | Done, tested on Postgres engine |
+| From your mentor: Register, Join on Google Meet, Add to Google Calendar, Calendar file, Cancel registration, Submit | My mentor tab | /api/mentor-tools | Done |

@@ -322,6 +322,7 @@ export function createMentorshipApi(pool, { authenticate, now = () => new Date()
     const reason = clean(data.reason, 200);
     if (!reason) fail(400, 'Choose a reason for removing this student.');
     await pool.query('UPDATE space_memberships SET remove_after=$2, remove_reason=$3 WHERE id=$1', [m.id, addDays(now(), 7), reason]);
+    await pool.query("INSERT INTO mentor_audit_log(space_id,actor_id,action,target_id,detail) VALUES($1,$2,'remove_student',$3,$4)", [space.id, uid, m.student_id, reason]);
     await notify(pool, m.student_id, 'spaces', { title: 'You will be removed from a mentor space in 7 days', body: `Reason given: ${reason}. You can appeal from your mentorship page. Your journal is not touched.`, target: '/mentorship', dedupe: `remove:${m.id}` });
   }
 

@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS mentor_notes, space_rubrics, space_session_guests, space_sessions, space_resources, assignment_submissions, mentor_assignments, space_agenda, mentor_announcements, mentor_audit_log;

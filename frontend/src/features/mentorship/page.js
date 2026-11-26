@@ -2,6 +2,7 @@ import { el, btn, field, check, path, fail, copyText } from './ui.js';
 import { consentFlow, tokenFrom } from './join.js';
 import { swapPanels, popIn } from '../notifications/motion.js';
 import { toast } from '../notifications/toast.js';
+import { mentorTools, fromMentor } from './tools.js';
 
 const HEADS = (s) => (s.role === 'none' ? ['Mentorship', 'Join a mentor, or become one. Pick one. You cannot be both at once.'] : s.role === 'student' ? ['Your mentor', 'One mentor at a time. You choose what they can see.'] : s.checklist?.space ? ['Your mentor space', 'You lead it, you see how each student grows.'] : ['Become a mentor', 'Three steps: get verified, activate your plan, create your space.']);
 const when = (v) => new Date(v).toLocaleDateString('en-IN', { dateStyle: 'medium' });
@@ -101,6 +102,7 @@ export const mentorshipPage = {
         await act({ action: 'report', category, details: prompt('What happened? (optional)') ?? '' }); toast('Report sent. A reviewer reads it. Your mentor will not see who sent it.');
       }));
       root.append(actions);
+      if (m.status === 'active' || m.status === 'paused') await fromMentor(root, { request });
       const audit = el('div'); audit.style.display = 'grid'; audit.style.gap = '8px'; root.append(el('strong', '', 'Who looked at your data'), audit);
       try {
         const a = await request(path + '?view=audit', 'GET');
@@ -115,14 +117,14 @@ export const mentorshipPage = {
       if (!s.checklist.space) { wrap.append(checklist()); return wrap; }
       if (s.space.status !== 'active') wrap.append(el('p', 'n-in mt-row', s.space.status === 'closing' ? `Your space is closed to new members and read-only until ${when(s.space.closing_until)}.` : 'Your mentor plan is not active, so your space is read-only. Members keep their journals.'));
       const tabs = el('div', 'mt-tabs'); tabs.setAttribute('role', 'tablist');
-      const panels = { space: el('section', 'n-out ws-card mt-card'), members: el('section', 'n-out ws-card mt-card') };
-      const labels = { space: 'My space', members: 'Members' }; let cur = 'space'; const bs = {};
+      const panels = { space: el('section', 'n-out ws-card mt-card'), members: el('section', 'n-out ws-card mt-card'), tools: el('section', 'n-out ws-card mt-card') };
+      const labels = { space: 'My space', members: 'Members', tools: 'Mentor tools' }; let cur = 'space'; const bs = {};
       for (const k of Object.keys(panels)) {
         const b = el('button', 'btn btn-secondary', labels[k]); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(k === cur));
-        b.addEventListener('click', async () => { if (k === cur) return; bs[cur].setAttribute('aria-selected', 'false'); b.setAttribute('aria-selected', 'true'); const out = panels[cur]; cur = k; if (k === 'members') await members(panels.members); swapPanels(out, panels[k]); });
+        b.addEventListener('click', async () => { if (k === cur) return; bs[cur].setAttribute('aria-selected', 'false'); b.setAttribute('aria-selected', 'true'); const out = panels[cur]; cur = k; if (k === 'members') await members(panels.members); if (k === 'tools') mentorTools(panels.tools, { request, readOnly: s.space.status !== 'active' }); swapPanels(out, panels[k]); });
         bs[k] = b; tabs.append(b); panels[k].hidden = k !== cur;
       }
-      wrap.append(tabs, panels.space, panels.members);
+      wrap.append(tabs, panels.space, panels.members, panels.tools);
       void space(panels.space);
       return wrap;
     }

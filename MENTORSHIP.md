@@ -20,3 +20,15 @@ One page, `/mentorship`, three states (no role, student, mentor). Joining happen
 
 ## Owner steps
 Run `npm run db:migrate` for 031. Connect `cancelMentorPlan` and `planTerm` in `server.js` when billing lands (defaults: no-op and monthly). Have the consent wording and the "18 or older" approach reviewed.
+
+## Mentor tools (migration 032)
+
+Open the mentor page, then "Mentor tools": Cohort, Students, Feedback, Admin. Students see the same content under "From your mentor".
+
+- Posts, weekly agenda, assignments (a reviewed assignment counts as a journaling day), resources (https only), house rules, process rubric (0 to 5), private notes, activity log, CSV export (logged).
+- Posts that look like trade calls (buy/sell with a price) are refused.
+- The mistake heat map shows only when 3 or more students share.
+- Live sessions: Google Meet only. Students Register (optional seat limit). The Meet link is hidden until registered and opens 15 minutes before the start, for 3 hours. The mentor sees who registered and who joined. Reminders (1 day, 1 hour) go to registered students only. The calendar file and the Google Calendar link carry no Meet link.
+- Create a Meet opens meet.new and the mentor pastes the link. Creating Meet links automatically needs each mentor to sign in with Google (Calendar API). Not built.
+- Not built: AI digest, certificates, cohort leaderboard, public profile and reviews, co-mentors.
+- Legacy tables `space_announcements` and `space_assignments` already exist from migration 015, so the new ones are `mentor_announcements` and `mentor_assignments`.
