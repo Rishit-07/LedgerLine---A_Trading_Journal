@@ -1,6 +1,6 @@
 import {createProfilePictureHandler} from './profile-picture.js';
 import {startBillingMail} from './billing-mail.js';
-import {billingApi} from './report-billing.js';
+import {createBillingApi} from './report-billing.js';
 import {billingProfile} from './billing-profile.js';
 import {startMentorMail} from './mentor-mail.js';
 import {mentorVerification} from './mentor-verification.js';
@@ -154,7 +154,8 @@ const identify = async (request) => {
 const tickets = createTicketApi(pool, mailConfig, { authenticate: authenticateRequest, identify, auth, notify: (uid, kind, details) => notify(pool, uid, kind, details).catch(() => null) });
 const notifications = createNotificationApi(pool, authenticateRequest);
 const notificationSettings = createNotificationSettingsApi(pool, authenticateRequest);
-const mentorship = createMentorshipApi(pool, { authenticate: authenticateRequest });
+const billingApiHandlers = createBillingApi(pool, { authenticate: authenticateRequest });
+const mentorship = createMentorshipApi(pool, { authenticate: authenticateRequest, cancelMentorPlan: billingApiHandlers.cancelMentorPlan, planTerm: billingApiHandlers.planTerm });
 const mentorTools = createMentorToolsApi(pool, { authenticate: authenticateRequest });
 const newsletter = createNewsletterApi(pool, { authenticate: authenticateRequest, mail: mailConfig, auth });
 configureDelivery(createSenders({ pool, mail: mailConfig, messaging: getMessaging(firebaseApp) }));
@@ -167,14 +168,13 @@ const streak = createStreakApi(pool, authenticateRequest, streaks, { remindersAv
 const saveTrade = createTradeHandler(streaks, authenticateRequest);
 const workspace = createWorkspaceApi(pool, authenticateRequest);
 const reports=reportApi(pool,authenticateRequest);
-const billing=billingApi(pool,authenticateRequest);
+const billing=billingApiHandlers.handler;
 const routes = new Map([
-  ...['overview','invoice','manage'].map(key=>['/api/billing/'+key,{methods:[key==='manage'?'POST':'GET'],handler:billing}]),
+  ...['overview','invoice','status'].map(key=>['/api/billing/'+key,{methods:['GET'],handler:billing}]),
   ['/api/billing/profile',{methods:['GET','PUT'],handler:billingProfile(pool,authenticateRequest)}],
   ['/api/billing/checkout',{methods:['POST','GET'],handler:billing}],
-  ['/api/billing/status',{methods:['GET'],handler:billing}],
-  ['/api/billing/crypto/webhook',{methods:['POST'],handler:billing}],
-  ['/api/billing/webhook',{methods:['POST'],handler:billing}],
+  ['/api/billing/needs-review',{methods:['GET','POST'],handler:billing}],
+  ['/api/billing/coinpayments/webhook',{methods:['POST'],handler:billing}],
   ['/api/reports',{methods:['GET'],handler:reports}],
   ['/api/ai/report',{methods:['POST','DELETE'],handler:reports}],
   ['/api/reports/preferences',{methods:['GET','PUT'],handler:reports}],
@@ -305,6 +305,7 @@ if (process.env.STREAK_NEON_SCHEDULE !== 'true') {
     if (running) return;
     running = true;
     try { await mentorTools.sweep(); } catch { console.error('Mentor tools maintenance failed.'); }
+    try { await billingApiHandlers.sweep(); } catch { console.error('Billing maintenance failed.'); }
     try { await mentorship.sweep(); } catch { console.error('Mentorship maintenance failed.'); }
     try { await newsletter.sendDueIssues(); } catch { console.error('Newsletter sending failed.'); }
     try { await flushPending(pool); } catch { console.error('Held notifications could not be sent.'); }
