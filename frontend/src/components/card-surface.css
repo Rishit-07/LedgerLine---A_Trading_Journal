@@ -1,12 +1,14 @@
+/* Matt black card: no gloss, a faint warm edge and a soft top-left sheen, so it sits well on cream and on black. */
 .ll-card-surface {
-  color: white;
-  background-color: #141351;
+  color: #f1ebdd;
+  background-color: #111112;
   background-image:
-    radial-gradient(ellipse at 8% 103%, #ff008a 0%, #e700ce 20%, transparent 56%),
-    radial-gradient(ellipse at 62% -14%, #2858ff 5%, #333afc 34%, transparent 72%),
-    linear-gradient(118deg, #8118bd, #5328d8 45%, #0b103e 88%, #101336);
-  border: 1px solid #c4aaff80;
-  box-shadow: inset 0 1px 0 #ffffff70, inset 1px 0 0 #ffbbfc80, 0 2px 0 #bb63cc, 1px 4px 0 #24194c;
+    radial-gradient(ellipse at 12% -8%, #ffffff17 0%, transparent 52%),
+    radial-gradient(ellipse at 100% 110%, #00000099 0%, transparent 60%),
+    repeating-linear-gradient(125deg, #ffffff05 0 1px, transparent 1px 3px),
+    linear-gradient(150deg, #1b1b1d, #101011 55%, #0a0a0b);
+  border: 1px solid #d8c9a42e;
+  box-shadow: inset 0 1px 0 #ffffff1f, inset 1px 0 0 #ffffff0d, 0 2px 0 #050505, 0 12px 28px #0000004d;
 }
 .br-chip {
   width: 13%; aspect-ratio: 1.32; border-radius: 18%;
