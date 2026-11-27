@@ -27,6 +27,6 @@ Things built differently from the design boards, or not built. Each needs your d
 ## MetaTrader and Pro locks
 - Settings > Brokers (Zerodha, Upstox, Angel One, Dhan, Fyers, CSV radios) is replaced by a MetaTrader panel (report import and optional live sync). The design pack has no MetaTrader screen, so the panel reuses the neomorphic cards and standard buttons.
 - Free import limit of 25 trades a month is my choice, set in `billing-config.js`.
-- Replay, Mistake lab and Ask your journal were open to everyone; they are now Pro-only on the server.
+- Replay, Mistake lab and Ask your journal stay open to everyone but are limited per month on the server (Free 5 each, Pro and Mentor 150 / 300 / 300). The numbers are my choice, set in `billing-config.js`.
 - Buttons gain a shared hover sheen (primary) and press-in; the plan-ready screen no longer has a Replay button.
 - Still open: the landing page "Brokers" section and onboarding broker step still describe the old broker list.

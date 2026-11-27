@@ -12,4 +12,14 @@ Rules worth knowing
 - The scripts never place, modify or close orders and never touch passwords. They have not been compiled in MetaEditor here: compile and test them on a demo account before sharing.
 - Everything is closed-trade, process-only; no currency amounts are stored from MetaTrader.
 
-Pro locks (server side, `workspace.js` `proPages`): Replay, Mistake lab and Ask your journal return 403 `{reason:'needs_plan'}` for Free accounts, and the page shows an unlock card with "See plans". AI reports were already gated in `reports.js`.
+Monthly limits on the analysis tools (server side, `workspace.js` `spend()` and `usage()`, numbers in `billing-config.js` `FEATURE_LIMITS`). Nothing is locked: every account can open Replay, Mistake lab and Ask your journal. Per calendar month (UTC):
+
+| Tool | Free | Pro and Mentor |
+|---|---|---|
+| Replay (replays opened) | 5 | 150 |
+| Mistake lab (new tags; editing a tag is free) | 5 | 300 |
+| Ask your journal (questions) | 5 | 300 |
+| MetaTrader report import | 25 trades | no cap |
+| MetaTrader live sync | not included | included |
+
+Past the limit the API answers 403 with `reason: 'limit'` and a message (Free: points at Pro; paid: says it resets on the 1st). Each page shows "x of y used" and, for Free, a "Get more with Pro" link. AI reports keep their own rules in `reports.js`.

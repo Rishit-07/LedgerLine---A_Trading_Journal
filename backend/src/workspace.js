@@ -3,11 +3,16 @@ import {createCandleLookup} from './replay-candles.js';
 import { configuredCoach, askCoach, checkCoachScope } from './coach.js';
 import { communityApi } from './community.js';
 import { readJson, send } from './http.js';
-import { hasPlan } from './entitlements.js';
+import { activePlan } from './entitlements.js';
+import { FEATURE_LIMITS, FEATURE_NAMES } from './billing-config.js';
 import { imageRequestLimit, prepareScreenshot, tradeScreenshots } from './trade-screenshots.js';
 
-// Pages promised to paid plans. Checked on the server for every read and write, so hiding a button is never the only lock.
-const proPages = { replay: 'Replay', mistake: 'Mistake lab', coach: 'Ask your journal' };
+// Monthly use per tool, counted from the records themselves. Checked on the server, so hiding a button is never the only limit.
+const usedSql = {
+  replay: 'SELECT count(*)::int AS n FROM billing_replay_usage WHERE user_id=$1 AND used_at>=$2',
+  mistake: 'SELECT count(*)::int AS n FROM mistakes WHERE user_id=$1 AND created_at>=$2',
+  coach: 'SELECT count(*)::int AS n FROM coach_requests WHERE user_id=$1 AND created_at>=$2',
+};
 const tradeId = /^[1-9]\d{0,17}$/;
 const uuid = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
 const isoDay = /^\d{4}-\d{2}-\d{2}$/;
@@ -55,6 +60,19 @@ function validateCandles(candles) {
 
 export function createWorkspaceApi(pool, authenticate, {coachConfig = configuredCoach(process.env), fetchCoach = fetch, lookupCandles = createCandleLookup()} = {}) {
   const query = async (sql, params) => (await pool.query(sql, params)).rows;
+  async function usage(uid, feature) {
+    const { plan } = await activePlan(pool, uid);
+    const d = new Date(), since = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+    const [{ n }] = await query(usedSql[feature], [uid, since]);
+    return { feature: FEATURE_NAMES[feature], plan, used: n, limit: FEATURE_LIMITS[feature][plan === 'free' ? 'free' : 'paid'] };
+  }
+  /** Throws a 403 with reason 'limit' when this month's allowance is spent. Free accounts are pointed at Pro; paid accounts are told when it renews. */
+  async function spend(uid, feature) {
+    const u = await usage(uid, feature);
+    if (u.used >= u.limit) throw Object.assign(new Error(u.plan === 'free'
+      ? `You have used your ${u.limit} free ${FEATURE_NAMES[feature]} uses this month. Pro raises it to ${FEATURE_LIMITS[feature].paid}.`
+      : `You have reached this month's ${FEATURE_NAMES[feature]} limit. It resets on the 1st.`), { status: 403, reason: 'limit', feature: u.feature });
+  }
   const coaching = new Set();
   const allowance = 20000;
   async function coachBalance(uid) {
@@ -93,8 +111,9 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
       const ledger = await query(trades, [uid]);
       return { trades: ledger.slice(0, 500), hasOlder: ledger.length > 500 };
     },
-    replay: async (uid) => ({ trades: (await query(trades, [uid])).filter(({ closedAt }) => closedAt).slice(0, 500) }),
+    replay: async (uid) => ({ usage: await usage(uid,'replay'), trades: (await query(trades, [uid])).filter(({ closedAt }) => closedAt).slice(0, 500) }),
     mistake: async (uid) => ({
+      usage: await usage(uid,'mistake'),
       trades: (await query(trades, [uid])).slice(0, 500),
       mistakes: await query(`SELECT trade_id::text AS "tradeId", kind, note, created_at AS "createdAt"
         FROM mistakes WHERE user_id=$1 ORDER BY created_at DESC LIMIT 500`, [uid]),
@@ -117,6 +136,7 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
     },
     people: community.people,
     coach: async (uid) => ({
+      usage: await usage(uid,'coach'),
       tokens:await coachBalance(uid),
       available:Boolean(coachConfig),provider:coachConfig?.provider,
       chats: await query('SELECT id,title,pinned,updated_at AS "updatedAt" FROM coach_chats WHERE user_id=$1 ORDER BY pinned DESC,updated_at DESC,id',[uid]),
@@ -184,6 +204,7 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
     mistake: async (uid, data) => {
       requireValue(tradeId.test(data.tradeId ?? '') && string(data.kind, 50, true) && string(data.note, 500),
         'Choose a trade and enter a mistake to log.');
+      if (!(await query('SELECT 1 FROM mistakes WHERE user_id=$1 AND trade_id=$2 AND kind=$3',[uid,data.tradeId,data.kind.trim()])).length) await spend(uid,'mistake');
       const [record] = await query(`INSERT INTO mistakes (user_id,trade_id,kind,note)
         SELECT user_id,id,$3,$4 FROM trades WHERE user_id=$1 AND id=$2 AND closed_at IS NOT NULL
         ON CONFLICT (user_id,trade_id,kind) DO UPDATE SET note=excluded.note
@@ -298,6 +319,7 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
         return chat;
       }
       if (!coachConfig) throw fail(503,'AI chat is not connected.');
+      await spend(uid,'coach');
       requireValue(string(data.question,600,true),'Enter a question of up to 600 characters.');
       if (coaching.has(uid)) throw fail(429,'Your last question is still being answered.');
       coaching.add(uid);
@@ -350,8 +372,6 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
       try {
         if (page === 'screenshots') return await tradeScreenshots(query,claims.uid,params.get('tradeId'),request,response);
         if (!Object.hasOwn(pageLoaders,page)) return send(response,404,{ error:'Workspace page unavailable.' });
-        if (Object.hasOwn(proPages,page) && !await hasPlan(pool,claims.uid,'pro'))
-          return send(response,403,{ error:proPages[page]+' is part of Pro.',reason:'needs_plan',feature:proPages[page] });
         if (request.method === 'POST') {
           if (!Object.hasOwn(writes,page)) return send(response,405,{ error:'This page does not accept changes.' });
           const { error,data } = await readJson(request,page === 'history' ? imageRequestLimit : 120_000);
@@ -378,8 +398,8 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
           if (!record) throw fail(404,'Closed trade unavailable.');
           if(!record.candles.length) Object.assign(record,await lookupCandles(record));
           else record.candleSource='Imported candles';
-          if(record.candles?.length)await query('INSERT INTO billing_replay_usage(user_id) VALUES($1)',[claims.uid]);
-          return send(response,200,record);
+          if(record.candles?.length){await spend(claims.uid,'replay');await query('INSERT INTO billing_replay_usage(user_id) VALUES($1)',[claims.uid]);}
+          return send(response,200,{...record,usage:await usage(claims.uid,'replay')});
         }
         const [account] = await query(profile,[claims.uid]);
         if (!account) throw fail(409,'Finish onboarding first.');

@@ -21,3 +21,12 @@ export function priceFor(plan, months, introUsed = 0) {
 /* Plan limits. Free accounts can bring in this many MetaTrader trades per calendar month (UTC); Pro and Mentor have no cap.
    Live sync (the installed bridge) is a Pro feature. Change the number here and nowhere else. */
 export const FREE_MT_IMPORTS_PER_MONTH = 25;
+
+/* Monthly use of the analysis tools (calendar month, UTC). Free accounts get a taste; Pro and Mentor get a generous cap that exists to stop abuse.
+   replay = replays opened, mistake = new mistake tags, coach = Ask your journal questions. Change the numbers here and nowhere else. */
+export const FEATURE_LIMITS = {
+  replay:  { free: 5, paid: 150 },
+  mistake: { free: 5, paid: 300 },
+  coach:   { free: 5, paid: 300 },
+};
+export const FEATURE_NAMES = { replay: 'Replay', mistake: 'Mistake lab', coach: 'Ask your journal' };

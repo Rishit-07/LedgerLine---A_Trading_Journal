@@ -47,17 +47,13 @@ export async function renderWorkspace(landing, { path, request, uid, name, photo
     await screen.bind(page,{data,request,save,reload,uid});
     hideSkeleton();
     status.textContent='';
+    if(data.usage){const chip=document.createElement('p'),link=document.createElement('a');chip.className='usage-chip';
+      chip.textContent=`${data.usage.feature} this month: ${data.usage.used} of ${data.usage.limit} used. `;
+      if(data.usage.plan==='free'){link.href='/billing?from=reports';link.textContent='Get more with Pro';chip.append(link);}
+      status.after(chip);}
   } catch (error) {
     hideSkeleton();
     content.forEach((element)=>{element.hidden=true;});
-    if(error.reason==='needs_plan'){
-      status.textContent='';
-      const lock=document.createElement('section');lock.className='plan-lock';
-      const title=document.createElement('h2');title.textContent=(error.feature||'This feature')+' is part of Pro';
-      const copy=document.createElement('p');copy.textContent='Your free plan keeps the journal, streaks and clubs. Pro unlocks this page, and it opens as soon as your payment is confirmed.';
-      const see=document.createElement('a');see.className='btn btn-primary';see.href='/billing?from=reports';see.textContent='See plans';
-      lock.append(title,copy,see);status.append(lock);return;
-    }
     status.textContent=error.message;
     status.append(' ',button('Try again',()=>location.reload()));
   }
