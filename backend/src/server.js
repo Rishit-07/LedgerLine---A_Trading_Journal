@@ -24,6 +24,7 @@ import { createOnboardingHandler } from './onboarding.js';
 import { createNewsletterApi } from './newsletter.js';
 import { createMentorshipApi } from './mentorship.js';
 import { createMentorToolsApi } from './mentor-tools.js';
+import { createLedgerBotApi } from './ledger-bot.js';
 import { createNotificationApi, notify } from './notifications.js';
 import { createNotificationSettingsApi } from './notification-settings.js';
 import { configureDelivery, createSenders, flushPending } from './notification-delivery.js';
@@ -198,6 +199,7 @@ const routes = new Map([
   ['/api/mfa/disable', { methods: ['POST'], handler: (request, response) => twoStep.disable(request, response) }],
   ['/api/account/export', { methods: ['GET'], handler: (request, response) => accountData.export(request, response) }],
   ['/api/mentorship', { methods: ['GET', 'POST'], handler: mentorship.handler }],
+  ['/api/ledger-bot', { methods: ['GET', 'PUT'], handler: createLedgerBotApi(pool, { authenticate: authenticateRequest }) }],
   ['/api/mentor-tools', { methods: ['GET', 'POST'], handler: mentorTools.handler }],
   ['/api/newsletter', { methods: ['POST'], handler: newsletter.subscribe }],
   ['/api/newsletter/confirm', { methods: ['POST'], handler: newsletter.confirm }],

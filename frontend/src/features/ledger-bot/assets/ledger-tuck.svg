@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 240"><style>
+.fl{animation:fl 3.4s ease-in-out infinite}
+.bl{transform-box:fill-box;transform-origin:center;animation:bl 4.6s infinite}
+.lk{animation:lk 7s ease-in-out infinite}
+.bn{animation:bn 1.5s cubic-bezier(.3,1.5,.5,1) infinite;transform-origin:150px 190px}
+.br{animation:br 4.2s ease-in-out infinite;transform-origin:150px 190px}
+.dt{animation:dt 1.2s ease-in-out infinite}.dt2{animation-delay:.2s}.dt3{animation-delay:.4s}
+.cf{animation:cf 2.2s ease-in infinite}.cf2{animation-delay:.5s}.cf3{animation-delay:1.1s}
+.pr{animation:pr 1.5s ease-out infinite;transform-origin:150px 118px}
+.zz{animation:zz 3s ease-in-out infinite}.zz2{animation-delay:1.2s}
+.tw{animation:tw 2.4s ease-in-out infinite;transform-origin:226px 62px}
+.tk{animation:tk 3s ease-in-out infinite;transform-origin:150px 190px}
+@keyframes fl{50%{transform:translateY(-6px)}}
+@keyframes bl{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(.08)}}
+@keyframes lk{0%,18%{transform:translateX(0)}28%,48%{transform:translateX(-5px)}58%,78%{transform:translateX(5px)}88%,100%{transform:translateX(0)}}
+@keyframes bn{0%,100%{transform:translateY(0) scale(1,1)}12%{transform:translateY(0) scale(1.08,.9)}40%{transform:translateY(-26px) scale(.95,1.06)}70%{transform:translateY(0) scale(1.06,.92)}85%{transform:translateY(0) scale(.98,1.02)}}
+@keyframes br{50%{transform:scale(1.03,1.04)}}
+@keyframes dt{50%{opacity:.2}}
+@keyframes cf{0%{opacity:0;transform:translateY(-20px)}15%{opacity:1}100%{opacity:0;transform:translateY(60px) rotate(120deg)}}
+@keyframes pr{from{opacity:.55;transform:scale(.8)}to{opacity:0;transform:scale(1.5)}}
+@keyframes zz{0%{opacity:0;transform:translate(0,6px)}40%{opacity:.9}100%{opacity:0;transform:translate(8px,-14px)}}
+@keyframes tw{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(6deg)}}
+@keyframes tk{50%{transform:scale(1.02,.99)}}
+@media(prefers-reduced-motion:reduce){.fl,.bl,.lk,.bn,.br,.dt,.cf,.pr,.zz,.tw,.tk{animation:none}}
+</style><defs><radialGradient id="g" gradientUnits="userSpaceOnUse" cx="-40" cy="-52" r="150"><stop offset="0" stop-color="#ffd08a"/><stop offset=".38" stop-color="#9aa4fb"/><stop offset=".72" stop-color="#6b6ef0"/><stop offset="1" stop-color="#4b3fd6"/></radialGradient><radialGradient id="h" cx=".35" cy=".25" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><radialGradient id="sh" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#4a3fd0" stop-opacity=".28"/><stop offset="1" stop-color="#4a3fd0" stop-opacity="0"/></radialGradient></defs><ellipse cx="150" cy="214" rx="62" ry="8" fill="url(#sh)"/><g class="tk"><g transform="translate(150 124) scale(.8,.74)"><g fill="url(#g)"><circle cx="-38" cy="-38" r="48"/><circle cx="38" cy="-38" r="48"/><circle cx="-38" cy="38" r="48"/><circle cx="38" cy="38" r="48"/><rect x="-60" y="-60" width="120" height="120"/></g><ellipse cx="-22" cy="-48" rx="40" ry="26" fill="url(#h)"/><g transform="translate(0 12) scale(1,1.08)"><g class="bl"><rect x="-25" y="-14" width="14" height="22" rx="7" fill="#fff"/></g><g class="bl"><rect x="11" y="-14" width="14" height="22" rx="7" fill="#fff"/></g></g></g></g><g class="tw"><circle cx="226" cy="62" r="24" fill="#fff" stroke="#c9c6ba" stroke-width="1.4"/><rect x="223" y="48" width="6" height="18" rx="3" fill="#b4530f"/><circle cx="226" cy="74" r="3.6" fill="#b4530f"/></g></svg>

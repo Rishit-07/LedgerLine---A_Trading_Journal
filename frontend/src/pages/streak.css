@@ -74,7 +74,7 @@
 .streak-connected { display: grid; justify-items: center; gap: 5px; padding: 12px; border: 1px solid var(--track); border-radius: 14px; text-align: center; }
 .streak-connected small { color: var(--sub); }
 .streak-tally-pair { display: flex; align-items: center; }
-.streak-tally-pair img:first-child { scale: -1 1; }
+.streak-tally-pair > :first-child { scale: -1 1; }
 .streak-message, .streak-footnote { color: var(--sub); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
 .streak-message:empty, .streak-social > div:empty { display: none; }
 .streak-footnote { margin: 10px 0 0; font-size: 12px; }

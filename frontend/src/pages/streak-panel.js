@@ -1,3 +1,4 @@
+import { mountDeclared } from '../features/ledger-bot/index.js';
 import { paginate } from './pagination.js';
 import { gsap } from 'gsap';
 import { fetchStreakInviter, parseStreakInvite, streakInviteCode, streakInvitePath } from '../streak-invite.js';
@@ -12,7 +13,7 @@ export const streakPanelMarkup = `
     </header>
     <p data-streak-load class="streak-message" role="status"></p>
     <div data-streak-content hidden>
-      <div class="streak-stage"><img data-tally src="/tally-calm.svg" alt="Tally calm" width="110" height="110" /></div>
+      <div class="streak-stage"><span data-tally></span></div>
       <div class="streak-number" data-streak-count>0</div>
       <h3>day streak</h3>
       <p class="streak-day-status" data-streak-message aria-live="polite"></p>
@@ -56,8 +57,8 @@ export const streakPanelMarkup = `
         <p class="streak-message" role="status" data-invite-status></p>
         <div class="streak-connected" data-streak-connected hidden>
           <div class="streak-tally-pair" aria-hidden="true">
-            <img src="/tally-cheer.svg" alt="" width="64" height="64" />
-            <img src="/tally-cheer.svg" alt="" width="64" height="64" />
+            <span data-ledger="cheer" data-size="64" data-decor></span>
+            <span data-ledger="cheer" data-size="64" data-decor></span>
           </div>
           <strong role="status"></strong>
           <small>Log, review, or take a rest day to keep your own streak going.</small>
@@ -87,6 +88,7 @@ export const streakPanelMarkup = `
   </dialog>${shareMarkup}`;
 
 export function bindStreakDialog(page, { request, getState, onState }) {
+  mountDeclared(page);
   const dialog = page.querySelector('#streak');
   const content = dialog.querySelector('[data-streak-content]');
   const loadStatus = dialog.querySelector('[data-streak-load]');

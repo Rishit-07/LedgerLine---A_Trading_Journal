@@ -3,6 +3,7 @@ import { enrolTotp, removeTotp, twoStepStatus } from '../mfa.js';
 import {avatarUrl} from './profile-picture.js';
 import { portfolioPath, portfolioVisibilityMarkup, fillPortfolioVisibility, readPortfolioVisibility } from './portfolio-preferences.js';
 import { markets, submit, formValues } from './workspace-ui.js';
+import { savePop, localPop } from '../features/ledger-bot/index.js';
 
 const sections = [
   ['account','Account','user'],['brokers','Brokers','briefcase-business'],['rules','Trading rules','list-checks'],
@@ -30,7 +31,7 @@ export function settingsMarkup(notifications) {
     <div class="account-settings-panels">
     ${panel('account','Account',`<form class="ws-form" data-avatar-form><label>Profile picture<input name="picture" type="file" accept="image/jpeg,image/png,image/webp"></label><div class="account-actions"><button class="btn btn-primary">Save picture</button><button class="btn btn-danger" type="button" data-remove-avatar>Remove picture</button></div><p role="status"></p></form><form class="ws-form" data-edit="account"><label>Display name<input class="n-in" name="displayName" maxlength="100" required></label><fieldset><legend>Your markets</legend>${Object.entries(markets).map(([key,label])=>`<label><input name="markets" type="checkbox" value="${key}"> ${label}</label>`).join('')}</fieldset>${saveButton}</form>`)}
     ${panel('brokers','Brokers',`<p>Choose your preferred import method. CSV imports are available for any broker.</p><form data-edit="broker"><div class="account-providers">${providers.map(([key,label,api])=>`<label class="n-out"><span class="account-provider-icon">${key==='csv'?'CSV':label.slice(0,1)}</span><span><strong>${label}</strong><small>${api}</small></span><input type="radio" name="broker" value="${key}" required></label>`).join('')}</div><label><input type="radio" name="broker" value="manual"> Add trades by hand</label><div class="account-actions">${saveButton}<a href="/history#import">Import CSV</a></div></form><div class="account-read"><div class="n-in"><strong>What Ledgerline reads</strong><p>Trade rows from the CSV file you choose. Direct broker sync requires a connected integration.</p></div><div class="n-in"><strong>What it never does</strong><p>Place orders, move money or change positions in your brokerage account.</p></div></div>`)}
-    ${panel('rules','Trading rules',`<form class="ws-form" data-edit="rules">${ruleDefinitions.map(([key,label,values,unit])=>`<div class="account-rule"><label>${label}<select name="${key}" class="n-in">${values.map(v=>`<option value="${v}">${v}${unit}</option>`).join('')}</select></label><label><input type="checkbox" name="hardRules" value="${key}"> Hard rule</label></div>`).join('')}${saveButton}</form>`)}
+    ${panel('rules','Trading rules',`<form class="ws-form" data-edit="rules">${ruleDefinitions.map(([key,label,values,unit])=>`<div class="account-rule"><label>${label}<select name="${key}" class="n-in">${values.map(v=>`<option value="${v}">${v}${unit}</option>`).join('')}</select></label><label><input type="checkbox" name="hardRules" value="${key}"> Hard rule</label></div>`).join('')}${saveButton}</form><div class="lb-setting"><div><strong>Ledger bot pops in and out</strong><small>Appears for a few seconds every 5 minutes. Turn off to keep Ledger on screen, still, with no animation.</small></div><button type="button" class="n-switch n-in on" data-bot-pop aria-pressed="true" aria-label="Ledger bot pops in and out"><span class="n-knob"></span></button></div><p role="status" data-bot-pop-status></p>`)}
     <div data-preference="notifications" hidden>${notifications}</div>
     ${panel('appearance','Appearance','<p>Choose a light or dark workspace on this device.</p><button class="btn btn-secondary" data-change-theme>Switch theme</button>')}
     ${panel('security','Two-step sign-in','<p>Ask for a 6-digit code from an authenticator app each time you sign in. This protects your journal even if your password leaks.</p><p data-mfa-state role="status"></p><div class="btn-row"><button type="button" class="btn btn-primary" data-mfa-on hidden>Turn on two-step sign-in</button><button type="button" class="btn btn-danger" data-mfa-off hidden>Turn off</button></div>')}
@@ -53,6 +54,15 @@ export async function bindAccountSettings(page,request) {
   };
   selectSection();
   window.addEventListener('hashchange',selectSection);
+  const botSwitch=page.querySelector('[data-bot-pop]'),botStatus=page.querySelector('[data-bot-pop-status]');
+  const paintBot=on=>{botSwitch.classList.toggle('on',on);botSwitch.setAttribute('aria-pressed',String(on));};
+  paintBot(localPop());
+  botSwitch.onclick=async()=>{
+    const next=!botSwitch.classList.contains('on');paintBot(next);botSwitch.disabled=true;botStatus.textContent='';
+    try{await savePop(request,next);botStatus.textContent=next?'Ledger will pop in and out.':'Ledger stays on screen and still.';}
+    catch(e){paintBot(!next);botStatus.textContent=e.message;}
+    finally{botSwitch.disabled=false;}
+  };
   const portfolioForm=page.querySelector('[data-portfolio-settings]');
   const portfolioStatus=portfolioForm.querySelector('[role=status]');
   const setPortfolio=portfolio=>{

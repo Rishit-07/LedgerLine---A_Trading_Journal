@@ -1,3 +1,4 @@
+import { mountDeclared } from '../features/ledger-bot/index.js';
 import { node, formatDate } from './workspace-ui.js';
 import './coach-page.css';
 
@@ -10,7 +11,7 @@ export const coach = {
       <nav aria-label="Past chats" data-chat-history></nav>
     </aside>
     <section class="n-out ws-card ws-coach">
-      <header class="ws-section-head"><img src="/tally-calm.svg" alt="" width="44" height="44">
+      <header class="ws-section-head"><span data-ledger="calm" data-size="44" data-decor></span>
         <div><h2 data-chat-title>New chat</h2><p data-chat-connection></p></div>
         <details class="coach-options" data-options hidden>
           <summary aria-label="Chat options">•••</summary>
@@ -37,6 +38,7 @@ export const coach = {
     </section>
   </div>`,
   async bind(page, { data, save, request }) {
+    mountDeclared(page);
     const get = (selector) => page.querySelector(selector);
     const form = get('[data-coach-form]');
     const input = form.elements.question;
