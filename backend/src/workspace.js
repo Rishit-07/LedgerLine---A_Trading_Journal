@@ -4,15 +4,11 @@ import { configuredCoach, askCoach, checkCoachScope } from './coach.js';
 import { communityApi } from './community.js';
 import { readJson, send } from './http.js';
 import { activePlan } from './entitlements.js';
-import { FEATURE_LIMITS, FEATURE_NAMES } from './billing-config.js';
+import { runAi, replayInput, mistakeInput, REPLAY_PROMPT, MISTAKE_PROMPT } from './ai-tools.js';
+import { FEATURE_NAMES } from './billing-config.js';
+import { usedSql, monthStart, limitFor, tokenState, emptyMessage, walletAllowance, recordTokens } from './usage-limits.js';
 import { imageRequestLimit, prepareScreenshot, tradeScreenshots } from './trade-screenshots.js';
 
-// Monthly use per tool, counted from the records themselves. Checked on the server, so hiding a button is never the only limit.
-const usedSql = {
-  replay: 'SELECT count(*)::int AS n FROM billing_replay_usage WHERE user_id=$1 AND used_at>=$2',
-  mistake: 'SELECT count(*)::int AS n FROM mistakes WHERE user_id=$1 AND created_at>=$2',
-  coach: 'SELECT count(*)::int AS n FROM coach_requests WHERE user_id=$1 AND created_at>=$2',
-};
 const tradeId = /^[1-9]\d{0,17}$/;
 const uuid = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
 const isoDay = /^\d{4}-\d{2}-\d{2}$/;
@@ -62,22 +58,51 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
   const query = async (sql, params) => (await pool.query(sql, params)).rows;
   async function usage(uid, feature) {
     const { plan } = await activePlan(pool, uid);
-    const d = new Date(), since = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
-    const [{ n }] = await query(usedSql[feature], [uid, since]);
-    return { feature: FEATURE_NAMES[feature], plan, used: n, limit: FEATURE_LIMITS[feature][plan === 'free' ? 'free' : 'paid'] };
+    const [{ n }] = await query(usedSql[feature], [uid, monthStart()]);
+    return { feature: FEATURE_NAMES[feature], plan, used: n, limit: limitFor(plan, feature) };
   }
+  const aiBusy = new Set();
+  /** Check the allowance, run the AI, and only then record the run, so a failed call is never charged. One run at a time per user. */
+  async function aiRun(uid, feature, tool, ref, prompt, payload) {
+    if (!coachConfig) throw fail(503, 'AI is not connected.');
+    await spend(uid, feature);
+    if (aiBusy.has(uid)) throw fail(429, 'Your last AI request is still running.');
+    aiBusy.add(uid);
+    try {
+      await aiGate(uid);
+      const tokens = { tokens: 0 };
+      const output = await runAi(coachConfig, fetchCoach, prompt, payload, tokens);
+      if (!output) throw fail(503, 'The AI could not finish that. Please try again.');
+      await chargeTokens(uid, tokens.tokens);
+      const [row] = await query('INSERT INTO ai_tool_runs(user_id,tool,ref,output) VALUES($1,$2,$3,$4) RETURNING created_at AS "createdAt"', [uid, tool, ref, output]);
+      return { output, createdAt: row.createdAt, usage: await usage(uid, feature) };
+    } finally { aiBusy.delete(uid); }
+  }
+  const lastRun = async (uid, tool, ref = '') => (await query('SELECT output,created_at AS "createdAt" FROM ai_tool_runs WHERE user_id=$1 AND tool=$2 AND ref=$3 ORDER BY id DESC LIMIT 1', [uid, tool, ref]))[0] ?? null;
   /** Throws a 403 with reason 'limit' when this month's allowance is spent. Free accounts are pointed at Pro; paid accounts are told when it renews. */
   async function spend(uid, feature) {
     const u = await usage(uid, feature);
     if (u.used >= u.limit) throw Object.assign(new Error(u.plan === 'free'
-      ? `You have used your ${u.limit} free ${FEATURE_NAMES[feature]} uses this month. Pro raises it to ${FEATURE_LIMITS[feature].paid}.`
+      ? `You have used your ${u.limit} free ${FEATURE_NAMES[feature]} uses this month. Pro raises it to ${limitFor('pro',feature)}.`
       : `You have reached this month's ${FEATURE_NAMES[feature]} limit. It resets on the 1st.`), { status: 403, reason: 'limit', feature: u.feature });
   }
   const coaching = new Set();
-  const allowance = 20000;
+  const planOf = async (uid) => (await activePlan(pool, uid)).plan;
+  const dbq = { query: pool.query.bind(pool) };
   async function coachBalance(uid) {
-    const [wallet]=await query('SELECT spent FROM coach_daily_tokens WHERE user_id=$1 AND day='+today,[uid]);
-    return {remaining:Math.max(0,allowance-(wallet?.spent ?? 0)),allowance};
+    const t = await tokenState(dbq, uid, await planOf(uid));
+    return { remaining: t.remaining, allowance: t.allowance, window: t.window, retryMinutes: t.retryMinutes ?? null, hour: t.hour ?? null, month: t.month ?? null };
+  }
+  /** One gate for every AI call: stops when the wallet is empty and says why (day, hour cooldown or month). */
+  async function aiGate(uid) {
+    const t = await tokenState(dbq, uid, await planOf(uid));
+    if (!t.remaining) throw Object.assign(fail(429, emptyMessage(t)), { reason: 'tokens' });
+  }
+  /** After a successful AI answer: take the tokens from the daily wallet (Free) and write the ledger row (everyone). */
+  async function chargeTokens(uid, tokens) {
+    const plan = await planOf(uid);
+    if (plan === 'free') await query('SELECT debit_coach_tokens($1,$2,$3)', [uid, tokens, walletAllowance(plan)]);
+    await recordTokens(dbq, uid, tokens);
   }
   const community = communityApi(query);
   const earnedBadges = (uid,sharedOnly=true) => query(`SELECT c.name,c.key,c.category,c.icon_path AS "iconPath",e.earned_at AS "earnedAt",e.portfolio_visible AS shared
@@ -113,7 +138,7 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
     },
     replay: async (uid) => ({ usage: await usage(uid,'replay'), trades: (await query(trades, [uid])).filter(({ closedAt }) => closedAt).slice(0, 500) }),
     mistake: async (uid) => ({
-      usage: await usage(uid,'mistake'),
+      usage: await usage(uid,'mistake'), insight: await lastRun(uid,'mistake_insight'), insightUsage: await usage(uid,'mistake_insight'),
       trades: (await query(trades, [uid])).slice(0, 500),
       mistakes: await query(`SELECT trade_id::text AS "tradeId", kind, note, created_at AS "createdAt"
         FROM mistakes WHERE user_id=$1 ORDER BY created_at DESC LIMIT 500`, [uid]),
@@ -165,6 +190,15 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
       return closed;
     },
     replay: async (uid, data) => {
+      if (data.action === 'ai-review') {
+        requireValue(tradeId.test(data.tradeId ?? ''), 'Choose a valid trade.');
+        const [t] = await query(`SELECT t.symbol,t.market,t.side,t.setup,t.opened_at AS "openedAt",t.closed_at AS "closedAt",t.entry::float,t.stop::float,t.target::float,t.exit::float,
+          t.r_multiple::float AS result,coalesce(r.lesson,'') AS lesson FROM trades t LEFT JOIN trade_replays r ON r.user_id=t.user_id AND r.trade_id=t.id
+          WHERE t.user_id=$1 AND t.id=$2 AND t.closed_at IS NOT NULL`, [uid, data.tradeId]);
+        if (!t) throw fail(404, 'Closed trade unavailable.');
+        const rules = await query(`SELECT rules.text,c.kept FROM trade_checks c JOIN rules ON rules.user_id=c.user_id AND rules.id=c.rule_id WHERE c.user_id=$1 AND c.trade_id=$2 ORDER BY rules.position`, [uid, data.tradeId]);
+        return aiRun(uid, 'replay_review', 'replay_review', data.tradeId, REPLAY_PROMPT, replayInput(t, rules));
+      }
       if(data.action==='fill-price'){
         const field=data.field;
         requireValue(tradeId.test(data.tradeId ?? '') && ['entry','exit'].includes(field) &&
@@ -202,6 +236,12 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
       return record;
     },
     mistake: async (uid, data) => {
+      if (data.action === 'ai-insight') {
+        const rows = await query(`SELECT m.kind,m.note,t.r_multiple::float AS result FROM mistakes m JOIN trades t ON t.user_id=m.user_id AND t.id=m.trade_id
+          WHERE m.user_id=$1 AND t.closed_at>=now()-interval '90 days' ORDER BY m.created_at DESC LIMIT 300`, [uid]);
+        if (rows.length < 3) throw fail(400, 'Log at least 3 mistakes in the last 90 days first, so there is a pattern to read.');
+        return aiRun(uid, 'mistake_insight', 'mistake_insight', '', MISTAKE_PROMPT, { habits: mistakeInput(rows) });
+      }
       requireValue(tradeId.test(data.tradeId ?? '') && string(data.kind, 50, true) && string(data.note, 500),
         'Choose a trade and enter a mistake to log.');
       if (!(await query('SELECT 1 FROM mistakes WHERE user_id=$1 AND trade_id=$2 AND kind=$3',[uid,data.tradeId,data.kind.trim()])).length) await spend(uid,'mistake');
@@ -320,11 +360,12 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
       }
       if (!coachConfig) throw fail(503,'AI chat is not connected.');
       await spend(uid,'coach');
+      const plan = await planOf(uid), allowance = walletAllowance(plan);
       requireValue(string(data.question,600,true),'Enter a question of up to 600 characters.');
       if (coaching.has(uid)) throw fail(429,'Your last question is still being answered.');
       coaching.add(uid);
       try {
-        if (!(await coachBalance(uid)).remaining) throw fail(429,'Your Coach tokens refill at midnight IST.');
+        await aiGate(uid);
         const usage={tokens:0};
         const [existing] = await query('SELECT id FROM coach_chats WHERE user_id=$1 AND id=$2',[uid,data.chatId]);
         if (!existing && data.newChat !== true) throw fail(404,'Conversation unavailable.');
@@ -358,6 +399,7 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
         FROM chat CROSS JOIN message`,
         [uid,data.chatId,title,question,answer,JSON.stringify(sources),usage.tokens,allowance]);
         if (!record) throw fail(409,'This conversation changed. Reopen it and try again.');
+        await recordTokens(dbq,uid,usage.tokens);
         return record;
       } finally { coaching.delete(uid); }
     },
@@ -399,14 +441,14 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
           if(!record.candles.length) Object.assign(record,await lookupCandles(record));
           else record.candleSource='Imported candles';
           if(record.candles?.length){await spend(claims.uid,'replay');await query('INSERT INTO billing_replay_usage(user_id) VALUES($1)',[claims.uid]);}
-          return send(response,200,{...record,usage:await usage(claims.uid,'replay')});
+          return send(response,200,{...record,usage:await usage(claims.uid,'replay'),review:await lastRun(claims.uid,'replay_review',id),reviewUsage:await usage(claims.uid,'replay_review')});
         }
         const [account] = await query(profile,[claims.uid]);
         if (!account) throw fail(409,'Finish onboarding first.');
         return send(response,200,{ account,today:new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',dateStyle:'short'}).format(new Date()),
           ...await pageLoaders[page](claims.uid) });
       } catch (error) {
-        if (error.code==='P4201') return send(response,429,{error:'Your Coach tokens refill at midnight IST.'});
+        if (error.code==='P4201') return send(response,429,{error:'Your AI tokens refill at midnight IST.'});
         if (error.status) return send(response,error.status,{error:error.message,...(error.reason?{reason:error.reason}:{})});
         console.error('Workspace request failed (' + (error.code ?? 'unknown') + ').');
         return send(response,503,{error:'This workspace is temporarily unavailable.'});

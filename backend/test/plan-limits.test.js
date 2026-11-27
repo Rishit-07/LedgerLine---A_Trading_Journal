@@ -8,8 +8,16 @@ const landing = readFileSync(new URL('../../frontend/index.html', import.meta.ur
 
 test('plan copy quotes the same limits the server enforces', () => {
   for (const text of [plans, landing]) {
-    assert.ok(text.includes(`${FEATURE_LIMITS.replay.paid}`) && text.includes(`${FEATURE_LIMITS.mistake.paid}`) && text.includes(`${FEATURE_LIMITS.coach.paid}`));
+    assert.ok(text.includes(String(FEATURE_LIMITS.replay.pro)) && text.includes(String(FEATURE_LIMITS.mistake.pro)) && text.includes(String(FEATURE_LIMITS.coach.pro)));
     assert.ok(text.includes(`${FREE_MT_IMPORTS_PER_MONTH} trades a month`));
     assert.ok(new RegExp(`${FEATURE_LIMITS.replay.free} uses each a month`).test(text));
+  }
+});
+
+test('token copy matches the token config', async () => {
+  const { AI_TOKENS } = await import('../src/billing-config.js');
+  const fmt = (n) => n.toLocaleString('en-US');
+  for (const text of [plans, landing]) {
+    assert.ok(text.includes(fmt(AI_TOKENS.free.day)) && text.includes(fmt(AI_TOKENS.pro.month)) && text.includes(fmt(AI_TOKENS.pro.hour)) && text.includes(fmt(AI_TOKENS.mentor.month)));
   }
 });

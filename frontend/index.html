@@ -103,7 +103,7 @@
             data-t="#brokers"
             data-l="2"
             data-state="ahead"
-            aria-label="Brokers"
+            aria-label="MetaTrader"
             style="top: 59.4%"
             tabindex="-1"
             ><span class="si-bar"></span></button
@@ -215,7 +215,7 @@
             ><span style="color: inherit; font-weight: 500">line</span></span
           ></div
         ><nav class="lp-nav" aria-label="Main navigation"
-          ><a href="#tools">Product</a><a href="#brokers">Brokers</a
+          ><a href="#tools">Product</a><a href="#brokers">MetaTrader</a
           ><a href="#clubs">Community</a><a href="#pricing">Pricing</a><a href="#faq">Questions</a></nav
         ><div style="display: flex; align-items: center; gap: 14px"
           ><button
@@ -2124,13 +2124,13 @@
         <section class="lp-sec" id="brokers"
           ><div class="landing-split" style="display: flex; gap: 70px; align-items: center"
             ><div style="flex: 1"
-              ><div class="lp-lab lp-rv" data-rv>Broker auto-log</div
+              ><div class="lp-lab lp-rv" data-rv>MetaTrader import</div
               ><h2 class="lp-eh lp-rv" data-rv style="margin: 16px 0 34px"
                 >Stop typing trades in.<br /><em style="color: var(--acc)">Start reviewing them.</em></h2
               ><div class="lp-step lp-rv" data-rv style="margin-bottom: 26px; transition-delay: 0s"
                 ><b class="n-in">1</b
                 ><div
-                  ><div style="font: 700 17px var(--font-sans)">Pick your broker</div
+                  ><div style="font: 700 17px var(--font-sans)">Save your history report</div
                   ><div
                     style="
                       font: 600 14px/1.6 var(--font-sans);
@@ -2138,13 +2138,13 @@
                       margin-top: 4px;
                       max-width: 430px;
                     "
-                    >Zerodha, Upstox, Angel One, Dhan or Fyers. Or drop in a CSV from any other broker.</div
+                    >In MetaTrader 4 or 5, save your account history as an HTML or CSV report. It works with any broker that uses MetaTrader.</div
                   ></div
                 ></div
               ><div class="lp-step lp-rv" data-rv style="margin-bottom: 26px; transition-delay: 0.15s"
                 ><b class="n-in">2</b
                 ><div
-                  ><div style="font: 700 17px var(--font-sans)">Sign in on the broker site</div
+                  ><div style="font: 700 17px var(--font-sans)">Upload it to Ledgerline</div
                   ><div
                     style="
                       font: 600 14px/1.6 var(--font-sans);
@@ -2152,13 +2152,13 @@
                       margin-top: 4px;
                       max-width: 430px;
                     "
-                    >You approve read-only access there. Ledgerline never sees your password.</div
+                    >Ledgerline reads closed trades only and never asks for a broker password.</div
                   ></div
                 ></div
               ><div class="lp-step lp-rv" data-rv style="margin-bottom: 26px; transition-delay: 0.3s"
                 ><b class="n-in">3</b
                 ><div
-                  ><div style="font: 700 17px var(--font-sans)">Review what arrives</div
+                  ><div style="font: 700 17px var(--font-sans)">Review what you import</div
                   ><div
                     style="
                       font: 600 14px/1.6 var(--font-sans);
@@ -2166,7 +2166,7 @@
                       margin-top: 4px;
                       max-width: 430px;
                     "
-                    >Fills land in a Needs review inbox. Confirm the setup, mood and note in a few taps.</div
+                    >Trades with a stop loss arrive with R already worked out. Add the setup and a note.</div
                   ></div
                 ></div
               ><div
@@ -2183,7 +2183,7 @@
               ></div
             ><div class="lp-rv" data-rv style="flex: 0 0 620px"
               ><div class="n-out lp-dev" style="width: 620px"
-                ><div class="lp-dots"><i></i><i></i><i></i><span>Broker auto-log</span></div
+                ><div class="lp-dots"><i></i><i></i><i></i><span>MetaTrader import</span></div
                 ><div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px"
                   ><div
                     class="n-out"
@@ -2200,8 +2200,8 @@
                         font: 700 10px var(--font-sans);
                         color: var(--acc);
                       "
-                      >Z</span
-                    ><span style="font: 700 12px var(--font-sans)">Zerodha</span></div
+                      >MT4</span
+                    ><span style="font: 700 12px var(--font-sans)">MetaTrader 4</span></div
                   ><div
                     class="n-out"
                     style="display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 14px"
@@ -2217,8 +2217,8 @@
                         font: 700 10px var(--font-sans);
                         color: var(--acc);
                       "
-                      >U</span
-                    ><span style="font: 700 12px var(--font-sans)">Upstox</span></div
+                      >MT5</span
+                    ><span style="font: 700 12px var(--font-sans)">MetaTrader 5</span></div
                   ><div
                     class="n-out"
                     style="display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 14px"
@@ -2234,8 +2234,8 @@
                         font: 700 10px var(--font-sans);
                         color: var(--acc);
                       "
-                      >A</span
-                    ><span style="font: 700 12px var(--font-sans)">Angel One</span></div
+                      >HT</span
+                    ><span style="font: 700 12px var(--font-sans)">HTML report</span></div
                   ><div
                     class="n-out"
                     style="display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 14px"
@@ -2251,8 +2251,8 @@
                         font: 700 10px var(--font-sans);
                         color: var(--acc);
                       "
-                      >D</span
-                    ><span style="font: 700 12px var(--font-sans)">Dhan</span></div
+                      >CS</span
+                    ><span style="font: 700 12px var(--font-sans)">CSV report</span></div
                   ><div
                     class="n-out"
                     style="display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 14px"
@@ -2268,8 +2268,8 @@
                         font: 700 10px var(--font-sans);
                         color: var(--acc);
                       "
-                      >F</span
-                    ><span style="font: 700 12px var(--font-sans)">Fyers</span></div
+                      >PRO</span
+                    ><span style="font: 700 12px var(--font-sans)">Live sync (Pro)</span></div
                   ><div
                     class="n-out"
                     style="display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 14px"
@@ -2285,8 +2285,8 @@
                         font: 700 10px var(--font-sans);
                         color: var(--acc);
                       "
-                      >CSV</span
-                    ><span style="font: 700 12px var(--font-sans)">CSV file</span></div
+                      >MT</span
+                    ><span style="font: 700 12px var(--font-sans)">Any MT broker</span></div
                   ></div
                 ><div
                   class="n-in"
@@ -2315,14 +2315,14 @@
                         d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1 M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"
                       /></svg></span
                   ><div style="flex: 1"
-                    ><div style="font: 700 13px var(--font-sans)">3 new fills need review</div
+                    ><div style="font: 700 13px var(--font-sans)">3 trades imported</div
                     ><div style="font: 600 10px var(--font-sans); color: var(--mut)"
-                      >Read-only sync, 2 min ago. We never place orders.</div
+                      >From your report. Closed trades only.</div
                     ></div
                   ><span
                     class="n-acc"
                     style="padding: 8px 14px; border-radius: 12px; font: 700 11px var(--font-sans)"
-                    >Review</span
+                    >Open</span
                   ></div
                 ></div
               ></div
@@ -2614,9 +2614,9 @@
                   <path
                     d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"
                   /></svg></span
-              ><div style="font: 700 17px var(--font-sans)">Read-only brokers</div
+              ><div style="font: 700 17px var(--font-sans)">Read-only by design</div
               ><div style="font: 600 14px/1.65 var(--font-sans); color: var(--sub); margin-top: 8px"
-                >Brokers connect read-only. Ledgerline can see fills and can never place, change or cancel an
+                >MetaTrader import and live sync only read closed trades. Ledgerline can never place, change or cancel an
                 order.</div
               ></div
             ><div
@@ -2743,15 +2743,15 @@
               <h3>Free</h3><p class="lp-plan-blurb">Everything needed to journal and size trades safely.</p>
               <div class="lp-price"><span class="lp-cur">$</span><span class="lp-amt" data-count>0</span><span class="lp-per"></span></div>
               <p class="lp-plan-note" data-note></p>
-              <ul><li>Trade journal and process score</li><li>Streaks and badges</li><li>Join clubs and spaces</li><li>Replay, Mistake lab and Ask your journal, 5 uses each a month</li><li>MetaTrader report import, 25 trades a month</li></ul>
+              <ul><li>Trade journal and process score</li><li>Streaks and badges</li><li>Join clubs and spaces</li><li>Trade replay, Mistake lab and Ask your journal, 5 uses each a month</li><li>AI trade review and habit insight, 2 each a month</li><li>AI tokens: 8,000 a day</li><li>MetaTrader report import, 25 trades a month</li></ul>
               <a class="btn btn-secondary" href="/auth">Start free</a>
             </article>
             <article class="lp-plan n-out lp-rv lp-plan-hot" data-rv style="transition-delay: 0.18s" data-plan="pro">
               <span class="lp-plan-tag">Most chosen</span>
-              <h3>Pro</h3><p class="lp-plan-blurb">Far higher limits on Replay, Mistake lab and Ask your journal, plus AI reports.</p>
+              <h3>Pro</h3><p class="lp-plan-blurb">Far higher limits on Trade replay, Mistake lab and Ask your journal, plus AI reports.</p>
               <div class="lp-price"><span class="lp-cur">$</span><span class="lp-amt" data-count>0</span><span class="lp-per"></span></div>
               <p class="lp-plan-note" data-note></p>
-              <ul><li>Replay, up to 150 a month</li><li>Mistake lab, up to 300 tags a month</li><li>Ask your journal, up to 300 questions a month</li><li>AI reports and monthly reviews</li><li>MetaTrader live sync and unlimited import</li></ul>
+              <ul><li>Trade replay, up to 150 a month</li><li>Mistake lab, up to 300 tags a month</li><li>Ask your journal, up to 300 questions a month</li><li>AI trade review and habit insight, 60 each a month</li><li>AI tokens: 600,000 a month, up to 40,000 an hour</li><li>AI reports and monthly reviews</li><li>MetaTrader live sync and unlimited import</li></ul>
               <a class="btn btn-primary" href="/billing?plan=pro">Choose Pro</a>
             </article>
             <article class="lp-plan n-out lp-rv" data-rv style="transition-delay: 0.31s" data-plan="mentor">
@@ -2759,7 +2759,7 @@
               <h3>Mentor</h3><p class="lp-plan-blurb">Pro, plus private teaching spaces for your students.</p>
               <div class="lp-price"><span class="lp-cur">$</span><span class="lp-amt" data-count>0</span><span class="lp-per"></span></div>
               <p class="lp-plan-note" data-note></p>
-              <ul><li>Create a mentor space</li><li>Announcements, assignments and live sessions</li><li>Cohort view of what students share</li><li>Verified badge and all Pro tools</li></ul>
+              <ul><li>Create a mentor space</li><li>Announcements, assignments and live sessions</li><li>Cohort view of what students share</li><li>Verified badge and all Pro tools, with much higher limits (3,000,000 AI tokens a month)</li></ul>
               <a class="btn btn-secondary" href="/billing?plan=mentor">Become a mentor</a>
             </article>
           </div>
@@ -2878,8 +2878,7 @@
                     color: var(--sub);
                     max-width: 640px;
                   "
-                  >Yes. Zerodha, Upstox, Angel One, Dhan and Fyers connect read-only, and any other broker works
-                  through a CSV import. Ledgerline can see your trades and can never place an order.</div
+                  >Through MetaTrader 4 or 5, yes: import a history report on any plan, or install the optional live-sync script on Pro. For other platforms, log trades by hand. Ledgerline only reads closed trades and can never place an order.</div
                 ></div
               >
               <div class="lp-faq"
@@ -2927,8 +2926,8 @@
                     color: var(--sub);
                     max-width: 640px;
                   "
-                  >Stocks, options, futures, forex and crypto. Log by hand, import a CSV, or auto-log from a
-                  supported broker.</div
+                  >Stocks, options, futures, forex and crypto. Log by hand, or import your MetaTrader history for any
+                  broker that uses it.</div
                 ></div
               >
               <div class="lp-faq"
@@ -2979,7 +2978,7 @@
                 ><div class="lp-lab" style="margin-bottom: 20px">Product</div
                 ><div style="display: flex; flex-direction: column; gap: 13px"
                   ><a href="/journal" data-hover="">Trade journal</a
-                  ><a href="#brokers" data-hover="">Broker auto-log</a
+                  ><a href="#brokers" data-hover="">MetaTrader import</a
                   ><a href="/sizing" data-hover="">Sizing lab</a
                   ><a href="/forecast" data-hover="">Forecast ledger</a
                   ><a href="/calendar" data-hover="">Trading calendar</a><a href="/coach" data-hover="">AI coach</a
