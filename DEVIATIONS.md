@@ -44,3 +44,7 @@ Things built differently from the design boards, or not built. Each needs your d
 - Privacy and Terms were rewritten to match what is built (crypto-only billing, MetaTrader, AI allowances). Bracketed items remain for the operator and a lawyer. `TERMS_VERSION` in `auth.js` was not changed, so existing acceptances stay valid; bump it if you want people to accept again.
 - New `/cookies` page (Cookie Policy tab). The spaces approval flag and the notification device ID are listed as essential storage.
 - The welcome email uses a new shared layout. Spam placement is mostly a sending-domain issue; see `docs/email-deliverability.md`.
+
+## MetaTrader guided setup
+- The bridge scripts now send a heartbeat (an empty trade list) so the panel can show "Connected". Not yet compiled or run in MetaTrader.
+- The landing copy no longer says the import works with "any broker"; it says MetaTrader 4 and 5 reports, and notes that live sync needs MetaTrader open or on a VPS.
