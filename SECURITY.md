@@ -81,3 +81,20 @@ Set `FIELD_ENCRYPTION_KEY` (generate with the command in `.env.example`), then r
 - Technical details (browser, device, screen, page, language, time zone, last 5 page errors) are sent only if the user leaves the box ticked; the server keeps a fixed whitelist of short text fields. No IP address, token, journal or trade data is stored.
 - Tickets linked to an account are exported and deleted with it. Visitor tickets (email only) are not linked to an account; delete them by email on request.
 - Run `npm run db:migrate` to apply `027_support_tickets.sql`.
+
+## Audit of the MetaTrader, AI and limits work (`metatrader` branch)
+Fixed
+- MetaTrader report parser: a crafted file could make a pattern run for a very long time (denial of service). The account-number pattern is replaced with a bounded one, oversized table rows are skipped, and a test feeds it hostile files and requires a quick finish.
+- Replay candles: the paid market-data call ran before the plan limit was checked, so a free user over the limit could still cost upstream calls. The limit is checked first.
+- Live notification stream: no cap on open streams per user. Capped at 5.
+- MetaTrader ingest and import are on the strict "costly" rate limit.
+- AI tools: output is stripped of currency amounts and code blocks, user text is passed as data with an instruction to ignore requests inside it, one AI run at a time per user, and a failed AI call is never charged.
+
+Checked and found sound
+- HTML sinks: every dynamic `innerHTML` uses constants or server-escaped Markdown (links limited to http, https and mailto).
+- SQL: every interpolated name is a server constant or whitelisted; all values are parameters.
+- Uploads are re-encoded and size-checked; the live-sync token is 256-bit, stored only as a SHA-256 hash, shown once, and revocable; every trade, mistake and replay lookup is scoped to the signed-in user.
+
+Left for the owner
+- `npm audit` reports high and moderate issues inside the Firebase packages' own dependencies (`@grpc/grpc-js`, `uuid`). Fixing them needs a major Firebase upgrade; do it on its own branch and retest sign-in.
+- The reviewer address falls back to a hard-coded default in `mentor-verification.js` when `REVIEWER_EMAIL` is not set. Set `REVIEWER_EMAIL` in production.

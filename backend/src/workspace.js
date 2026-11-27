@@ -438,9 +438,10 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
             FROM trades t LEFT JOIN trade_replays r ON r.user_id=t.user_id AND r.trade_id=t.id
             WHERE t.user_id=$1 AND t.id=$2 AND t.closed_at IS NOT NULL`, [claims.uid,id]);
           if (!record) throw fail(404,'Closed trade unavailable.');
+          await spend(claims.uid,'replay');   // before the paid market-data call, so a user at the limit costs nothing
           if(!record.candles.length) Object.assign(record,await lookupCandles(record));
           else record.candleSource='Imported candles';
-          if(record.candles?.length){await spend(claims.uid,'replay');await query('INSERT INTO billing_replay_usage(user_id) VALUES($1)',[claims.uid]);}
+          if(record.candles?.length){await query('INSERT INTO billing_replay_usage(user_id) VALUES($1)',[claims.uid]);}
           return send(response,200,{...record,usage:await usage(claims.uid,'replay'),review:await lastRun(claims.uid,'replay_review',id),reviewUsage:await usage(claims.uid,'replay_review')});
         }
         const [account] = await query(profile,[claims.uid]);

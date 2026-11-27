@@ -38,3 +38,9 @@ test('number and time helpers', () => {
   assert.equal(number('1 234.50'), 1234.5); assert.equal(number('1,5'), 1.5); assert.ok(Number.isNaN(number('abc')));
   assert.equal(serverTime('2026.11.02 09:15:00').toISOString(), '2026-11-02T09:15:00.000Z'); assert.equal(serverTime('nope'), null);
 });
+
+test('hostile files finish quickly', () => {
+  for (const evil of ['Account: ' + ' '.repeat(1_000_000) + 'x', '<tr>' + '<td>'.repeat(200_000), '<tr><td>' + 'a'.repeat(1_400_000) + '</td></tr>']) {
+    const t = Date.now(); parseReport(evil); assert.ok(Date.now() - t < 1500, 'parse took too long');
+  }
+});

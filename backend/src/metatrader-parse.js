@@ -6,11 +6,12 @@ const MAX_TEXT = 1_500_000;
 export const MAX_ROWS = 2000;
 
 const entities = { '&nbsp;': ' ', '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'" };
-const plain = (html) => html.replace(/<[^>]*>/g, ' ').replace(/&(?:nbsp|amp|lt|gt|quot|#39);/g, (m) => entities[m]).replace(/\s+/g, ' ').trim();
+const plain = (html) => html.slice(0, 50_000).replace(/<[^>]*>/g, ' ').replace(/&(?:nbsp|amp|lt|gt|quot|#39);/g, (m) => entities[m]).replace(/\s+/g, ' ').trim();
 
 function htmlRows(text) {
   const rows = [];
   for (const chunk of text.split(/<tr[\s>]/i).slice(1)) {
+    if (chunk.length > 20_000) continue;   // a real row is a few hundred characters; anything huge is not a report
     const cells = [...chunk.matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map((m) => plain(m[1]));
     if (cells.length) rows.push(cells);
   }
@@ -94,7 +95,8 @@ export function parseReport(text) {
   if (!body.trim()) return { error: 'The file is empty.' };
   if (body.length > MAX_TEXT) return { error: 'That file is too large. Export a shorter date range.' };
   const rows = /<tr[\s>]/i.test(body) ? htmlRows(body) : csvRows(body);
-  const account = (body.match(/Account:?\s*(?:<[^>]*>\s*|&nbsp;|\s)*(\d{4,12})/i) ?? [])[1] ?? '';
+  // The account number sits near the top; read only that part, with tags removed first, so no pattern can run away on a hostile file.
+  const account = (plain(body.slice(0, 20_000)).match(/Account:?\s*(\d{4,12})/i) ?? [])[1] ?? '';
   let col = null; const trades = [], skipped = []; let seen = 0;
   for (const cells of rows) {
     if (!col) { col = columns(cells); continue; }

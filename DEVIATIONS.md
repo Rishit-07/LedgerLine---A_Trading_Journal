@@ -29,4 +29,6 @@ Things built differently from the design boards, or not built. Each needs your d
 - Free import limit of 25 trades a month is my choice, set in `billing-config.js`.
 - Replay, Mistake lab and Ask your journal stay open to everyone but are limited per month on the server (Free 5 each, Pro and Mentor 150 / 300 / 300). The numbers are my choice, set in `billing-config.js`.
 - Buttons gain a shared hover sheen (primary) and press-in; the plan-ready screen no longer has a Replay button.
-- Still open: the landing page "Brokers" section and onboarding broker step still describe the old broker list.
+- The landing page, About page and FAQ no longer claim Zerodha, Upstox, Angel One, Dhan or Fyers sync, because that was never built; they describe MetaTrader import and Pro live sync only.
+- Still open: the onboarding broker step and the `broker_links` table still store the old broker names (no code reads them to sync anything).
+- AI trade review (on a trade's chart) and AI habit insight (Mistake lab) are new at your request. Limits and token tiers are my choice, set in `billing-config.js`.

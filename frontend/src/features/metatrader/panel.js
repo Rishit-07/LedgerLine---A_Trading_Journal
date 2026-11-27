@@ -8,7 +8,7 @@ export const metatraderMarkup='<p>Bring your MetaTrader 4 or 5 trades into the j
 export function bindMetaTrader(root,request){
   const host=root.querySelector('[data-mt]');
   let state=null,secret='';
-  const apiUrl=(import.meta.env?.VITE_API_URL||location.origin).replace(/\/$/,'')+'/api/metatrader/ingest';
+  const apiUrl=location.origin+'/api/metatrader/ingest';
 
   async function load(){
     try{state=await request('/api/metatrader','GET');}catch(e){host.replaceChildren(el('p',e.message,'mt-note'));return;}

@@ -103,9 +103,12 @@ export function createNotificationApi(pool, authenticate) {
   };
 
   /* Server-sent events: one open request per tab. Sends each new row as it is created. */
+  const open = new Map();   // live streams per user, so one account cannot hold thousands of connections
   const stream = async (request, response) => {
     const claims = await authenticate(request, response);
     if (!claims) return;
+    if ((open.get(claims.uid) ?? 0) >= 5) return send(response, 429, { error: 'Too many open tabs. Close one and try again.' });
+    open.set(claims.uid, (open.get(claims.uid) ?? 0) + 1);
     response.writeHead(200, {
       'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store, no-transform', Connection: 'keep-alive',
       'X-Content-Type-Options': 'nosniff', 'X-Accel-Buffering': 'no', 'Content-Security-Policy': "default-src 'none'",
@@ -116,7 +119,7 @@ export function createNotificationApi(pool, authenticate) {
     const beat = setInterval(() => response.write(': keep-alive\n\n'), 25_000);
     // Tokens last an hour; end the stream before then so the page reconnects with a fresh one.
     const limit = setTimeout(() => response.end(), 10 * 60_000);
-    request.on('close', () => { bus.off(claims.uid, push); clearInterval(beat); clearTimeout(limit); });
+    request.on('close', () => { open.set(claims.uid, Math.max(0, (open.get(claims.uid) ?? 1) - 1)); bus.off(claims.uid, push); clearInterval(beat); clearTimeout(limit); });
   };
   return { main, count, stream };
 }
