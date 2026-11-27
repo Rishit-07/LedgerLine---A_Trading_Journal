@@ -16,8 +16,9 @@ export function renderLegal(landing) {
   let activeDocument;
 
   function setDocument() {
-    const isTerms = location.pathname.replace(/\/$/, '') === '/terms';
-    const key = isTerms ? 'terms' : 'privacy';
+    const path = location.pathname.replace(/\/$/, '');
+    const key = path === '/terms' ? 'terms' : path === '/cookies' ? 'cookies' : 'privacy';
+    const tab = ['privacy', 'terms', 'cookies'].indexOf(key);
     if (key === activeDocument) return;
     activeDocument = key;
     const { title, sections } = legalDocuments[key];
@@ -25,9 +26,9 @@ export function renderLegal(landing) {
     titles.forEach((element) => {
       element.textContent = title;
     });
-    tabs.style.setProperty('--tab', Number(isTerms));
+    tabs.style.setProperty('--tab', tab);
     links.forEach((link, index) => {
-      if (index === Number(isTerms)) link.setAttribute('aria-current', 'page');
+      if (index === tab) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     });
     const items = [];
@@ -52,9 +53,8 @@ export function renderLegal(landing) {
       indexBadge.className = 'n-in n-mono';
       indexBadge.textContent = number;
       subtitle.append(indexBadge, heading);
-      const text = document.createElement('p');
-      text.textContent = copy;
-      card.append(subtitle, text);
+      const paragraphs = copy.split('\n').map((line) => { const p = document.createElement('p'); p.textContent = line; return p; });
+      card.append(subtitle, ...paragraphs);
       return card;
     });
     const contact = document.createElement('p');

@@ -4,6 +4,7 @@
    With the setting off, or with reduced motion, the bot stays on screen and still. */
 import { botSvg } from './svg.js';
 import { animated, localPop, rememberPop } from './prefs.js';
+import { remember } from '../../consent.js';
 import './ledger-bot.css';
 
 const STAY = 12000, CYCLE = 5 * 60000, FLOATING = ['/dashboard', '/journal', '/badges'];
@@ -161,7 +162,7 @@ export async function startLedgerBot({ request, path }) {
   let note = null;
   try {
     const result = await request('/api/ledger-bot' + (floats ? '?note=1' : ''), 'GET');
-    if (result.pop !== localPop()) rememberPop(result.pop); else try { localStorage.setItem('lp-bot-pop', result.pop ? 'on' : 'off'); } catch { /* ignore */ }
+    if (result.pop !== localPop()) rememberPop(result.pop); else remember('lp-bot-pop', result.pop ? 'on' : 'off');
     note = result.note;
   } catch { /* the bot still works with the local setting */ }
   if (floats) mountFloating({ note });

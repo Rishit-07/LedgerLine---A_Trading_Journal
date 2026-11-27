@@ -30,7 +30,7 @@
         var p = location.pathname.replace(/\/$/, '') || '/';
         var kind = p === '/' ? 'landing'
           : p === '/auth' || p === '/onboarding' ? 'auth'
-          : /^\/(about|support|terms|privacy|legal|streak|p\/)/.test(p) ? 'article'
+          : /^\/(about|support|terms|privacy|cookies|legal|streak|p\/)/.test(p) ? 'article'
           : 'app';
         document.documentElement.setAttribute('data-skel', kind);
       })();
@@ -3006,7 +3006,8 @@
                 ><div style="display: flex; flex-direction: column; gap: 13px"
                   ><a href="/about" data-hover="">About</a><a href="/about" data-hover="">How scoring works</a
                   ><a href="/support" data-hover="">Help center</a><a href="/privacy" data-hover="">Privacy</a
-                  ><a href="/terms" data-hover="">Terms</a></div
+                  ><a href="/terms" data-hover="">Terms</a><a href="/cookies" data-hover="">Cookies</a
+                  ><a href="#" data-cookie-settings data-hover="">Cookie settings</a></div
                 ></div
               ></div
             ><div style="margin-top: 60px; font: 600 12px var(--font-sans); color: var(--mut)"

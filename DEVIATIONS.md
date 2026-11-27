@@ -38,3 +38,9 @@ Things built differently from the design boards, or not built. Each needs your d
 - GSAP is loaded from the npm package (dynamic import) instead of cdnjs, so the CSP needs no extra host. It still loads only on these two screens and not at all with reduced motion.
 - `_redirects` has no catch-all, so unknown paths get a real HTTP 404 from `404.html`. This needs a host that honours `_redirects` and `404.html` (Cloudflare Pages and Netlify do).
 - `robots.txt`, `sitemap.xml` and the canonical link are written only when `SITE_URL` is set at build time.
+
+## Cookie consent and legal pages
+- The banner offers two choices, "Essential only" and "Remember my preferences", because Ledgerline has no analytics or advertising storage. The only optional storage is the theme and the Ledger bot setting. Nothing optional is written before the visitor chooses. A "Cookie settings" link in the landing and legal footers and in Settings reopens it.
+- Privacy and Terms were rewritten to match what is built (crypto-only billing, MetaTrader, AI allowances). Bracketed items remain for the operator and a lawyer. `TERMS_VERSION` in `auth.js` was not changed, so existing acceptances stay valid; bump it if you want people to accept again.
+- New `/cookies` page (Cookie Policy tab). The spaces approval flag and the notification device ID are listed as essential storage.
+- The welcome email uses a new shared layout. Spam placement is mostly a sending-domain issue; see `docs/email-deliverability.md`.

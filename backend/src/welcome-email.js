@@ -1,9 +1,7 @@
 import nodemailer from 'nodemailer';
+import { button, escapeHtml as esc, layout, paragraph } from './email-layout.js';
 
 const retryInterval = 5 * 60_000;
-const htmlEscape = (value) => value.replace(/[&<>"']/g, (char) => ({
-  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-})[char]);
 
 export function readMailConfig(env) {
   const { GMAIL_ADDRESS, GMAIL_APP_PASSWORD, RESEND_API_KEY: apiKey, EMAIL_FROM: from, APP_URL: appUrl } = env;
@@ -47,17 +45,26 @@ export function prepareWelcome(config, claims) {
   if (!config || claims.email_verified !== true || !claims.email) return null;
   const firstName = typeof claims.name === 'string' ? claims.name.trim().split(/\s+/)[0].slice(0, 60) : '';
   const greeting = firstName ? `Hi ${firstName},` : 'Hi there,';
-  const intro = 'Welcome to Ledgerline 🙌. We’re glad you’re here ❤️. You don’t need a perfect plan to start. One trade, one reason for taking it, and one note about what you learned is enough.';
+  const intro = 'Welcome to Ledgerline. We’re glad you’re here. You don’t need a perfect plan to start. One trade, one reason for taking it, and one note about what you learned is enough.';
   const aboutLabel = 'See how Ledgerline works';
   const journal = new URL('/auth', config.origin).href;
   const about = new URL('/about', config.origin).href;
+  const html = layout({
+    preheader: 'One trade, one reason, one note is enough to start.',
+    title: firstName ? `Welcome, ${firstName}` : 'Welcome to Ledgerline',
+    origin: config.origin,
+    reason: 'You are getting this because you created a Ledgerline account with this email address.',
+    body: paragraph(esc(intro)) + button('Open Ledgerline', journal) +
+      paragraph(`<a href="${esc(about)}" style="color:#4f5bd5;font-weight:600">${aboutLabel}</a>`) +
+      paragraph('See you in the journal,<br>The Ledgerline team'),
+  });
   return {
     provider: config.provider,
     from: config.from,
     to: [claims.email],
     subject: 'Welcome to Ledgerline',
     text: `${greeting}\n\n${intro}\n\nOpen Ledgerline: ${journal}\n${aboutLabel}: ${about}\n\nSee you in the journal,\nThe Ledgerline team`,
-    html: `<p>${htmlEscape(greeting)}</p><p>${intro}</p><p><a href="${htmlEscape(journal)}">Open Ledgerline</a></p><p><a href="${htmlEscape(about)}">${aboutLabel}</a></p><p>See you in the journal,<br>The Ledgerline team</p>`,
+    html,
   };
 }
 

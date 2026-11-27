@@ -1,4 +1,5 @@
 import {legacyBillingRoute} from './features/billing/route.js';
+import {initConsent,remember} from './consent.js';
 import {openingReveal} from './components/file-actions.js';
 import {communityRedirect,roomPath} from './features/community/routes.js';
 import '@fontsource-variable/schibsted-grotesk';
@@ -40,6 +41,7 @@ function setTheme(dark) {
 setTheme(root.classList.contains('dark'));
 
 import { appPages } from './routes.js';
+initConsent();
 const path = location.pathname.replace(/\/$/, '') || '/';
 bindPageNavigation();
 
@@ -78,7 +80,7 @@ if(legacyBillingRoute(path,location.search)){location.replace('/billing');}else 
     transitionTheme(event, () => {
       const dark = !root.classList.contains('dark');
       setTheme(dark);
-      localStorage.setItem('ledgerline-theme', dark ? 'dark' : 'light');
+      remember('ledgerline-theme', dark ? 'dark' : 'light');
     }),
   );
 
@@ -107,7 +109,7 @@ if(legacyBillingRoute(path,location.search)){location.replace('/billing');}else 
 } else if (path === '/support') {
   landing.hidden = true;
   import('./pages/support.js').then(({ renderSupport }) => bindPublicAccount(renderSupport(landing))).catch(renderLoadError);
-} else if (path === '/terms' || path === '/privacy' || path === '/legal') {
+} else if (path === '/terms' || path === '/privacy' || path === '/cookies' || path === '/legal') {
   landing.hidden = true;
   if (path === '/legal') history.replaceState(null, '', '/privacy' + location.hash);
   import('./pages/legal.js').then(({ renderLegal }) => bindPublicAccount(renderLegal(landing))).catch(renderLoadError);
