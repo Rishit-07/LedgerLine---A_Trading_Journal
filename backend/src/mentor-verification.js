@@ -1,3 +1,4 @@
+import {clientAddress} from './guard.js';
 import {createHmac} from 'node:crypto';
 import {fields,sectionError,termsVersion} from '../../src/config/mentor-form.js';
 import {readJson,send} from './http.js';
@@ -83,7 +84,7 @@ export function mentorVerification(pool,authenticate,auth,admin=false){
       const count=await db.query("SELECT count(*)::int n FROM mentor_review_events WHERE actor_id=$1 AND action='submit' AND created_at>now()-interval '30 days'",[user.uid]);
       if(count.rows[0].n>=3)reject('You can submit up to three applications per 30 days.',429);
       const secret=process.env.MENTOR_IP_HASH_KEY;if(!secret)reject('Verification submission is temporarily unavailable.',503);
-      const hash=createHmac('sha256',secret).update(req.socket.remoteAddress??'').digest('hex');
+      const hash=createHmac('sha256',secret).update(clientAddress(req,process.env.TRUST_PROXY==='true',process.env)).digest('hex');
       await db.query("UPDATE mentor_verifications SET status='pending',submitted_at=now(),terms_version=$2,conduct_version=$2,accepted_at=now(),accepted_ip_hash=$3,email=$4,reviewer_note=NULL WHERE user_id=$1",[user.uid,termsVersion,hash,user.email]);
      }else await db.query('UPDATE mentor_verifications SET step=$2 WHERE user_id=$1',[user.uid,Math.min(4,data.step+1)]);
     }

@@ -15,7 +15,15 @@ Required environment: `DATABASE_URL`, `FIREBASE_PROJECT_ID` (plus the Firebase a
 ## 3. Frontend: Cloudflare Pages
 Build `npm run build` with `SITE_URL=https://your-domain` (and `VITE_TURNSTILE_SITE_KEY` if you use Turnstile). Publish `frontend/dist`. It contains `_headers`, `_redirects` and `404.html`.
 
-**/api must be forwarded to the API on the same address.** The browser calls `/api/...` on the site's own address, and the MetaTrader script and the CoinPayments webhook use that address too. Static Pages cannot forward to an outside server from `_redirects`, so add a small Pages Function (or Worker route) that passes `/api/*` to the API and forwards the visitor's address. This is not built yet.
+**/api forwarding is built.** The browser, the MetaTrader script and the CoinPayments webhook all use the site's own address, so `functions/api/[[path]].js` (a Pages Function) passes `/api/*` to the API. In Pages set:
+- Build command `npm ci && npm run build`, build output directory `frontend/dist`, root directory the repository root (so `functions/` is found).
+- Variables: `API_ORIGIN` (the Render service address, no trailing slash), `PROXY_KEY` (a secret, `openssl rand -hex 32`), `SITE_URL`, and `VITE_TURNSTILE_SITE_KEY` if used.
+- Put the same `PROXY_KEY` on the API. With it, the API trusts the visitor address the forwarder sends, so rate limits see real visitors.
+- Pages Functions on the free plan have a daily request limit (check Cloudflare's current number), which is plenty at the start.
+- Not yet run against a real Pages project: check sign-in, an upload and the notification stream after the first deploy.
+
+## Render (API), free plan
+`render.yaml` at the repo root is a Blueprint. In Render choose New > Blueprint, pick this repo and branch, then fill in each secret under Environment (`sync: false` ones are left blank on purpose). After deploy, copy the service address into Pages as `API_ORIGIN`. Set `APP_URL` and `PUBLIC_APP_URL` to your site address, not the Render one.
 
 ## Free-tier note
 A free host that sleeps (for example Render free) pauses the 5-minute maintenance (billing sweep, reminders, emails) while asleep. Payments still settle when it wakes. Move to an always-on host once money is coming in.

@@ -1,5 +1,6 @@
 /* Request guards shared by the HTTP server: rate limiting, client address, safe handler wrapper.
    Kept free of database and Firebase imports so it can be unit tested. */
+import { timingSafeEqual } from 'node:crypto';
 import { send } from './http.js';
 import { reportError } from './error-report.js';
 
@@ -46,7 +47,15 @@ export function createSharedLimiter({ url, token, windowMs, max, fallback, fetch
 }
 
 /** The client address. X-Forwarded-For is only believed when TRUST_PROXY=true (the server sits behind a proxy). */
-export function clientAddress(request, trustProxy = process.env.TRUST_PROXY === 'true') {
+export function clientAddress(request, trustProxy = process.env.TRUST_PROXY === 'true', env = process.env) {
+  // The Cloudflare Pages /api forwarder sends the visitor's address with a shared secret. It is believed only when the secret matches.
+  const key = env.PROXY_KEY;
+  if (key) {
+    const sent = Buffer.from(String(request.headers['x-ledgerline-proxy-key'] ?? ''));
+    const expected = Buffer.from(key);
+    const ip = String(request.headers['x-ledgerline-client-ip'] ?? '').trim().slice(0, 64);
+    if (ip && sent.length === expected.length && timingSafeEqual(sent, expected)) return ip;
+  }
   if (trustProxy) {
     const forwarded = String(request.headers['x-forwarded-for'] ?? '').split(',').pop().trim();
     if (forwarded) return forwarded;

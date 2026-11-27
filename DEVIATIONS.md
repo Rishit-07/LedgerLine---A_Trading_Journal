@@ -53,3 +53,8 @@ Things built differently from the design boards, or not built. Each needs your d
 - The `Dockerfile` is for the API only and has not been built here (no Docker engine in the sandbox); the file layout was checked by hand and the server starts and stops at the environment check, as expected.
 - Turnstile covers the support and newsletter forms only. Sign-up goes straight to Firebase, so the server cannot block it; App Check is the control there. It is off unless both keys are set.
 - `/api` forwarding for production is documented in `docs/deploy.md` but not built.
+
+## Cloudflare Pages forwarder and Render blueprint
+- `functions/api/[[path]].js` forwards `/api/*` to the API and sends the visitor address with a shared `PROXY_KEY`; `guard.js` trusts it only when the key matches. Not yet run on a real Pages project.
+- `render.yaml` describes the free Docker web service; secrets are entered in Render, never in the file. Not yet run on Render.
+- Newsletter, mentorship and mentor-verification IP hashes now use the same address helper.
