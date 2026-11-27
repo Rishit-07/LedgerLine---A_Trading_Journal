@@ -28,5 +28,5 @@ export const appPages = {
   '/profile': 'Profile',
 };
 
-export const publicPages = ['/', '/about', '/support', '/terms', '/privacy', '/legal', '/auth', '/onboarding', '/streak/share', '/streak/invite'];
+export const publicPages = ['/', '/about', '/support', '/terms', '/privacy', '/cookies', '/legal', '/auth', '/onboarding', '/streak/share', '/streak/invite'];
 export const prefixPages = ['/p/*', '/newsletter/*', '/clubs/*', '/spaces/*', '/community/*'];

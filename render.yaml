@@ -1,0 +1,46 @@
+# Render Blueprint: creates the Ledgerline API as a Docker web service on the free plan.
+# Secrets are not stored here. After the first sync, open the service > Environment and fill each value in.
+services:
+  - type: web
+    name: ledgerline-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: singapore
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: PUBLIC_APP_URL
+        sync: false
+      - key: PROXY_KEY
+        sync: false
+      - key: FIELD_ENCRYPTION_KEY
+        sync: false
+      - key: NEWSLETTER_SECRET
+        sync: false
+      - key: MENTOR_IP_HASH_KEY
+        sync: false
+      - key: REVIEWER_EMAIL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: COINPAYMENTS_CLIENT_ID
+        sync: false
+      - key: COINPAYMENTS_CLIENT_SECRET
+        sync: false
+      - key: TURNSTILE_SECRET_KEY
+        sync: false

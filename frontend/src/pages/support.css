@@ -214,3 +214,4 @@
 .support-diagnostics { display:flex; gap:8px; align-items:flex-start; font-size:13px; }
 .support-diagnostics-list { font-size:12px; }
 .support-diagnostics-list pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:200px; overflow:auto; margin:8px 0; }
+.ts-box{min-height:0;margin:6px 0}

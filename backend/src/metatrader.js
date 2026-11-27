@@ -108,7 +108,7 @@ export function createMetaTraderApi(pool, { authenticate, now = () => new Date()
       const parsed = data.trades.map((t) => toTrade({ ticket: String(t.ticket ?? '').replace(/\D/g, '').slice(0, 32), account, symbol: t.symbol, type: String(t.type ?? ''),
         volume: Number(t.volume), openedAt: at(t.open_time), closedAt: at(t.close_time), entry: Number(t.open_price), exit: Number(t.close_price),
         stop: Number(t.sl), target: Number(t.tp), commission: Number(t.commission) }));
-      const result = await store(row.user_id, parsed.filter((p) => p.trade).map((p) => p.trade), 'live', Infinity);
+      const result = parsed.length ? await store(row.user_id, parsed.filter((p) => p.trade).map((p) => p.trade), 'live', Infinity) : { imported: 0, duplicates: 0, limited: 0 };
       await pool.query('UPDATE mt_links SET last_seen_at=now() WHERE id=$1', [row.id]);
       return send(response, 200, { ...result, skipped: parsed.filter((p) => p.skip).length });
     } catch { console.error('MetaTrader ingest failed.'); return send(response, 503, { error: 'Try again shortly.' }); }

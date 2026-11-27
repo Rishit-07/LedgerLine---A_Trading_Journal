@@ -30,3 +30,6 @@ AI token wallet (shared by Ask your journal, AI trade review and AI habit insigh
 - Mentor: 3,000,000 tokens a month, 150,000 an hour.
 
 Past a limit the API answers 403 with `reason: 'limit'` (tool count) or 429 with `reason: 'tokens'` (wallet). A failed AI call is never charged. The billing page shows every meter, and its comparison table is built from the same config, so copy and enforcement cannot drift apart (a test checks the landing page and `plans.ts` too).
+
+## Guided setup and connection check
+The Live sync card walks through four steps (add the script, allow the address in WebRequest, create a connection, check it) with copy buttons for the address and token. The script also posts an empty list when no trade has closed, so a new connection shows as **Connected** within a few minutes even before its first trade. A link counts as connected if it was seen in the last 10 minutes. While a link is waiting, the card re-checks every 8 seconds for up to 10 minutes; "Check now" does it on demand. The bridge scripts are still uncompiled, so confirm the heartbeat on a demo account.

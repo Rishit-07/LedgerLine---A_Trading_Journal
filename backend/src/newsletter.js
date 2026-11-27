@@ -2,6 +2,7 @@
    Nothing is sent to anyone until they confirm from the email we send them. */
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { isEmail, readJson, send } from './http.js';
+import { clientAddress } from './guard.js';
 import { renderMarkdown, markdownToText } from './markdown.js';
 import { makeToken, readToken, available as tokensAvailable } from './newsletter-tokens.js';
 import { eligibleReviewer, reviewer } from './mentor-verification.js';
@@ -89,7 +90,7 @@ export function createNewsletterApi(pool, { authenticate, mail, auth, env = proc
     return { sent: true };
   }
 
-  const ipOf = (request) => (env.TRUST_PROXY === 'true' ? String(request.headers['x-forwarded-for'] ?? '').split(',').pop().trim() : '') || request.socket?.remoteAddress || '';
+  const ipOf = (request) => clientAddress(request, env.TRUST_PROXY === 'true', env) === 'unknown' ? '' : clientAddress(request, env.TRUST_PROXY === 'true', env);
   const body = async (request, response, max = 2048) => {
     const { error, data } = await readJson(request, max);
     if (error || !data || typeof data !== 'object') { send(response, error ?? 400, { error: 'Enter a valid request.' }); return null; }

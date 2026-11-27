@@ -82,9 +82,9 @@
 .legal-tabs {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   padding: 5px;
-  max-width: 560px;
+  max-width: 720px;
   margin-bottom: 28px;
 }
 .legal-tabs a {
@@ -102,10 +102,11 @@
 .legal-tabs a[aria-current] {
   color: var(--acc);
 }
+.legal-tabs a { font-size: clamp(12.5px, 3.4vw, 16px); padding-inline: 6px; }
 .legal-pill {
   position: absolute;
   inset: 5px auto 5px 5px;
-  width: calc((100% - 10px) / 2);
+  width: calc((100% - 10px) / var(--tabs, 3));
   border-radius: 15px;
   transform: translateX(calc(var(--tab, 0) * 100%));
   transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.3, 1);

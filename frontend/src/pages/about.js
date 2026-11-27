@@ -1,3 +1,4 @@
+import { mountTurnstile } from '../turnstile.js';
 import pageMarkup from './about.html?raw';
 import { bindPageTheme, mountPage } from './shared.js';
 import { initSectionRail } from '../section-rail.js';
@@ -8,6 +9,7 @@ const clamp = (value) => Math.max(0, Math.min(1, value));
 const ease = (value) => 1 - (1 - clamp(value)) ** 3;
 
 function bindNewsletter(form) {
+  const check = mountTurnstile(form.querySelector('[data-turnstile]'));
   const button = form.querySelector('button');
   const status = form.querySelector('[role="status"]');
   form.addEventListener('submit', async (event) => {
@@ -19,10 +21,15 @@ function bindNewsletter(form) {
     try {
       const response = await fetch(form.action, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...check.headers() },
         body: JSON.stringify({ email }),
         signal: AbortSignal.timeout(10000),
       });
+      if (response.status === 403) {
+        status.textContent = 'Please complete the check, then try again.';
+        check.reset();
+        return;
+      }
       if (response.status === 400) {
         status.textContent = 'Enter a valid email address.';
         return;

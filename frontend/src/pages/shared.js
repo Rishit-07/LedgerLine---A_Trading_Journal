@@ -1,5 +1,6 @@
 import { transitionTheme } from '../theme-transition.js';
 import { animatePageEntry } from './navigation.js';
+import { remember } from '../consent.js';
 
 export function mountPage(previous, markup) {
   const template = document.createElement('template');
@@ -26,7 +27,7 @@ export function bindPageTheme(page) {
   button.addEventListener('click', (event) => {
     transitionTheme(event, () => {
       root.classList.toggle('dark');
-      localStorage.setItem('ledgerline-theme', root.classList.contains('dark') ? 'dark' : 'light');
+      remember('ledgerline-theme', root.classList.contains('dark') ? 'dark' : 'light');
       update();
     });
   });

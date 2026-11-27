@@ -1,5 +1,6 @@
 /* The 404 page. The server answers 404 (see write-headers.mjs); this draws the page, hides it from search, and logs only the path and referrer. */
 import './screens.css';
+import { remember } from '../../consent.js';
 import { el, mascot, follow, hop, reducedMotion, gsapOnce } from './mascot.js';
 
 const middle = (text, max = 30) => (text.length <= max ? text : text.slice(0, Math.ceil((max - 1) / 2)) + '…' + text.slice(-Math.floor((max - 1) / 2)));
@@ -29,7 +30,7 @@ export function renderNotFound(landing) {
   const top = el('div', 'll-top'), theme = el('button', 'll-th'); theme.type = 'button';
   const dark = () => document.documentElement.classList.contains('dark');
   const label = () => { theme.textContent = dark() ? 'Light' : 'Dark'; };
-  theme.onclick = () => { const next = !dark(); document.documentElement.classList.toggle('dark', next); try { localStorage.setItem('ledgerline-theme', next ? 'dark' : 'light'); } catch { /* ignore */ } label(); };
+  theme.onclick = () => { const next = !dark(); document.documentElement.classList.toggle('dark', next); remember('ledgerline-theme', next ? 'dark' : 'light'); label(); };
   label(); top.append(theme);
 
   const h1 = el('h1'); words(h1, 'This page isn’t in the book');

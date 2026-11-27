@@ -6,6 +6,7 @@ import { hasPlan, activePlan } from './entitlements.js';
 import { notify } from './notifications.js';
 import { cachedStats } from './mentorship-stats.js';
 import { readJson, send } from './http.js';
+import { clientAddress } from './guard.js';
 
 export const CONSENT_VERSION = '2026-11';
 const LINK_DAYS = [7, 14, 30];
@@ -21,7 +22,7 @@ const addDays = (d, n) => new Date(d.getTime() + n * 864e5);
 const addMonths = (d, n) => { const x = new Date(d); x.setUTCMonth(x.getUTCMonth() + n); return x; };
 
 export function createMentorshipApi(pool, { authenticate, now = () => new Date(), env = process.env, cancelMentorPlan = async () => {}, planTerm = async () => 'monthly', plans = { hasPlan, activePlan } }) {
-  const ipHash = (request) => sha((env.NEWSLETTER_SECRET ?? env.FIELD_ENCRYPTION_KEY ?? '') + '|' + (request.socket?.remoteAddress ?? '')).slice(0, 32);
+  const ipHash = (request) => sha((env.NEWSLETTER_SECRET ?? env.FIELD_ENCRYPTION_KEY ?? '') + '|' + clientAddress(request, env.TRUST_PROXY === 'true', env)).slice(0, 32);
 
   async function tx(fn) {
     if (!pool.connect) return fn(pool);

@@ -63,11 +63,11 @@ void Send()
             + ",\"commission\":" + Num(HistoryDealGetDouble(deal, DEAL_COMMISSION), 2) + "}";
       count++; if(closeTime > newest) newest = closeTime;
    }
-   if(count == 0) return;
+   // With no new closed trades this still posts an empty list, so Ledgerline can show the link as connected.
    string body = "{\"account\":\"" + (string)AccountInfoInteger(ACCOUNT_LOGIN) + "\",\"trades\":[" + items + "]}";
    char post[], result[]; string headers = "Content-Type: application/json\r\nAuthorization: Bearer " + Token + "\r\n", rh;
    StringToCharArray(body, post, 0, StringLen(body));
    int code = WebRequest("POST", LedgerlineUrl, headers, 8000, post, result, rh);
-   if(code == 200) { lastSent = newest; Print("Ledgerline: sent ", count, " closed trades."); }
+   if(code == 200) { lastSent = newest; if(count > 0) Print("Ledgerline: sent ", count, " closed trades."); }
    else Print("Ledgerline: not sent (", code, "). ", code == -1 ? "Allow the address in Tools > Options > Expert Advisors." : CharArrayToString(result));
 }

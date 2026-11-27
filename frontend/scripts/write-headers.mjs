@@ -12,12 +12,12 @@ const hashes = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/scrip
 
 const policy = [
   "default-src 'self'",
-  `script-src 'self' 'inline-speculation-rules' ${hashes.join(' ')} https://apis.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/`,
+  `script-src 'self' 'inline-speculation-rules' ${hashes.join(' ')} https://apis.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://challenges.cloudflare.com`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.googleusercontent.com",
   "font-src 'self' data:",
   "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebaseappcheck.googleapis.com https://fcmregistrations.googleapis.com https://firebaseinstallations.googleapis.com https://lumberjack.razorpay.com",
-  'frame-src https://ledger-line-d2e8c.firebaseapp.com https://accounts.google.com https://www.google.com/recaptcha/ https://recaptcha.google.com',
+  'frame-src https://ledger-line-d2e8c.firebaseapp.com https://accounts.google.com https://www.google.com/recaptcha/ https://recaptcha.google.com https://challenges.cloudflare.com',
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

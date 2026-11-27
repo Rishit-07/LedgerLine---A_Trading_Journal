@@ -1,0 +1,18 @@
+.ck {
+  position: fixed; z-index: 60; left: 16px; right: 16px; bottom: 16px; max-width: 460px;
+  padding: 20px 22px; background: var(--bg); color: var(--ink); border-radius: var(--radius-raised);
+  box-shadow: var(--surface-raised); font-family: var(--font-sans);
+  opacity: 0; transform: translateY(16px); transition: opacity .25s ease, transform .25s ease;
+}
+.ck.is-open { opacity: 1; transform: none; }
+.ck h2 { margin: 0 0 6px; font-size: 18px; font-weight: 750; }
+.ck p { margin: 0 0 10px; font-size: 14px; line-height: 1.5; color: var(--sub); }
+.ck a { color: var(--acc); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
+.ck .ck-now { color: var(--ink); font-weight: 650; }
+.ck .ck-now:empty { display: none; }
+.ck-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.ck-actions .btn { flex: 1 1 150px; }
+.ck a:focus-visible, .ck button:focus-visible { outline: 3px solid var(--acc); outline-offset: 2px; }
+@media (min-width: 640px) { .ck { left: auto; right: 24px; bottom: 24px; } }
+@media (prefers-reduced-motion: reduce) { .ck { transition: none; transform: none; } }
+@media print { .ck { display: none; } }

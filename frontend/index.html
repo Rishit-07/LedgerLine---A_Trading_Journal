@@ -30,7 +30,7 @@
         var p = location.pathname.replace(/\/$/, '') || '/';
         var kind = p === '/' ? 'landing'
           : p === '/auth' || p === '/onboarding' ? 'auth'
-          : /^\/(about|support|terms|privacy|legal|streak|p\/)/.test(p) ? 'article'
+          : /^\/(about|support|terms|privacy|cookies|legal|streak|p\/)/.test(p) ? 'article'
           : 'app';
         document.documentElement.setAttribute('data-skel', kind);
       })();
@@ -2147,7 +2147,7 @@
                       margin-top: 4px;
                       max-width: 430px;
                     "
-                    >In MetaTrader 4 or 5, save your account history as an HTML or CSV report. It works with any broker that uses MetaTrader.</div
+                    >In MetaTrader 4 or 5, save your account history as an HTML or CSV report. No setup, and it works on every plan.</div
                   ></div
                 ></div
               ><div class="lp-step lp-rv" data-rv style="margin-bottom: 26px; transition-delay: 0.15s"
@@ -2161,7 +2161,7 @@
                       margin-top: 4px;
                       max-width: 430px;
                     "
-                    >Ledgerline reads closed trades only and never asks for a broker password.</div
+                    >Your MetaTrader password never leaves MetaTrader. Ledgerline reads closed trades only and can never place or change a trade.</div
                   ></div
                 ></div
               ><div class="lp-step lp-rv" data-rv style="margin-bottom: 26px; transition-delay: 0.3s"
@@ -2887,7 +2887,7 @@
                     color: var(--sub);
                     max-width: 640px;
                   "
-                  >Through MetaTrader 4 or 5, yes: import a history report on any plan, or install the optional live-sync script on Pro. For other platforms, log trades by hand. Ledgerline only reads closed trades and can never place an order.</div
+                  >Through MetaTrader 4 or 5, yes: import a history report on any plan, or install the optional live-sync script on Pro (one-time setup, and MetaTrader has to stay open or run on a VPS). For other platforms, log trades by hand. Ledgerline only reads closed trades and can never place an order.</div
                 ></div
               >
               <div class="lp-faq"
@@ -3006,7 +3006,8 @@
                 ><div style="display: flex; flex-direction: column; gap: 13px"
                   ><a href="/about" data-hover="">About</a><a href="/about" data-hover="">How scoring works</a
                   ><a href="/support" data-hover="">Help center</a><a href="/privacy" data-hover="">Privacy</a
-                  ><a href="/terms" data-hover="">Terms</a></div
+                  ><a href="/terms" data-hover="">Terms</a><a href="/cookies" data-hover="">Cookies</a
+                  ><a href="#" data-cookie-settings data-hover="">Cookie settings</a></div
                 ></div
               ></div
             ><div style="margin-top: 60px; font: 600 12px var(--font-sans); color: var(--mut)"
