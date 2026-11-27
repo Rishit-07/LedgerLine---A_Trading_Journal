@@ -39,34 +39,7 @@ function setTheme(dark) {
 
 setTheme(root.classList.contains('dark'));
 
-const appPages = {
-  '/dashboard': 'Dashboard',
-  '/billing':'Plans and billing',
-  '/mentor-verification':'Verify you teach',
-  '/mentor-review':'Mentor reviews',
-  '/tickets':'My tickets',
-  '/notifications':'Notifications',
-  '/ticket-admin':'Ticket queue',
-  '/newsletter-admin':'Newsletter',
-  '/mentorship':'Mentorship',
-  '/mentor/join':'Join a mentor',
-  '/journal': 'Trade journal',
-  '/history': 'Trade history',
-  '/forecast': 'Forecast ledger',
-  '/calendar': 'Trading calendar',
-  '/sizing': 'Sizing lab',
-  '/clubs': 'Clubs',
-  '/coach': 'AI coach',
-  '/plan': 'Plan',
-  '/mistake': 'Mistake lab',
-  '/reports': 'AI Reports',
-  '/badges': 'Badges',
-  '/portfolio': 'Portfolio',
-  '/people': 'People',
-  '/spaces': 'Mentor spaces',
-  '/settings': 'Settings',
-  '/profile': 'Profile',
-};
+import { appPages } from './routes.js';
 const path = location.pathname.replace(/\/$/, '') || '/';
 bindPageNavigation();
 
@@ -95,7 +68,7 @@ function renderPending(title, message, retry = false) {
 const renderLoadError = () => renderPending('Page unavailable', 'Reload the page to try again.');
 
 const communityDestination=communityRedirect(new URL(location.href));
-if(legacyBillingRoute(path,location.search)){location.replace('/billing');}else if(path==='/motion-preview'){import('./pages/motion-preview.js').then(m=>m.preview(landing)).catch(renderLoadError);}else if(path==='/replay'){location.replace('/history');} else if(path==='/ai-reports'){location.replace('/reports'+location.search+location.hash);} else if(communityDestination) {
+if(legacyBillingRoute(path,location.search)){location.replace('/billing');}else if(import.meta.env.DEV&&path==='/motion-preview'){import('./pages/motion-preview.js').then(m=>m.preview(landing)).catch(renderLoadError);}else if(path==='/replay'){location.replace('/history');} else if(path==='/ai-reports'){location.replace('/reports'+location.search+location.hash);} else if(communityDestination) {
   location.replace(communityDestination);
 } else if (path === '/') {
   openingReveal();
@@ -155,5 +128,6 @@ if(legacyBillingRoute(path,location.search)){location.replace('/billing');}else 
     .catch(() => renderPending(path === '/auth' ? 'Sign-in unavailable' : 'Account could not load',
       'Try again in a moment.', true));
 } else {
-  renderPending('Page unavailable');
+  landing.hidden = true;
+  import('./features/screens/notfound.js').then(({ renderNotFound }) => renderNotFound(landing)).catch(() => renderPending('Page not found', 'This page is not in the book. Your journal is untouched.'));
 }

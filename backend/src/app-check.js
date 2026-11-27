@@ -7,7 +7,7 @@ export function createAppCheckGate(app, { enforce = process.env.APP_CHECK_ENFORC
   if (!enforce) return async () => true;
   const appCheck = getAppCheck(app);
   return async function gate(request, response, pathname) {
-    if (pathname === '/api/health' || pathname.endsWith('/webhook')) return true;
+    if (pathname === '/api/health' || pathname.endsWith('/webhook') || pathname === '/api/metatrader/ingest' || pathname === '/api/not-found') return true;
     const token = request.headers['x-firebase-appcheck'];
     try {
       if (typeof token !== 'string' || !token) throw new Error('missing');

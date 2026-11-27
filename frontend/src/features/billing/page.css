@@ -35,3 +35,7 @@
   .bill-columns > aside { grid-template-columns:1fr; }
   .bill-payment { margin:auto 0 0; width:100%; max-width:none; border-radius:22px 22px 0 0; }
 }
+
+.usage-chip{margin:8px 0;font-size:13px;opacity:.85}.usage-chip a{font-weight:700;color:var(--acc)}
+.ai-panel{display:grid;gap:10px;justify-items:start;margin-top:16px}.ai-panel h2,.ai-panel p{margin:0}.ai-output{white-space:pre-wrap;line-height:1.5}.ai-output:empty{display:none}.ai-meter{font-size:13px;opacity:.85}.ai-more{font-weight:700;color:var(--acc)}
+.bill-usage-row{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin:8px 0}.bill-usage-row meter{grid-column:1/-1;width:100%}.bill-usage-note{font-size:13px;opacity:.8}

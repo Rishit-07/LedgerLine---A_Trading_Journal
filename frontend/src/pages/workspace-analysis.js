@@ -1,3 +1,4 @@
+import {aiPanel} from './ai-panel.js';
 import {fileCard,fileAction,startedDownload} from '../components/file-actions.js';
 import { paginate } from './pagination.js';
 import { node, select, button, stat, metric, message, number, formatDate, signedR, rate, markets, fillTradeOptions, submit, closedSummary, drawLine } from './workspace-ui.js';
@@ -225,8 +226,10 @@ export const mistake = {
       <form class="ws-form" data-mistake-form><label>Closed trade<select name="tradeId" required></select></label>
       <label>Habit<input name="kind" list="mistake-labels" maxlength="50" required></label><datalist id="mistake-labels"><option value="Moved stop"><option value="Chased entry"><option value="Oversized"><option value="Early exit"></datalist>
       <label>Review note<textarea name="note" maxlength="500" rows="3"></textarea></label><button class="btn btn-primary">Save tag</button></form>
-      <p role="status" data-mistake-status></p></section></div></div>`,
-  bind(page,{data,save}) {
+      <p role="status" data-mistake-status></p></section></div></div><div data-mistake-ai></div>`,
+  bind(page,{data,save,request}) {
+    select(page,'[data-mistake-ai]').append(aiPanel({title:'AI habit insight',intro:'Reads your logged mistakes from the last 90 days and picks the one habit to work on, with a rule to try. It never talks about money.',label:'Read my habits',
+      usage:data.insightUsage,last:data.insight,run:()=>request('/api/workspace?page=mistake','POST',{action:'ai-insight'})}));
     const form=select(page,'[data-mistake-form]');
     const closed=data.trades.filter((trade)=>trade.closedAt);
     const trades=new Map(closed.map((trade)=>[trade.id,trade]));

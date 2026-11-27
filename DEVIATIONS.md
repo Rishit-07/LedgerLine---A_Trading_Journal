@@ -23,3 +23,18 @@ Things built differently from the design boards, or not built. Each needs your d
 - The bottom-right bot appears on Dashboard, Journal, Badges and the sign-in page, on screens 760px wide and up. On phones only the in-card bots show.
 - The setting sits in Settings > Trading rules, as the design places it under Trading.
 - Notes come from a fixed set of process-only sentences with the user's own numbers.
+
+## MetaTrader and Pro locks
+- Settings > Brokers (Zerodha, Upstox, Angel One, Dhan, Fyers, CSV radios) is replaced by a MetaTrader panel (report import and optional live sync). The design pack has no MetaTrader screen, so the panel reuses the neomorphic cards and standard buttons.
+- Free import limit of 25 trades a month is my choice, set in `billing-config.js`.
+- Replay, Mistake lab and Ask your journal stay open to everyone but are limited per month on the server (Free 5 each, Pro and Mentor 150 / 300 / 300). The numbers are my choice, set in `billing-config.js`.
+- Buttons gain a shared hover sheen (primary) and press-in; the plan-ready screen no longer has a Replay button.
+- The landing page, About page and FAQ no longer claim Zerodha, Upstox, Angel One, Dhan or Fyers sync, because that was never built; they describe MetaTrader import and Pro live sync only.
+- Still open: the onboarding broker step and the `broker_links` table still store the old broker names (no code reads them to sync anything).
+- AI trade review (on a trade's chart) and AI habit insight (Mistake lab) are new at your request. Limits and token tiers are my choice, set in `billing-config.js`.
+
+## Loading screen, 404 page and hosting
+- The Loading board's "Broker trades" row is shown as "MetaTrader trades" and only appears once the account has imported trades. "Mentor notes" only appears when the account has any. Rows use real counts from `/api/opening`; none are invented.
+- GSAP is loaded from the npm package (dynamic import) instead of cdnjs, so the CSP needs no extra host. It still loads only on these two screens and not at all with reduced motion.
+- `_redirects` has no catch-all, so unknown paths get a real HTTP 404 from `404.html`. This needs a host that honours `_redirects` and `404.html` (Cloudflare Pages and Netlify do).
+- `robots.txt`, `sitemap.xml` and the canonical link are written only when `SITE_URL` is set at build time.

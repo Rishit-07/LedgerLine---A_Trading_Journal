@@ -1,0 +1,53 @@
+/* Loading and 404: the ruled ledger page. Colours come from the app tokens; nothing new. */
+@property --n { syntax: '<integer>'; inherits: false; initial-value: 0; }
+.ll-pg { --mx: 22px; --h: 42px; --hl: 44px; position: fixed; inset: 0; z-index: 9999; overflow: auto; background-color: var(--bg); color: var(--ink); font-family: var(--font-sans);
+  background-image: linear-gradient(to bottom, transparent 43px, rgb(31 31 28 / .075) 43px, rgb(31 31 28 / .075) 44px); background-size: 100% 44px; }
+:root.dark .ll-pg { background-image: linear-gradient(to bottom, transparent 43px, rgb(236 238 244 / .06) 43px, rgb(236 238 244 / .06) 44px); }
+.ll-pg.page { position: relative; inset: auto; min-height: 100vh; z-index: 0; overflow: hidden; }
+.ll-pg::before { content: ""; position: absolute; top: 0; bottom: 0; left: var(--mx); width: 2px; background: color-mix(in srgb, var(--acc) 32%, transparent); }
+@media (min-width: 721px) { .ll-pg { --mx: 120px; --h: 76px; --hl: 88px; } }
+.ll-col { margin-left: calc(var(--mx) + 44px); width: min(660px, calc(100% - var(--mx) - 56px)); padding: 88px 0; }
+@media (min-width: 721px) { .ll-col { width: min(660px, calc(100% - var(--mx) - 88px)); } }
+.ll-pg h1 { font: 400 var(--h) / var(--hl) 'Instrument Serif', serif; letter-spacing: -.01em; margin: 0; }
+.ll-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ll-tx { font: 500 16px/44px var(--font-sans); color: var(--sub); margin: 0; }
+.ll-row { display: flex; align-items: center; height: 44px; gap: 12px; font: 600 15px var(--font-sans); color: var(--ink); text-decoration: none; }
+@media (min-width: 721px) { .ll-row { font-size: 16px; } }
+.ll-ld { flex: 1; min-width: 16px; height: 0; border-bottom: 2px dotted color-mix(in srgb, var(--ink) 34%, transparent); margin-top: 12px; }
+.ll-vl { font: 500 13px var(--font-mono); color: var(--sub); text-align: right; white-space: nowrap; }
+@media (min-width: 721px) { .ll-vl { font-size: 15px; } }
+.ll-vl b { font-weight: 600; color: var(--ink); }
+.ll-cn { counter-reset: n var(--n); }
+.ll-cn::before { content: counter(n); }
+.ll-tk { flex: none; }
+.ll-tk path { stroke-dasharray: 1; }
+.ll-top { position: absolute; top: 16px; right: 16px; z-index: 3; }
+.ll-th, .ll-btn { border: 0; cursor: pointer; font: 700 13px var(--font-sans); color: var(--sub); background: var(--bg); padding: 10px 16px; border-radius: 14px; box-shadow: 4px 4px 9px var(--sd), -4px -4px 9px var(--sl); transition: box-shadow .2s, transform .2s; }
+.ll-th:active { box-shadow: inset 3px 3px 7px var(--sd), inset -3px -3px 7px var(--sl); }
+.ll-btn { display: inline-flex; align-items: center; justify-content: center; height: 52px; padding: 0 26px; border-radius: 16px; font-size: 15px; color: var(--ink); text-decoration: none; box-shadow: 6px 6px 13px var(--sd), -6px -6px 13px var(--sl); }
+.ll-btn:hover { transform: translateY(-1px); }
+.ll-btn.pri { background: var(--acc); color: var(--on-indigo, #fff); box-shadow: 6px 6px 14px var(--sd), -4px -4px 10px var(--sl); }
+.ll-btn[disabled] { cursor: default; transform: none; color: var(--mut); box-shadow: inset 4px 4px 9px var(--sd), inset -4px -4px 9px var(--sl); }
+.ll-th:focus-visible, .ll-btn:focus-visible, .ll-row:focus-visible, .ll-link:focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; border-radius: 10px; }
+.ll-bot { position: absolute; pointer-events: none; right: max(40px, 8vw); top: 236px; width: 240px; }
+.ll-bot img { display: block; width: 100%; height: auto; }
+.ll-bot .b2 { position: absolute; left: 0; top: 0; opacity: 0; }
+@media (max-width: 720px) { .ll-bot { position: relative; right: auto; top: auto; width: 132px; margin: 20px 0 0 auto; } }
+.ll-w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: .14em; margin-bottom: -.14em; }
+.ll-wi { display: inline-block; }
+.ll-pen { height: 2px; margin: -1px 0 0; background: var(--acc); transform-origin: 0 50%; transform: scaleX(0); }
+.ll-dbl { height: 7px; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform-origin: 0 50%; transform: scaleX(0); margin: 19px 0 0; }
+.ll-single { height: 2px; background: var(--ink); opacity: .5; margin: 19px 0 0; transform-origin: 0 50%; }
+.ll-msg { position: relative; min-height: 44px; }
+.ll-msg .ll-tx { position: absolute; left: 0; top: 0; }
+.ll-msg .m2 { opacity: 0; }
+.ll-warn { color: var(--down); font: 700 15px var(--font-sans); }
+.ll-acts { display: flex; flex-wrap: wrap; gap: 14px; margin: 44px 0 0; }
+.ll-note { font: 500 15px/44px var(--font-sans); color: var(--sub); margin: 0; min-height: 44px; }
+.ll-link:hover span:first-child { color: var(--acc); }
+.ll-tb { margin-top: 44px; position: relative; }
+.ll-df { font: 600 26px var(--font-mono) !important; color: var(--down) !important; }
+.ll-df.ok { color: var(--acc) !important; }
+.ll-stamp { position: absolute; right: 22%; top: 26px; border: 3px solid var(--acc); color: var(--acc); padding: 2px 16px; font: 700 22px var(--font-sans); letter-spacing: .04em; border-radius: 8px; opacity: 0; transform: rotate(-6deg); pointer-events: none; }
+.ll-retry { margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { .ll-pg *, .ll-pg *::before { animation: none !important; transition: none !important; } .ll-bot { position: relative; right: auto; top: auto; margin: 20px 0 0 auto; width: 132px; } }

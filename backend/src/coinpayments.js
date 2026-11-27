@@ -7,7 +7,7 @@ export const webhookUrl = (env) => env.COINPAYMENTS_WEBHOOK_URL || new URL('/api
 const base = (env) => (env.COINPAYMENTS_API_BASE || 'https://api.coinpayments.com/api/v1').replace(/\/$/, '');
 
 export function sign(secret, { method, url, clientId, timestamp, body = '' }) {
-  return createHmac('sha256', secret).update(`﻿${method}${url}${clientId}${timestamp}${body}`).digest('base64');
+  return createHmac('sha256', secret).update(`${method}${url}${clientId}${timestamp}${body}`).digest('base64');
 }
 async function call(env, fetcher, method, path, data) {
   const url = base(env) + path, timestamp = new Date().toISOString().split('.')[0], body = data ? JSON.stringify(data) : '';

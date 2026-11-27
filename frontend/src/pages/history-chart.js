@@ -1,4 +1,5 @@
 import {node,button,number,formatDate} from './workspace-ui.js';
+import {aiPanel} from './ai-panel.js';
 export function drawCandles(canvas, candles, step, levels = []) {
   const context=canvas.getContext('2d'), {width,height}=canvas;
   context.clearRect(0,0,width,height);
@@ -108,8 +109,11 @@ export function tradeChart(trade, request) {
     status.textContent=levels.length?'Position open. Levels come from your trade log.':'No prices recorded for this open trade.';
   }
   if(trade.closedAt) void request('/api/workspace?'+new URLSearchParams({page:'replay',tradeId:trade.id}),'GET')
-    .then(({candles,candleStatus,candleSource})=>{
+    .then((record)=>{
+      const {candles,candleStatus,candleSource}=record;
       if(!well.isConnected)return;
+      if(record.reviewUsage)chart.append(aiPanel({title:'AI review',intro:'A short process review of this trade: what followed your plan, what to check, and one drill. It never talks about money.',label:'Review this trade',
+        usage:record.reviewUsage,last:record.review,run:()=>request('/api/workspace?page=replay','POST',{action:'ai-review',tradeId:trade.id})}));
       if(!candles?.length){
         status.replaceWith(executionSummary(trade,candleStatus,true,request));
         return;
@@ -134,6 +138,6 @@ export function tradeChart(trade, request) {
       canvas.hidden=false;
       status.replaceChildren(node('small',candleSource || 'Recorded candles'));
       status.className='candle-caption';paint();
-    }).catch(()=>{if(well.isConnected)status.replaceWith(executionSummary(trade,'Candle lookup failed. Reopen the trade to retry.',true,request));});
+    }).catch((error)=>{if(well.isConnected)status.replaceWith(executionSummary(trade,error.reason==='limit'?error.message:'Candle lookup failed. Reopen the trade to retry.',true,request));});
   return chart;
 }

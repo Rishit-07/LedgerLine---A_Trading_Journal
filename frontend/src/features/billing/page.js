@@ -5,7 +5,11 @@ import {planReadyScreen} from './plan-ready.js';
 import './page.css';
 
 const labels={free:'Free',pro:'Pro',mentor:'Mentor'};
-const rows=[['Trade journal and process score',1,1,1],['Join clubs and spaces',1,1,1],['AI reports and mistake lab',0,1,1],['Create private mentor spaces',0,0,1],['Announcements and cohort view',0,0,1]];
+const limitRows=(l)=>{const cell=(k,unit)=>[String(l[k].free)+unit,String(l[k].pro)+unit,String(l[k].mentor)+unit];
+ return [['Trade journal and process score',1,1,1],['Join clubs and spaces',1,1,1],['Trade replay chart (a month)',...cell('replay','')],['Mistake lab tags (a month)',...cell('mistake','')],
+  ['Ask your journal questions (a month)',...cell('coach','')],['AI tokens',l.ai_tokens.free.day.toLocaleString('en-US')+' a day',l.ai_tokens.pro.month.toLocaleString('en-US')+' a month',l.ai_tokens.mentor.month.toLocaleString('en-US')+' a month'],['AI tokens per hour (cooldown)','—',l.ai_tokens.pro.hour.toLocaleString('en-US'),l.ai_tokens.mentor.hour.toLocaleString('en-US')],['AI trade review (a month)',...cell('replay_review','')],['AI habit insight (a month)',...cell('mistake_insight','')],
+  ['AI reports and monthly reviews',0,1,1],['MetaTrader report import',l.mt_import.free+' trades a month','Unlimited','Unlimited'],['MetaTrader live sync',0,1,1],
+  ['Create private mentor spaces',0,0,1],['Announcements and cohort view',0,0,1]];};
 const money=v=>'$'+(Number.isInteger(Number(v))?Number(v):Number(v).toFixed(2));
 const cents=(v,cur)=>(cur==='USD'?'$':'₹')+(v/100).toFixed(2);
 const section=(key,title)=>'<section class="ws-card n-out bill-section"><h2>'+title+'</h2><div data-bill="'+key+'"></div></section>';
@@ -89,10 +93,12 @@ export const billing={
    pollTimer=setTimeout(poll,3500);
   }
   const table=node('table');table.innerHTML='<thead><tr><th>Feature</th><th>Free</th><th>Pro</th><th>Mentor</th></tr></thead>';
-  for(const row of rows){const tr=table.insertRow();row.forEach((value,i)=>tr.insertCell().textContent=i?(value?'✓':'—'):value);}
+  const rows=limitRows(data.limits);
+  for(const row of rows){const tr=table.insertRow();row.forEach((value,i)=>tr.insertCell().textContent=i?(typeof value==='string'?value:value?'✓':'—'):value);}
   el('compare').append(table);
-  Object.values(labels).forEach((label,i)=>{const details=node('details','','bill-mobile');details.append(node('summary',label));for(const row of rows)details.append(node('p',(row[i+1]?'✓ ':'— ')+row[0]));el('compare').append(details);});
-  const meter=node('meter');meter.min=0;meter.max=Math.max(1,data.usage);meter.value=data.usage;el('usage').append(node('strong',String(data.usage)),node('p','Replays used this month'),meter);
+  Object.values(labels).forEach((label,i)=>{const details=node('details','','bill-mobile');details.append(node('summary',label));for(const row of rows)details.append(node('p',(typeof row[i+1]==='string'?row[i+1]+' · ':row[i+1]?'✓ ':'— ')+row[0]));el('compare').append(details);});
+  for(const tool of data.tools){const row=node('div','','bill-usage-row'),meter=node('meter');meter.min=0;meter.max=tool.limit??Math.max(1,tool.used);meter.value=tool.used;row.append(node('span',tool.name),node('strong',tool.limit===null?tool.used+' used, no limit':tool.used+' of '+tool.limit),meter);el('usage').append(row);}
+  el('usage').append(node('p','Counted per calendar month (UTC). Limits reset on the 1st.','bill-usage-note'));
   const form=node('form','','ws-form');for(const [name,label] of [['billing_name','Name on invoice'],['gstin','GSTIN (optional)'],['address','Billing address']]){const field=node('label',label),input=node('input');input.name=name;input.value=data.profile[name]??'';input.required=name==='billing_name';field.append(input);form.append(field);}
   const save=node('button','Save details','btn btn-secondary');form.append(node('p','Invoices are sent to '+data.profile.email),save);el('profile').append(form);
   form.onsubmit=async e=>{e.preventDefault();save.disabled=true;try{await request('/api/billing/profile','PUT',Object.fromEntries(new FormData(form)));note('Invoice details saved.');}catch(err){note(err.message);}finally{save.disabled=false;}};

@@ -47,6 +47,10 @@ export async function renderWorkspace(landing, { path, request, uid, name, photo
     await screen.bind(page,{data,request,save,reload,uid});
     hideSkeleton();
     status.textContent='';
+    if(data.usage){const chip=document.createElement('p'),link=document.createElement('a');chip.className='usage-chip';
+      chip.textContent=`${data.usage.feature} this month: ${data.usage.used} of ${data.usage.limit} used. `;
+      if(data.usage.plan==='free'){link.href='/billing?from=reports';link.textContent='Get more with Pro';chip.append(link);}
+      status.after(chip);}
   } catch (error) {
     hideSkeleton();
     content.forEach((element)=>{element.hidden=true;});

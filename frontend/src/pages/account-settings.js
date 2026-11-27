@@ -4,14 +4,11 @@ import {avatarUrl} from './profile-picture.js';
 import { portfolioPath, portfolioVisibilityMarkup, fillPortfolioVisibility, readPortfolioVisibility } from './portfolio-preferences.js';
 import { markets, submit, formValues } from './workspace-ui.js';
 import { savePop, localPop } from '../features/ledger-bot/index.js';
+import { metatraderMarkup, bindMetaTrader } from '../features/metatrader/panel.js';
 
 const sections = [
-  ['account','Account','user'],['brokers','Brokers','briefcase-business'],['rules','Trading rules','list-checks'],
+  ['account','Account','user'],['metatrader','MetaTrader','briefcase-business'],['rules','Trading rules','list-checks'],
   ['notifications','Notifications','bell'],['appearance','Appearance','sun'],['portfolio','Portfolio','user'],['security','Two-step sign-in','shield'],['privacy','Data and privacy','shield'],['billing','Plans and billing','credit-card']
-];
-const providers = [
-  ['zerodha','Zerodha','Kite Connect'],['upstox','Upstox','Upstox API'],['angel-one','Angel One','SmartAPI'],
-  ['dhan','Dhan','DhanHQ'],['fyers','Fyers','Fyers API'],['csv','CSV file','Any broker']
 ];
 const ruleDefinitions = [['risk','Risk per trade',[0.25,0.5,1,1.5,2],'%'],['loss','Daily loss limit',[1,2,3,4],'R'],['trades','Max trades per day',[2,3,5,8,10],'']];
 const iconPaths = {
@@ -30,14 +27,14 @@ export function settingsMarkup(notifications) {
     <nav class="n-out account-panel account-nav" aria-label="Settings sections">${sections.map(([id,label,icon])=>`<button type="button" class="btn btn-ghost" data-pref-tab="${id}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${iconPaths[icon]}"/></svg>${label}</button>`).join('')}</nav>
     <div class="account-settings-panels">
     ${panel('account','Account',`<form class="ws-form" data-avatar-form><label>Profile picture<input name="picture" type="file" accept="image/jpeg,image/png,image/webp"></label><div class="account-actions"><button class="btn btn-primary">Save picture</button><button class="btn btn-danger" type="button" data-remove-avatar>Remove picture</button></div><p role="status"></p></form><form class="ws-form" data-edit="account"><label>Display name<input class="n-in" name="displayName" maxlength="100" required></label><fieldset><legend>Your markets</legend>${Object.entries(markets).map(([key,label])=>`<label><input name="markets" type="checkbox" value="${key}"> ${label}</label>`).join('')}</fieldset>${saveButton}</form>`)}
-    ${panel('brokers','Brokers',`<p>Choose your preferred import method. CSV imports are available for any broker.</p><form data-edit="broker"><div class="account-providers">${providers.map(([key,label,api])=>`<label class="n-out"><span class="account-provider-icon">${key==='csv'?'CSV':label.slice(0,1)}</span><span><strong>${label}</strong><small>${api}</small></span><input type="radio" name="broker" value="${key}" required></label>`).join('')}</div><label><input type="radio" name="broker" value="manual"> Add trades by hand</label><div class="account-actions">${saveButton}<a href="/history#import">Import CSV</a></div></form><div class="account-read"><div class="n-in"><strong>What Ledgerline reads</strong><p>Trade rows from the CSV file you choose. Direct broker sync requires a connected integration.</p></div><div class="n-in"><strong>What it never does</strong><p>Place orders, move money or change positions in your brokerage account.</p></div></div>`)}
+    ${panel('metatrader','MetaTrader',metatraderMarkup)}
     ${panel('rules','Trading rules',`<form class="ws-form" data-edit="rules">${ruleDefinitions.map(([key,label,values,unit])=>`<div class="account-rule"><label>${label}<select name="${key}" class="n-in">${values.map(v=>`<option value="${v}">${v}${unit}</option>`).join('')}</select></label><label><input type="checkbox" name="hardRules" value="${key}"> Hard rule</label></div>`).join('')}${saveButton}</form><div class="lb-setting"><div><strong>Ledger bot pops in and out</strong><small>Appears for a few seconds every 5 minutes. Turn off to keep Ledger on screen, still, with no animation.</small></div><button type="button" class="n-switch n-in on" data-bot-pop aria-pressed="true" aria-label="Ledger bot pops in and out"><span class="n-knob"></span></button></div><p role="status" data-bot-pop-status></p>`)}
     <div data-preference="notifications" hidden>${notifications}</div>
     ${panel('appearance','Appearance','<p>Choose a light or dark workspace on this device.</p><button class="btn btn-secondary" data-change-theme>Switch theme</button>')}
     ${panel('security','Two-step sign-in','<p>Ask for a 6-digit code from an authenticator app each time you sign in. This protects your journal even if your password leaks.</p><p data-mfa-state role="status"></p><div class="btn-row"><button type="button" class="btn btn-primary" data-mfa-on hidden>Turn on two-step sign-in</button><button type="button" class="btn btn-danger" data-mfa-off hidden>Turn off</button></div>')}
     ${panel('privacy','Data and privacy','<label><input type="checkbox" data-report-consent disabled> Allow AI reviews to use my aggregated trading records</label><p data-consent-status role="status"></p><p>Choose what visitors can see on your portfolio or export your trades.</p><div class="account-actions"><a href="/settings#portfolio">Portfolio visibility</a><a href="/history#export">Export trades as CSV</a></div><h3>Your data</h3><p>Download a copy of everything Ledgerline holds about you, or delete your account. Deleting removes your journal, settings and community activity and cannot be undone.</p><div class="btn-row"><button type="button" class="btn btn-secondary" data-export-data>Download my data</button><button type="button" class="btn btn-danger" data-delete-account>Delete my account…</button></div><p data-data-status role="status"></p>')}
     ${panel('portfolio','Portfolio',`<form class="ws-form" data-portfolio-settings>${portfolioVisibilityMarkup}<button class="btn btn-primary" disabled>Save portfolio settings</button><p role="status"></p></form><div class="account-actions"><a data-own-portfolio href="/portfolio">Open my portfolio</a></div>`)}
-    ${panel('billing','Plans and billing','<p>Billing has its own page now: your plan, payment method (UPI, card or crypto), crypto period and invoices all live there.</p><a class="btn btn-primary" href="/billing">Open billing</a>')}
+    ${panel('billing','Plans and billing','<p>Billing has its own page now: your plan, how long you have paid for, your monthly usage and invoices all live there. Payment is in crypto.</p><a class="btn btn-primary" href="/billing">Open billing</a>')}
     </div></div>`;
 }
 
@@ -45,7 +42,7 @@ export async function bindAccountSettings(page,request) {
 
   const selectSection = () => {
     const hash=location.hash.slice(1);
-    const id=sections.some(([key])=>key===hash)?hash:'brokers';
+    const id=sections.some(([key])=>key===hash)?hash:'metatrader';
     for(const button of page.querySelectorAll('[data-pref-tab]')) button.setAttribute('aria-pressed',String(button.dataset.prefTab===id));
     for(const item of page.querySelectorAll('[data-preference]')) item.hidden=item.dataset.preference!==id;
   };
@@ -53,6 +50,7 @@ export async function bindAccountSettings(page,request) {
     history.replaceState(history.state,'','#'+button.dataset.prefTab);selectSection();
   };
   selectSection();
+  bindMetaTrader(page,request);
   window.addEventListener('hashchange',selectSection);
   const botSwitch=page.querySelector('[data-bot-pop]'),botStatus=page.querySelector('[data-bot-pop-status]');
   const paintBot=on=>{botSwitch.classList.toggle('on',on);botSwitch.setAttribute('aria-pressed',String(on));};
@@ -152,13 +150,13 @@ export async function bindAccountSettings(page,request) {
     const status=form.querySelector('[role=status]');
     form.onsubmit=event=>submit(event,status,async()=>{
       const data=new FormData(form);
-      let payload={section,broker:data.get('broker')};
+      let payload={section};
       if(section==='account') {
         payload={section,displayName:data.get('displayName').trim(),markets:data.getAll('markets')};
         if(!payload.markets.length) throw new Error('Choose at least one market.');
       } else if(section==='rules') payload={section,hardRules:data.getAll('hardRules'),risk:Number(data.get('risk')),loss:Number(data.get('loss')),trades:Number(data.get('trades'))};
       await request('/api/onboarding','PUT',payload);
-      return section==='broker'?'Import preference saved.':'Changes saved.';
+      return 'Changes saved.';
     });
   }
 }
