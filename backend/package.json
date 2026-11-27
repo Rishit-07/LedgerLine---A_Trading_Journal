@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "firebase-admin": "14.5.1",
-    "nodemailer": "10.6.0",
+    "nodemailer": "10.6.1",
     "pdfkit": "^0.21.0",
     "pg": "8.23.1",
     "sharp": "^0.35.5"
