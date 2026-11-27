@@ -3,8 +3,11 @@ import {createCandleLookup} from './replay-candles.js';
 import { configuredCoach, askCoach, checkCoachScope } from './coach.js';
 import { communityApi } from './community.js';
 import { readJson, send } from './http.js';
+import { hasPlan } from './entitlements.js';
 import { imageRequestLimit, prepareScreenshot, tradeScreenshots } from './trade-screenshots.js';
 
+// Pages promised to paid plans. Checked on the server for every read and write, so hiding a button is never the only lock.
+const proPages = { replay: 'Replay', mistake: 'Mistake lab', coach: 'Ask your journal' };
 const tradeId = /^[1-9]\d{0,17}$/;
 const uuid = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
 const isoDay = /^\d{4}-\d{2}-\d{2}$/;
@@ -347,6 +350,8 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
       try {
         if (page === 'screenshots') return await tradeScreenshots(query,claims.uid,params.get('tradeId'),request,response);
         if (!Object.hasOwn(pageLoaders,page)) return send(response,404,{ error:'Workspace page unavailable.' });
+        if (Object.hasOwn(proPages,page) && !await hasPlan(pool,claims.uid,'pro'))
+          return send(response,403,{ error:proPages[page]+' is part of Pro.',reason:'needs_plan',feature:proPages[page] });
         if (request.method === 'POST') {
           if (!Object.hasOwn(writes,page)) return send(response,405,{ error:'This page does not accept changes.' });
           const { error,data } = await readJson(request,page === 'history' ? imageRequestLimit : 120_000);
@@ -382,7 +387,7 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
           ...await pageLoaders[page](claims.uid) });
       } catch (error) {
         if (error.code==='P4201') return send(response,429,{error:'Your Coach tokens refill at midnight IST.'});
-        if (error.status) return send(response,error.status,{error:error.message});
+        if (error.status) return send(response,error.status,{error:error.message,...(error.reason?{reason:error.reason}:{})});
         console.error('Workspace request failed (' + (error.code ?? 'unknown') + ').');
         return send(response,503,{error:'This workspace is temporarily unavailable.'});
       }

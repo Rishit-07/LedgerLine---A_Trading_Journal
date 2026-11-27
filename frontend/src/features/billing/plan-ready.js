@@ -1,5 +1,5 @@
 import {gsap} from 'gsap';
-import {node,button} from '../../pages/workspace-ui.js';
+import {node} from '../../pages/workspace-ui.js';
 import './ready.css';
 
 export function planReadyScreen(plan,features,done){
@@ -27,8 +27,8 @@ export function planReadyScreen(plan,features,done){
   }
  }
  stage.append(...waves,card,confetti);
- const proceed=button('Continue',()=>dialog.close()),replay=button('Replay',play);
- actions.append(proceed,replay);dialog.append(glow,wipe,stage,title,caption,chips,actions);
+ const proceed=node('button','Continue','btn btn-primary');proceed.type='button';proceed.onclick=()=>dialog.close();
+ actions.append(proceed);dialog.append(glow,wipe,stage,title,caption,chips,actions);
  document.body.append(dialog);dialog.showModal();
  let timeline,start,deadline;
  function play(){

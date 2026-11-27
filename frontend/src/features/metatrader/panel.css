@@ -1,0 +1,7 @@
+.mt-card{padding:20px;margin:16px 0;display:grid;gap:12px}.mt-card h3,.mt-card h4,.mt-card p{margin:0}.mt-meter{font-weight:600}
+.mt-bar{display:block;height:8px;border-radius:8px;background:var(--track);overflow:hidden}.mt-bar i{display:block;height:100%;background:var(--acc);transition:width .5s ease}
+.mt-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.mt-steps{margin:0;padding-left:20px;display:grid;gap:6px}
+.mt-links{list-style:none;margin:0;padding:0;display:grid;gap:8px}.mt-links li{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.mt-token{display:grid;gap:8px;justify-items:start}.mt-token code{word-break:break-all;padding:10px;border-radius:10px;background:var(--track);max-width:100%}
+.mt-lock{display:grid;gap:10px;justify-items:start;padding:14px;border-radius:14px;background:var(--track)}.mt-skips{margin:6px 0 0;padding-left:18px;opacity:.8}
+@media(prefers-reduced-motion:no-preference){.mt-card{animation:mt-in .35s ease both}@keyframes mt-in{from{opacity:0;transform:translateY(8px)}}}

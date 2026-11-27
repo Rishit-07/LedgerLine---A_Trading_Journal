@@ -17,3 +17,7 @@ export function priceFor(plan, months, introUsed = 0) {
   if (months === 1 && introUsed < INTRO_MONTHS) return { cents: p.intro, intro: 1 };
   return { cents: p.monthly * months, intro: 0 };
 }
+
+/* Plan limits. Free accounts can bring in this many MetaTrader trades per calendar month (UTC); Pro and Mentor have no cap.
+   Live sync (the installed bridge) is a Pro feature. Change the number here and nowhere else. */
+export const FREE_MT_IMPORTS_PER_MONTH = 25;

@@ -24,6 +24,7 @@ import { createOnboardingHandler } from './onboarding.js';
 import { createNewsletterApi } from './newsletter.js';
 import { createMentorshipApi } from './mentorship.js';
 import { createMentorToolsApi } from './mentor-tools.js';
+import { createMetaTraderApi } from './metatrader.js';
 import { createLedgerBotApi } from './ledger-bot.js';
 import { createNotificationApi, notify } from './notifications.js';
 import { createNotificationSettingsApi } from './notification-settings.js';
@@ -158,6 +159,7 @@ const notificationSettings = createNotificationSettingsApi(pool, authenticateReq
 const billingApiHandlers = createBillingApi(pool, { authenticate: authenticateRequest });
 const mentorship = createMentorshipApi(pool, { authenticate: authenticateRequest, cancelMentorPlan: billingApiHandlers.cancelMentorPlan, planTerm: billingApiHandlers.planTerm });
 const mentorTools = createMentorToolsApi(pool, { authenticate: authenticateRequest });
+const metatrader = createMetaTraderApi(pool, { authenticate: authenticateRequest });
 const newsletter = createNewsletterApi(pool, { authenticate: authenticateRequest, mail: mailConfig, auth });
 configureDelivery(createSenders({ pool, mail: mailConfig, messaging: getMessaging(firebaseApp) }));
 const accountData = createAccountDataApi(pool, authenticateRequest, auth);
@@ -200,6 +202,8 @@ const routes = new Map([
   ['/api/account/export', { methods: ['GET'], handler: (request, response) => accountData.export(request, response) }],
   ['/api/mentorship', { methods: ['GET', 'POST'], handler: mentorship.handler }],
   ['/api/ledger-bot', { methods: ['GET', 'PUT'], handler: createLedgerBotApi(pool, { authenticate: authenticateRequest }) }],
+  ['/api/metatrader', { methods: ['GET', 'POST'], handler: metatrader.handler }],
+  ['/api/metatrader/ingest', { methods: ['POST'], handler: metatrader.ingest }],
   ['/api/mentor-tools', { methods: ['GET', 'POST'], handler: mentorTools.handler }],
   ['/api/newsletter', { methods: ['POST'], handler: newsletter.subscribe }],
   ['/api/newsletter/confirm', { methods: ['POST'], handler: newsletter.confirm }],

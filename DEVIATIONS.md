@@ -23,3 +23,10 @@ Things built differently from the design boards, or not built. Each needs your d
 - The bottom-right bot appears on Dashboard, Journal, Badges and the sign-in page, on screens 760px wide and up. On phones only the in-card bots show.
 - The setting sits in Settings > Trading rules, as the design places it under Trading.
 - Notes come from a fixed set of process-only sentences with the user's own numbers.
+
+## MetaTrader and Pro locks
+- Settings > Brokers (Zerodha, Upstox, Angel One, Dhan, Fyers, CSV radios) is replaced by a MetaTrader panel (report import and optional live sync). The design pack has no MetaTrader screen, so the panel reuses the neomorphic cards and standard buttons.
+- Free import limit of 25 trades a month is my choice, set in `billing-config.js`.
+- Replay, Mistake lab and Ask your journal were open to everyone; they are now Pro-only on the server.
+- Buttons gain a shared hover sheen (primary) and press-in; the plan-ready screen no longer has a Replay button.
+- Still open: the landing page "Brokers" section and onboarding broker step still describe the old broker list.
