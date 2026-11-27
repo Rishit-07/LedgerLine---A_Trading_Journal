@@ -6,14 +6,17 @@ const MAX_TEXT = 1_500_000;
 export const MAX_ROWS = 2000;
 
 const entities = { '&nbsp;': ' ', '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'" };
-const plain = (html) => html.slice(0, 50_000).replace(/<[^>]*>/g, ' ').replace(/&(?:nbsp|amp|lt|gt|quot|#39);/g, (m) => entities[m]).replace(/\s+/g, ' ').trim();
+const plain = (html) => html.slice(0, 1_000).replace(/<[^>]*>/g, ' ').replace(/&(?:nbsp|amp|lt|gt|quot|#39);/g, (m) => entities[m]).replace(/\s+/g, ' ').trim();
 
 function htmlRows(text) {
   const rows = [];
   for (const chunk of text.split(/<tr[\s>]/i).slice(1)) {
     if (chunk.length > 20_000) continue;   // a real row is a few hundred characters; anything huge is not a report
     const cells = [...chunk.matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map((m) => plain(m[1]));
-    if (cells.length) rows.push(cells);
+    if (cells.length) {
+      rows.push(cells);
+      if (rows.length > MAX_ROWS + 50) break;
+    }
   }
   return rows;
 }
@@ -72,10 +75,12 @@ const crypto = /^(BTC|ETH|LTC|XRP|SOL|DOGE|ADA|BNB)/i;
 
 /** One closed MetaTrader position -> a Ledgerline trade, or a reason it cannot be one. R needs the stop loss, so a trade without one is skipped, never guessed. */
 export function toTrade({ ticket, account, symbol, type, volume, openedAt, closedAt, entry, exit, stop, target, commission }) {
-  const ref = `mt:${account || 'x'}:${ticket}`;
+  const safeTicket = String(ticket ?? '').replace(/\D/g, '').slice(0, 32);
+  const safeAccount = String(account ?? '').replace(/\D/g, '').slice(0, 16);
+  const ref = `mt:${safeAccount || 'x'}:${safeTicket}`;
   const side = /^buy/i.test(type) ? 'long' : /^sell/i.test(type) ? 'short' : null;
   const name = String(symbol ?? '').toUpperCase().replace(/[^A-Z0-9._#-]/g, '').slice(0, 48);
-  if (!ticket || !side) return { skip: { ref, reason: 'Not a buy or sell trade.' } };
+  if (!safeTicket || !side) return { skip: { ref, reason: 'Not a buy or sell trade.' } };
   if (!name) return { skip: { ref, reason: 'No symbol.' } };
   if (!openedAt || !closedAt) return { skip: { ref, reason: 'Still open.' } };
   if (closedAt < openedAt) return { skip: { ref, reason: 'Close time is before open time.' } };

@@ -62,9 +62,11 @@ export function createBillingApi(pool,{authenticate,env=process.env,fetcher=fetc
   if(!verifyWebhook(raw,req.headers,env,now().getTime()))return send(res,401,{error:'Invalid signature.'});
   let event;try{event=JSON.parse(raw);}catch{return send(res,400,{error:'Unreadable event.'});}
   const id=String(event.invoice?.id??event.invoiceId??event.id??''),key=createHash('sha256').update(raw).digest('hex');
+  if(!id)return send(res,400,{error:'Missing invoice identifier.'});
   if((await pool.query("SELECT 1 FROM webhook_events WHERE provider='coinpayments' AND event_id=$1",[key])).rowCount)return send(res,200,{received:true,duplicate:true});
   const {rows:[order]}=await pool.query("SELECT id FROM report_checkouts WHERE provider_ref=$1 AND method='Crypto'",[id]);
-  if(order)await settle(order.id);   // throws on failure, so the caller gets a 503 and CoinPayments retries
+  if(!order)return send(res,404,{error:'Order not found.'});
+  await settle(order.id);   // throws on failure, so the caller gets a 503 and CoinPayments retries
   await pool.query("INSERT INTO webhook_events(provider,event_id) VALUES('coinpayments',$1) ON CONFLICT DO NOTHING",[key]);   // only after it was handled
   send(res,200,{received:true});
  }

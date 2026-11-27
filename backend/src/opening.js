@@ -25,11 +25,14 @@ export function createOpeningApi(pool, { authenticate }) {
   /** Broken links. Only the path and where the visitor came from are kept, never who they are. */
   const notFound = async (request, response) => {
     let body = '';
-    for await (const chunk of request) { body += chunk; if (body.length > 2000) break; }
+    for await (const chunk of request) {
+      body += chunk;
+      if (body.length > 2000) { request.destroy(); break; }
+    }
     let data = {}; try { data = JSON.parse(body); } catch { /* ignore */ }
     const clean = (value) => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, 200);
     console.info('404', JSON.stringify({ path: clean(data.path), referrer: clean(data.referrer) }));
-    response.writeHead(204); response.end();
+    if (!response.writableEnded) { response.writeHead(204); response.end(); }
   };
   return { opening, notFound };
 }

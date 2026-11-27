@@ -98,9 +98,14 @@ export function createMetaTraderApi(pool, { authenticate, now = () => new Date()
       const { error, data } = await readJson(request, 400_000);
       if (error || !Array.isArray(data?.trades)) return send(response, error ?? 400, { error: 'Send {"trades":[...]}.' });
       if (data.trades.length > 200) return send(response, 413, { error: 'Send at most 200 trades per request.' });
-      const account = String(data.account ?? '').replace(/\D/g, '').slice(0, 12);
-      const at = (s) => (Number.isFinite(Number(s)) && Number(s) > 0 ? new Date(Number(s) * 1000) : null);
-      const parsed = data.trades.map((t) => toTrade({ ticket: String(t.ticket ?? '').replace(/\D/g, ''), account, symbol: t.symbol, type: String(t.type ?? ''),
+      const account = String(data.account ?? '').replace(/\D/g, '').slice(0, 16);
+      const at = (s) => {
+        const n = Number(s);
+        if (!Number.isFinite(n) || n < 946684800 || n > 4102444800) return null;
+        const d = new Date(n * 1000);
+        return Number.isNaN(d.getTime()) ? null : d;
+      };
+      const parsed = data.trades.map((t) => toTrade({ ticket: String(t.ticket ?? '').replace(/\D/g, '').slice(0, 32), account, symbol: t.symbol, type: String(t.type ?? ''),
         volume: Number(t.volume), openedAt: at(t.open_time), closedAt: at(t.close_time), entry: Number(t.open_price), exit: Number(t.close_price),
         stop: Number(t.sl), target: Number(t.tp), commission: Number(t.commission) }));
       const result = await store(row.user_id, parsed.filter((p) => p.trade).map((p) => p.trade), 'live', Infinity);
