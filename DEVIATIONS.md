@@ -48,3 +48,8 @@ Things built differently from the design boards, or not built. Each needs your d
 ## MetaTrader guided setup
 - The bridge scripts now send a heartbeat (an empty trade list) so the panel can show "Connected". Not yet compiled or run in MetaTrader.
 - The landing copy no longer says the import works with "any broker"; it says MetaTrader 4 and 5 reports, and notes that live sync needs MetaTrader open or on a VPS.
+
+## Docker and Turnstile
+- The `Dockerfile` is for the API only and has not been built here (no Docker engine in the sandbox); the file layout was checked by hand and the server starts and stops at the environment check, as expected.
+- Turnstile covers the support and newsletter forms only. Sign-up goes straight to Firebase, so the server cannot block it; App Check is the control there. It is off unless both keys are set.
+- `/api` forwarding for production is documented in `docs/deploy.md` but not built.

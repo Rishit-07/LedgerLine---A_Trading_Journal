@@ -36,6 +36,7 @@ import { createStreakStore } from './streak-store.js';
 import { createStreakApi } from './streak-api.js';
 import { runStreakMaintenance } from './streak-maintenance.js';
 import { prepareWelcome, readMailConfig, startWelcomeDelivery } from './welcome-email.js';
+import { createTurnstile } from './turnstile.js';
 
 const projectId = process.env.FIREBASE_PROJECT_ID;
 const connectionString = process.env.DATABASE_URL;
@@ -174,6 +175,7 @@ const saveTrade = createTradeHandler(streaks, authenticateRequest);
 const workspace = createWorkspaceApi(pool, authenticateRequest);
 const reports=reportApi(pool,authenticateRequest);
 const billing=billingApiHandlers.handler;
+const turnstile = createTurnstile();
 const routes = new Map([
   ...['overview','invoice','status'].map(key=>['/api/billing/'+key,{methods:['GET'],handler:billing}]),
   ['/api/billing/profile',{methods:['GET','PUT'],handler:billingProfile(pool,authenticateRequest)}],
@@ -209,7 +211,7 @@ const routes = new Map([
   ['/api/metatrader', { methods: ['GET', 'POST'], handler: metatrader.handler }],
   ['/api/metatrader/ingest', { methods: ['POST'], handler: metatrader.ingest }],
   ['/api/mentor-tools', { methods: ['GET', 'POST'], handler: mentorTools.handler }],
-  ['/api/newsletter', { methods: ['POST'], handler: newsletter.subscribe }],
+  ['/api/newsletter', { methods: ['POST'], handler: turnstile.gate(newsletter.subscribe) }],
   ['/api/newsletter/confirm', { methods: ['POST'], handler: newsletter.confirm }],
   ['/api/newsletter/manage', { methods: ['GET', 'POST'], handler: newsletter.manage }],
   ['/api/newsletter/unsubscribe', { methods: ['POST'], handler: newsletter.oneClickUnsubscribe }],
@@ -217,7 +219,7 @@ const routes = new Map([
   ['/api/newsletter/issues', { methods: ['GET'], handler: newsletter.issues }],
   ['/api/newsletter/events', { methods: ['POST'], handler: newsletter.events }],
   ['/api/newsletter-admin', { methods: ['GET', 'POST'], handler: newsletter.admin }],
-  ['/api/support', { methods: ['POST'], handler: tickets.create }],
+  ['/api/support', { methods: ['POST'], handler: turnstile.gate(tickets.create) }],
   ['/api/notifications', { methods: ['GET', 'POST'], handler: notifications.main }],
   ['/api/notification-settings', { methods: ['GET', 'PUT'], handler: notificationSettings.main }],
   ['/api/notification-settings/push', { methods: ['POST', 'DELETE'], handler: notificationSettings.push }],

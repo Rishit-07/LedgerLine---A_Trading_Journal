@@ -1,5 +1,6 @@
 import pageMarkup from './support.html?raw';
 import { bindPageTheme, mountPage } from './shared.js';
+import { mountTurnstile } from '../turnstile.js';
 import { collectDiagnostics, describeDiagnostics } from '../diagnostics.js';
 import '@fontsource/instrument-serif/latin-400.css';
 import './support.css';
@@ -116,6 +117,7 @@ function bindContactForm(page) {
   link.href = `mailto:${inbox}`;
   link.textContent = inbox;
   const form = page.querySelector('.support-form');
+  const check = mountTurnstile(form.querySelector('[data-turnstile]'));
   const status = form.querySelector('[data-contact-status]');
   const send = form.querySelector('button[type="submit"]');
   let edits = 0;
@@ -141,11 +143,12 @@ function bindContactForm(page) {
     status.textContent = 'Sending your message…';
     try {
       const response = await fetch('/api/support', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...check.headers() },
         body: JSON.stringify({ ...fields, ...(form.elements.diagnostics.checked ? { diagnostics: collectDiagnostics() } : {}) }), signal: AbortSignal.timeout(40000),
       });
       const data = await response.json().catch(() => null);
       if (!response.ok || data?.sent !== true) {
+        if (response.status === 403) check.reset();
         status.textContent = data?.error ?? 'We couldn’t send your message. Try opening an email draft.';
         return;
       }

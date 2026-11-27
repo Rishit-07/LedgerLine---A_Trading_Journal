@@ -18,7 +18,7 @@ export const legalDocuments = {
       ],
       [
         'Who else handles your data',
-        'Firebase Authentication (Google) for sign-in. Neon for our Postgres database. An email delivery provider to send our emails. CoinPayments to take crypto payments. An AI provider for the features above. Our hosting provider to serve the site. An error-reporting provider, only if we switch it on. These providers act on our behalf and may process data outside India. A blockchain transaction is public and permanent, and we cannot remove it.',
+        'Firebase Authentication (Google) for sign-in. Neon for our Postgres database. An email delivery provider to send our emails. CoinPayments to take crypto payments. An AI provider for the features above. Our hosting provider to serve the site, and Cloudflare for delivery and, where switched on, a bot check (Turnstile) on the support and newsletter forms. An error-reporting provider, only if we switch it on. These providers act on our behalf and may process data outside India. A blockchain transaction is public and permanent, and we cannot remove it.',
       ],
       [
         'Where it is stored',
@@ -103,7 +103,7 @@ export const legalDocuments = {
         'These are conveniences. They are stored only if you choose "Remember my preferences", and they are deleted if you choose "Essential only".\nTheme: whether you use light or dark.\nLedger bot setting: whether the bot pops in and out on this device.\nWithout them everything still works; the theme and bot setting simply follow the defaults each visit (signed-in accounts keep the bot setting on the server).',
       ],
       ['What we do not use', 'No analytics cookies, no advertising or retargeting cookies, no social-media trackers and no fingerprinting. If that ever changes we will ask first, here and in the banner, before anything is stored.'],
-      ['Other websites', 'Google sign-in and the CoinPayments payment page are run by Google and CoinPayments. They set their own cookies under their own policies, and Ledgerline does not control them.'],
+      ['Other websites', 'Google sign-in and the CoinPayments payment page are run by Google and CoinPayments, and the bot check on some forms, where switched on, is run by Cloudflare. They set their own cookies under their own policies, and Ledgerline does not control them.'],
       ['Change your choice', 'Use "Cookie settings" in the footer of this site, or in Settings, Data and privacy, at any time. You can also clear site data in your browser; you will be signed out and asked again.'],
     ],
   },
