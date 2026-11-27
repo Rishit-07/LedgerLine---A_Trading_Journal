@@ -32,7 +32,10 @@ The intro price applies only to one-month purchases, twice per account per plan.
 3. Point payouts at your Trust Wallet (see `docs/payout-setup.md`).
 4. **Run a sandbox test before launch.** The invoice request body follows CoinPayments' public docs as far as they could be read, but it has not been run against a real account. Make a test payment for each plan and confirm access, the invoice and the receipt email.
 5. Confirm the prices, and have an accountant confirm how GST and invoices apply to USD crypto sales. Set `BILLING_*` variables only after that.
-6. Run migrations up to 040.
+6. Run migrations 031, 032, 040, 050, 051 and 052 (in that order; rollbacks are in `database/rollback`).
+7. Keep the API process running: expired and stuck checkouts are cleaned up by `sweep()` every 5 minutes inside the server. It is skipped when `STREAK_NEON_SCHEDULE=true`, so if you set that, run the maintenance from your own scheduler instead.
+8. Set `REVIEWER_EMAIL` in production so the built-in fallback is not used.
+9. After the first real payment, check the needs-review list and the webhook log before announcing the plans.
 
 ## Not built
 Refunds, chargebacks and partial-payment top-ups (these go to needs review and are settled by hand), coupons (none by design), a mentor payout system (mentors are not paid through Ledgerline).

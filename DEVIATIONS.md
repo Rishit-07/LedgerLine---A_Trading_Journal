@@ -32,3 +32,9 @@ Things built differently from the design boards, or not built. Each needs your d
 - The landing page, About page and FAQ no longer claim Zerodha, Upstox, Angel One, Dhan or Fyers sync, because that was never built; they describe MetaTrader import and Pro live sync only.
 - Still open: the onboarding broker step and the `broker_links` table still store the old broker names (no code reads them to sync anything).
 - AI trade review (on a trade's chart) and AI habit insight (Mistake lab) are new at your request. Limits and token tiers are my choice, set in `billing-config.js`.
+
+## Loading screen, 404 page and hosting
+- The Loading board's "Broker trades" row is shown as "MetaTrader trades" and only appears once the account has imported trades. "Mentor notes" only appears when the account has any. Rows use real counts from `/api/opening`; none are invented.
+- GSAP is loaded from the npm package (dynamic import) instead of cdnjs, so the CSP needs no extra host. It still loads only on these two screens and not at all with reduced motion.
+- `_redirects` has no catch-all, so unknown paths get a real HTTP 404 from `404.html`. This needs a host that honours `_redirects` and `404.html` (Cloudflare Pages and Netlify do).
+- `robots.txt`, `sitemap.xml` and the canonical link are written only when `SITE_URL` is set at build time.

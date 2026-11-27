@@ -360,6 +360,8 @@ export async function renderAccountPage(path, landing, appPages) {
 
 
   const request = (route, method, body) => authenticatedRequest(user, route, method, body);
+  // Once per browser session, over the page while it loads: the opening screen with real counts.
+  try { if (!sessionStorage.getItem('ledgerline-opened')) void import('./features/screens/opening.js').then(({ showOpening }) => showOpening(request)).catch(() => {}); } catch { /* storage blocked: skip it */ }
   void import('./features/ledger-bot/index.js').then(({ startLedgerBot }) => startLedgerBot({ request, path })).catch(() => {});
   void import('./features/notifications/store.js').then(({ startNotifications }) => { startNotifications(user); return import('./features/notifications/bell.js'); }).then(({ installBell }) => installBell()).catch(() => {});
   if(roomPath(path)){

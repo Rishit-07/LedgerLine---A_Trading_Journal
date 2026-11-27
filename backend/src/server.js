@@ -25,6 +25,7 @@ import { createNewsletterApi } from './newsletter.js';
 import { createMentorshipApi } from './mentorship.js';
 import { createMentorToolsApi } from './mentor-tools.js';
 import { createMetaTraderApi } from './metatrader.js';
+import { createOpeningApi } from './opening.js';
 import { createLedgerBotApi } from './ledger-bot.js';
 import { createNotificationApi, notify } from './notifications.js';
 import { createNotificationSettingsApi } from './notification-settings.js';
@@ -160,6 +161,7 @@ const billingApiHandlers = createBillingApi(pool, { authenticate: authenticateRe
 const mentorship = createMentorshipApi(pool, { authenticate: authenticateRequest, cancelMentorPlan: billingApiHandlers.cancelMentorPlan, planTerm: billingApiHandlers.planTerm });
 const mentorTools = createMentorToolsApi(pool, { authenticate: authenticateRequest });
 const metatrader = createMetaTraderApi(pool, { authenticate: authenticateRequest });
+const openingApi = createOpeningApi(pool, { authenticate: authenticateRequest });
 const newsletter = createNewsletterApi(pool, { authenticate: authenticateRequest, mail: mailConfig, auth });
 configureDelivery(createSenders({ pool, mail: mailConfig, messaging: getMessaging(firebaseApp) }));
 const accountData = createAccountDataApi(pool, authenticateRequest, auth);
@@ -202,6 +204,8 @@ const routes = new Map([
   ['/api/account/export', { methods: ['GET'], handler: (request, response) => accountData.export(request, response) }],
   ['/api/mentorship', { methods: ['GET', 'POST'], handler: mentorship.handler }],
   ['/api/ledger-bot', { methods: ['GET', 'PUT'], handler: createLedgerBotApi(pool, { authenticate: authenticateRequest }) }],
+  ['/api/opening', { methods: ['GET'], handler: openingApi.opening }],
+  ['/api/not-found', { methods: ['POST'], handler: openingApi.notFound }],
   ['/api/metatrader', { methods: ['GET', 'POST'], handler: metatrader.handler }],
   ['/api/metatrader/ingest', { methods: ['POST'], handler: metatrader.ingest }],
   ['/api/mentor-tools', { methods: ['GET', 'POST'], handler: mentorTools.handler }],
