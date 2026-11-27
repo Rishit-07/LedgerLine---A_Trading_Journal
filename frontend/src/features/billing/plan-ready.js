@@ -22,7 +22,7 @@ export function planReadyScreen(plan,features,done){
   for(let i=0;i<42;i++){
    const angle=i*2.39996,distance=75+(i%9)*27;
    ctx.save();ctx.translate(340+Math.cos(angle)*distance*t,220+Math.sin(angle)*distance*t+65*t*t);
-   ctx.rotate(t*i*.6);ctx.fillStyle=['#ff49bf','#8894ff','#ffd692','#81e8ca'][i%4];ctx.fillRect(-3,-6,6,12);
+   ctx.rotate(t*i*.6);ctx.fillStyle=['#e9d9b4','#ffffff','#b8a077','#8a8a8f'][i%4];ctx.fillRect(-3,-6,6,12);
    if(i%3===0)ctx.fillRect(-.8,-11,1.6,22);ctx.restore();
   }
  }

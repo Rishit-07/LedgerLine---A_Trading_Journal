@@ -17,6 +17,7 @@ startErrorCapture();
 import { installTwoStep } from './mfa.js';
 import { initMotion } from './motion.js';
 import { initSectionRail } from './section-rail.js';
+import { initLandingPricing } from './landing-pricing.js';
 import { initToolWheel } from './tool-wheel.js';
 import { transitionTheme } from './theme-transition.js';
 import './styles/auth.css';
@@ -122,6 +123,7 @@ if(legacyBillingRoute(path,location.search)){location.replace('/billing');}else 
 
   initMotion();
   initSectionRail();
+  initLandingPricing();
   initToolWheel();
 } else if (path === '/about') {
   landing.hidden = true;

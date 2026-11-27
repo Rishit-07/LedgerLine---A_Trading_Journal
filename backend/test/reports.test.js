@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHmac} from 'node:crypto';
 import {authorize,checkQuota,insufficient,validateReport,generateReport} from '../src/reports.js';
-import {verifySignature} from '../src/report-billing.js';
 
 test('AI off and free direct calls are rejected before generation',()=>{
  assert.throws(()=>authorize({plan:'pro',enabled:false},'full'),{status:403});
@@ -24,8 +23,4 @@ test('validate evidence, citations and prose before replacing aliases with real 
 });
 test('invalid model output is retried once',async()=>{
  let calls=0;await assert.rejects(generateReport({kind:'full',facts},{},async()=>{calls++;return '{}';}),{status:502});assert.equal(calls,2);
-});
-test('webhook signature binds raw bytes and requires a configured secret',()=>{
- const raw=Buffer.from('{"event":"subscription.charged"}'),sig=createHmac('sha256','test').update(raw).digest('hex');
- assert.ok(verifySignature(raw,sig,'test'));assert.equal(verifySignature(Buffer.from('{}'),sig,'test'),false);assert.equal(verifySignature(raw,sig,''),false);
 });

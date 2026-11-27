@@ -147,6 +147,16 @@
             style="top: 97%"
             tabindex="-1"
             ><span class="si-bar"></span></button
+          ><button
+            type="button"
+            class="si-t"
+            data-t="#pricing"
+            data-l="2"
+            data-state="ahead"
+            aria-label="Pricing"
+            style="top: 97%"
+            tabindex="-1"
+            ><span class="si-bar"></span></button
           ><span class="si-head" aria-hidden="true"></span><span class="si-lab" aria-hidden="true"></span></div
       ></nav>
       <header class="lp-top"
@@ -206,7 +216,7 @@
           ></div
         ><nav class="lp-nav" aria-label="Main navigation"
           ><a href="#tools">Product</a><a href="#brokers">Brokers</a
-          ><a href="#clubs">Community</a><a href="#faq">Questions</a></nav
+          ><a href="#clubs">Community</a><a href="#pricing">Pricing</a><a href="#faq">Questions</a></nav
         ><div style="display: flex; align-items: center; gap: 14px"
           ><button
             class="btn btn-secondary"
@@ -2719,6 +2729,42 @@
             ></div
           >
         </section>
+        <section class="lp-sec" id="pricing">
+          <div class="lp-lab lp-rv" data-rv>Pricing</div>
+          <h2 class="lp-eh lp-rv" data-rv style="margin-top: 16px; max-width: 760px">Start free.<br />Pay only when it helps.</h2>
+          <p class="lp-rv lp-pricing-lede" data-rv>Loss limits, cooldowns, the pre-trade checklist, export and delete account are free forever.</p>
+          <div class="lp-terms lp-rv" data-rv role="group" aria-label="Billing period">
+            <button type="button" class="btn btn-secondary" data-term="monthly" aria-pressed="true">Monthly</button>
+            <button type="button" class="btn btn-secondary" data-term="yearly" aria-pressed="false">Yearly · 2 months free</button>
+          </div>
+          <div class="lp-plans">
+            <article class="lp-plan n-out lp-rv" data-rv style="transition-delay: 0.05s" data-plan="free">
+              
+              <h3>Free</h3><p class="lp-plan-blurb">Everything needed to journal and size trades safely.</p>
+              <div class="lp-price"><span class="lp-cur">$</span><span class="lp-amt" data-count>0</span><span class="lp-per"></span></div>
+              <p class="lp-plan-note" data-note></p>
+              <ul><li>Trade journal and process score</li><li>Streaks and badges</li><li>Join clubs and spaces</li></ul>
+              <a class="btn btn-secondary" href="/auth">Start free</a>
+            </article>
+            <article class="lp-plan n-out lp-rv lp-plan-hot" data-rv style="transition-delay: 0.18s" data-plan="pro">
+              <span class="lp-plan-tag">Most chosen</span>
+              <h3>Pro</h3><p class="lp-plan-blurb">Mistake lab, AI reports and deeper journal insights.</p>
+              <div class="lp-price"><span class="lp-cur">$</span><span class="lp-amt" data-count>0</span><span class="lp-per"></span></div>
+              <p class="lp-plan-note" data-note></p>
+              <ul><li>Replay and mistake lab</li><li>AI reports and weekly reviews</li><li>Broker sync</li><li>Ask your journal</li></ul>
+              <a class="btn btn-primary" href="/billing?plan=pro">Choose Pro</a>
+            </article>
+            <article class="lp-plan n-out lp-rv" data-rv style="transition-delay: 0.31s" data-plan="mentor">
+              <span class="lp-plan-tag">Verified mentors only</span>
+              <h3>Mentor</h3><p class="lp-plan-blurb">Pro, plus private teaching spaces for your students.</p>
+              <div class="lp-price"><span class="lp-cur">$</span><span class="lp-amt" data-count>0</span><span class="lp-per"></span></div>
+              <p class="lp-plan-note" data-note></p>
+              <ul><li>Create a mentor space</li><li>Announcements, assignments and live sessions</li><li>Cohort view of what students share</li><li>Verified badge and all Pro tools</li></ul>
+              <a class="btn btn-secondary" href="/billing?plan=mentor">Become a mentor</a>
+            </article>
+          </div>
+          <p class="lp-pricing-foot lp-rv" data-rv>Prices in US dollars, paid in crypto through CoinPayments. Prepaid: nothing renews by itself, and we remind you 7 days and 1 day before a period ends.</p>
+        </section>
         <section
           id="signin"
           style="
@@ -2904,8 +2950,7 @@
               ><div class="lp-faq"></div></div
           ></div>
         </section>
-        <section class="lp-sec" id="billing"><h2 class="lp-eh">Plans and billing</h2><p>Free includes your journal, process score and streak. Pro adds AI reviews. The Mentor plan adds private teaching spaces for verified mentors.</p><a class="btn btn-primary" href="/billing">View billing</a></section>
-        <footer class="lp-ft" style="padding: 100px 56px 40px"
+                <footer class="lp-ft" style="padding: 100px 56px 40px"
           ><div class="n-in" style="padding: 56px 56px 44px; border-radius: 46px"
             ><div
               class="lp-wm"
