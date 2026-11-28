@@ -3,6 +3,7 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { isEmail, readJson, send } from './http.js';
 import { clientAddress } from './guard.js';
+import { branded } from './email-layout.js';
 import { renderMarkdown, markdownToText } from './markdown.js';
 import { makeToken, readToken, available as tokensAvailable } from './newsletter-tokens.js';
 import { eligibleReviewer, reviewer } from './mentor-verification.js';
@@ -58,7 +59,7 @@ export function createNewsletterApi(pool, { authenticate, mail, auth, env = proc
     await deliverMail({
       to: sub.email, subject: 'Confirm your Ledgerline newsletter',
       text: `Tap to confirm you want the Ledgerline trading newsletter (${sub.topics.join(', ')}; ${FREQUENCIES[sub.frequency]}):\n${link}\n\nThe link works for 48 hours. Nothing is sent until you confirm. If this was not you, ignore this email.\n\n${PROMISE}`,
-      html: `<p>Tap to confirm you want the Ledgerline trading newsletter (${escapeHtml(sub.topics.join(', '))}; ${escapeHtml(FREQUENCIES[sub.frequency])}).</p><p><a href="${escapeHtml(link)}">Confirm my subscription</a></p><p style="font-size:12px;color:#666">The link works for 48 hours. Nothing is sent until you confirm. If this was not you, ignore this email.<br>${escapeHtml(PROMISE)}</p>`,
+      html: branded({ title: 'Confirm your subscription', lines: [`Tap to confirm you want the Ledgerline trading newsletter (${sub.topics.join(', ')}; ${FREQUENCIES[sub.frequency]}).`, 'The link works for 48 hours. Nothing is sent until you confirm. If this was not you, ignore this email.', PROMISE], action: { label: 'Confirm my subscription', href: link }, origin: new URL(link).origin, reason: 'You are getting this because this address was entered on the Ledgerline newsletter form.' }).html,
     });
   }
 

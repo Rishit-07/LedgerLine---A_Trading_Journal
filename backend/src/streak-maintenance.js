@@ -1,5 +1,6 @@
 import { localDay } from './streak-logic.js';
 import { createStreakStore } from './streak-store.js';
+import { branded } from './email-layout.js';
 
 export const streakReminder = 'Log or review one trade, or note a rest day. Your streak is safe until midnight.';
 
@@ -9,6 +10,7 @@ async function sendReminder(config, email, idempotencyKey) {
     to: [email],
     subject: 'Your Ledgerline streak',
     text: streakReminder + '\n\n' + new URL('/journal', config.origin).href,
+    html: branded({ title: 'Your streak is safe until midnight', lines: [streakReminder], action: { label: 'Open my journal', href: new URL('/journal', config.origin).href }, origin: config.origin, reason: 'You are getting this because you turned on streak reminders.' }).html,
   };
   if (config.provider === 'gmail') return config.transporter.sendMail({ ...message, to: { address: email } });
   const response = await fetch('https://api.resend.com/emails', {

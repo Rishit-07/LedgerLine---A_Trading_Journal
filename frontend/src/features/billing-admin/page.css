@@ -1,0 +1,5 @@
+.ws-field { display: grid; gap: 4px; }
+.ws-field > span { font-size: 13px; color: var(--sub); }
+.ws-field input[type=checkbox] { justify-self: start; width: 18px; height: 18px; }
+[data-billing-admin] .btn-row { display: flex; flex-wrap: wrap; gap: 10px; }
+[data-billing-admin] .btn[aria-pressed=true] { outline: 2px solid var(--acc); }

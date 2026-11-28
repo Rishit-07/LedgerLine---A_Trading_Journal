@@ -37,6 +37,8 @@ import { createStreakApi } from './streak-api.js';
 import { runStreakMaintenance } from './streak-maintenance.js';
 import { prepareWelcome, readMailConfig, startWelcomeDelivery } from './welcome-email.js';
 import { createTurnstile } from './turnstile.js';
+import { createBillingAdminApi } from './billing-admin.js';
+import { createAdminHubApi } from './admin-hub.js';
 
 const projectId = process.env.FIREBASE_PROJECT_ID;
 const connectionString = process.env.DATABASE_URL;
@@ -176,11 +178,15 @@ const workspace = createWorkspaceApi(pool, authenticateRequest);
 const reports=reportApi(pool,authenticateRequest);
 const billing=billingApiHandlers.handler;
 const turnstile = createTurnstile();
+const billingAdmin = createBillingAdminApi(pool, { authenticate: authenticateRequest });
+const adminHub = createAdminHubApi(pool, { authenticate: authenticateRequest });
 const routes = new Map([
   ...['overview','invoice','status'].map(key=>['/api/billing/'+key,{methods:['GET'],handler:billing}]),
   ['/api/billing/profile',{methods:['GET','PUT'],handler:billingProfile(pool,authenticateRequest)}],
   ['/api/billing/checkout',{methods:['POST','GET'],handler:billing}],
   ['/api/billing/needs-review',{methods:['GET','POST'],handler:billing}],
+  ['/api/billing-admin',{methods:['GET','POST'],handler:billingAdmin.handler}],
+  ['/api/admin',{methods:['GET'],handler:adminHub.handler}],
   ['/api/billing/coinpayments/webhook',{methods:['POST'],handler:billing}],
   ['/api/reports',{methods:['GET'],handler:reports}],
   ['/api/ai/report',{methods:['POST','DELETE'],handler:reports}],
