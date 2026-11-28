@@ -37,7 +37,10 @@ export function portfolioDesignControls(form,data) {
   setups.append(help);
   const frame=options(setups,'Show setups as',[['phone','Phone screens'],['card','Plain cards']],settings.frame || 'phone');
   const cards=node('div','','portfolio-setup-list');
-  const add=node('button','Add a setup','btn btn-secondary');add.type='button';
+  const add=node('button','','mgn-add-setup');add.type='button';
+  const addIcon=node('span','+','mgn-add-setup-icon');
+  const addLabel=node('span','Add a setup');
+  add.append(addIcon,addLabel);
   setups.append(cards,add);
   const entries=[];
   function sync(){entries.forEach(({title},i)=>title.textContent='Setup '+(i+1));add.hidden=entries.length>=5;}

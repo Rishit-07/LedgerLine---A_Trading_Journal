@@ -1,0 +1,330 @@
+.fu-root {
+  width: 100%;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.fu-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.fu-dropzone {
+  position: relative;
+  border: 1.5px dashed color-mix(in srgb, var(--ink) 24%, transparent);
+  border-radius: 16px;
+  padding: 22px 18px;
+  text-align: center;
+  background: var(--bg);
+  transition: border-color .16s ease, background-color .16s ease;
+  cursor: pointer;
+}
+
+.fu-dropzone:hover {
+  border-color: color-mix(in srgb, var(--ink) 48%, transparent);
+}
+
+.fu-dropzone.is-dragging {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 7%, transparent);
+}
+
+.fu-native-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.fu-drop-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.fu-drop-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--track);
+  color: var(--sub);
+  transition: background-color .16s ease, color .16s ease;
+}
+
+.fu-dropzone.is-dragging .fu-drop-icon {
+  background: color-mix(in srgb, var(--acc) 14%, transparent);
+  color: var(--acc);
+}
+
+.fu-drop-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fu-drop-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.fu-drop-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.fu-browse-btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--acc);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-underline-offset: 4px;
+}
+
+.fu-browse-btn:hover {
+  text-decoration: underline;
+}
+
+.fu-drop-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--sub);
+}
+
+.fu-files {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.fu-files-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fu-files-head h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.fu-files-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fu-head-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 11px;
+  border-radius: 10px;
+  border: 1px solid var(--track);
+  background: var(--surface, var(--bg));
+  color: var(--ink);
+  font: 600 12px/1.2 var(--font-sans, inherit);
+  cursor: pointer;
+}
+
+.fu-head-btn:hover {
+  border-color: color-mix(in srgb, var(--ink) 40%, transparent);
+}
+
+.fu-head-btn svg,
+.fu-icon-btn svg,
+.fu-file-icon svg,
+.fu-alert svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+.fu-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--track);
+  border-radius: 12px;
+  background: var(--surface, var(--bg));
+}
+
+.fu-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.fu-table th {
+  height: 36px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sub);
+  border-bottom: 1px solid var(--track);
+  white-space: nowrap;
+}
+
+.fu-table td {
+  padding: 8px 12px;
+  border-top: 1px solid var(--track);
+  vertical-align: middle;
+}
+
+.fu-table tbody tr:first-child td {
+  border-top: 0;
+}
+
+.fu-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fu-file-icon {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: var(--sub);
+  flex: none;
+}
+
+.fu-ring {
+  position: absolute;
+  inset: 0;
+  width: 32px;
+  height: 32px;
+  transform: rotate(-90deg);
+}
+
+.fu-ring-track {
+  fill: none;
+  stroke: color-mix(in srgb, var(--sub) 22%, transparent);
+  stroke-width: 2;
+}
+
+.fu-ring-fill {
+  fill: none;
+  stroke: var(--acc);
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: stroke-dashoffset .25s ease;
+}
+
+.fu-file-name {
+  margin: 0;
+  font-weight: 500;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.fu-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--track);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.fu-badge--error {
+  background: color-mix(in srgb, var(--neg, #dc2626) 14%, transparent);
+  color: var(--neg-text, #dc2626);
+  margin-left: 6px;
+}
+
+.fu-size {
+  color: var(--sub);
+  white-space: nowrap;
+}
+
+.fu-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fu-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--sub);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.fu-icon-btn:hover {
+  background: var(--track);
+  color: var(--ink);
+}
+
+.fu-icon-btn--danger {
+  color: var(--neg-text, #dc2626);
+}
+
+.fu-alert {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--neg, #dc2626) 35%, transparent);
+  background: color-mix(in srgb, var(--neg, #dc2626) 8%, transparent);
+  color: var(--neg-text, #dc2626);
+  font-size: 13px;
+}
+
+.fu-alert strong {
+  font-size: 13px;
+}
+
+.fu-alert p {
+  grid-column: 2;
+  margin: 0;
+  font-size: 12px;
+}
+
+.fu-root [hidden] {
+  display: none !important;
+}

@@ -1,16 +1,18 @@
 import './trade-screenshots.css';
 import { node, button } from '../pages/workspace-ui.js';
+import { createFileUpload } from './file-upload.js';
 
 const types = ['image/png','image/jpeg','image/webp'];
 const caption = {before:'Before trade',after:'After trade'};
 
-export function screenshotPicker(stage) {
-  const label = node('label','','chart-file-picker');
-  const input = node('input');
-  input.type = 'file';
-  input.accept = types.join(',');
-  label.append(node('span',caption[stage]+' screenshot (optional)'),input);
-  return label;
+export function screenshotPicker(stage, labelText) {
+  const uploader = createFileUpload({
+    label: labelText || (caption[stage] + ' screenshot (optional)'),
+    accept: types.join(','),
+    maxSize: 12 * 1024 * 1024,
+    maxFiles: 1,
+  });
+  return uploader.root;
 }
 
 export async function screenshotData(file) {
@@ -74,11 +76,10 @@ export function tradeScreenshots(trade,request) {
       card.append(node('small','Add your exit chart when you close the trade.'));
       return card;
     }
-    const picker = screenshotPicker(stage);
+    const picker = screenshotPicker(stage, saved ? 'Replace image' : 'Add screenshot');
     const input = picker.querySelector('input');
     const controls = node('div','','chart-shot-actions');
-    picker.firstChild.textContent = saved ? 'Replace image' : 'Add screenshot';
-    input.setAttribute('aria-label',label+' screenshot');
+    picker.querySelector('input').setAttribute('aria-label',label+' screenshot');
     controls.append(picker);
     const feedback = node('small');
     feedback.setAttribute('role','status');
@@ -96,7 +97,7 @@ export function tradeScreenshots(trade,request) {
       finally {controls.inert=false;}
     }
     input.onchange = () => {if (input.files.length) void change('save');};
-    if (saved) controls.append(button('Remove',() => {if(confirm('Remove this '+label.toLowerCase()+' screenshot?')) void change('remove');}));
+    if (saved) { const rm = button('Remove',() => {if(confirm('Remove this '+label.toLowerCase()+' screenshot?')) void change('remove');}); rm.className = 'btn btn-danger'; controls.append(rm); }
     card.append(controls,feedback);
     return card;
   }

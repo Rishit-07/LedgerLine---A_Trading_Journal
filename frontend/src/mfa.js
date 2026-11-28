@@ -32,7 +32,7 @@ function ask({ title, intro, build, submitLabel, label = '6-digit code', recover
     dialog.className = 'n-out dash-dialog mfa-dialog';
     dialog.setAttribute('aria-label', title);
     dialog.innerHTML = '<h2></h2><p class="mfa-intro"></p><form class="ws-form" novalidate><div data-extra></div>'
-      + '<label><span data-label></span><input name="code" autocomplete="one-time-code" maxlength="11" required data-required-message="Enter your code"></label>'
+      + '<label class="field mfa-field"><span data-label></span><input name="code" autocomplete="one-time-code" ' + (recovery ? 'placeholder="000000"' : 'inputmode="numeric" placeholder="000000"') + ' maxlength="11" required data-required-message="Enter your code"></label>'
       + (recovery ? '<p class="mfa-hint">Lost your phone? Enter one of your recovery codes instead, like <code>ab12c-d34ef</code>.</p>' : '')
       + '<p role="status" class="mfa-status"></p><div class="form-actions"><button type="button" class="btn btn-secondary" data-cancel>Cancel</button><button type="submit" class="btn btn-primary"></button></div></form>';
     dialog.querySelector('h2').textContent = title;

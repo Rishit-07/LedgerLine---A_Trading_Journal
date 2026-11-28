@@ -466,3 +466,9 @@
 .execution-timeline :disabled{opacity:.65}.trade-chart .candle-caption{justify-content:space-between;padding:10px 14px;color:#c9cce0}
 .replay-chart-well:has(.execution-timeline)>p:empty{display:none}
 .execution-detail details{grid-column:1/-1}.execution-detail summary{color:#cbd1ff;font-weight:650;font-size:13px;cursor:pointer}.execution-price-form{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.execution-price-form input{max-width:140px;border-radius:10px;background:var(--bg);padding:8px;color:var(--ink)}.execution-price-form small{flex-basis:100%}.execution-price-form small:empty{display:none}
+.calendar-usd-marker{position:absolute;top:6px;left:22px;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:color-mix(in srgb,var(--neg,#dc2626) 14%,var(--bg));border:1px solid color-mix(in srgb,var(--neg,#dc2626) 45%,transparent);color:var(--neg-text,#dc2626);font-size:11px;font-weight:800;line-height:1}
+.dash-calendar-day{position:relative}
+.calendar-legend-usd{color:var(--neg-text,#dc2626);font-weight:700}
+.calendar-event-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.calendar-usd-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--neg,#dc2626) 14%,transparent);color:var(--neg-text,#dc2626);font-size:11px;font-weight:800;letter-spacing:.03em}
+.calendar-event.is-usd-event{border-left:3px solid var(--neg-text,#dc2626)}

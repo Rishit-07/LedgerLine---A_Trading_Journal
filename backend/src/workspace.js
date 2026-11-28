@@ -6,7 +6,7 @@ import { readJson, send } from './http.js';
 import { activePlan } from './entitlements.js';
 import { runAi, replayInput, mistakeInput, REPLAY_PROMPT, MISTAKE_PROMPT } from './ai-tools.js';
 import { FEATURE_NAMES } from './billing-config.js';
-import { usedSql, monthStart, limitFor, tokenState, emptyMessage, walletAllowance, recordTokens } from './usage-limits.js';
+import { usedSql, monthStart, featureWindowStart, featureResetAt, limitFor, tokenState, emptyMessage, walletAllowance, recordTokens } from './usage-limits.js';
 import { imageRequestLimit, prepareScreenshot, tradeScreenshots } from './trade-screenshots.js';
 
 const tradeId = /^[1-9]\d{0,17}$/;
@@ -54,12 +54,12 @@ function validateCandles(candles) {
   return true;
 }
 
-export function createWorkspaceApi(pool, authenticate, {coachConfig = configuredCoach(process.env), fetchCoach = fetch, lookupCandles = createCandleLookup()} = {}) {
+export function createWorkspaceApi(pool, authenticate, {coachConfig = configuredCoach(process.env), fetchCoach = fetch, lookupCandles = createCandleLookup(), getMarketNews = async () => []} = {}) {
   const query = async (sql, params) => (await pool.query(sql, params)).rows;
   async function usage(uid, feature) {
     const { plan } = await activePlan(pool, uid);
-    const [{ n }] = await query(usedSql[feature], [uid, monthStart()]);
-    return { feature: FEATURE_NAMES[feature], plan, used: n, limit: limitFor(plan, feature) };
+    const [{ n }] = await query(usedSql[feature], [uid, featureWindowStart(feature)]);
+    return { feature: FEATURE_NAMES[feature], plan, used: n, limit: limitFor(plan, feature), window: feature === 'coach' ? '3 days' : 'month', resetsAt: featureResetAt(feature).toISOString() };
   }
   const aiBusy = new Set();
   /** Check the allowance, run the AI, and only then record the run, so a failed call is never charged. One run at a time per user. */
@@ -82,16 +82,18 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
   /** Throws a 403 with reason 'limit' when this month's allowance is spent. Free accounts are pointed at Pro; paid accounts are told when it renews. */
   async function spend(uid, feature) {
     const u = await usage(uid, feature);
+    const period = feature === 'coach' ? 'every 3 days' : 'this month';
+    const resetText = feature === 'coach' ? 'It resets every 3 days.' : 'It resets on the 1st.';
     if (u.used >= u.limit) throw Object.assign(new Error(u.plan === 'free'
-      ? `You have used your ${u.limit} free ${FEATURE_NAMES[feature]} uses this month. Pro raises it to ${limitFor('pro',feature)}.`
-      : `You have reached this month's ${FEATURE_NAMES[feature]} limit. It resets on the 1st.`), { status: 403, reason: 'limit', feature: u.feature });
+      ? `You have used your ${u.limit} free ${FEATURE_NAMES[feature]} uses (${period}). Pro raises it to ${limitFor('pro',feature)}.`
+      : `You have reached your ${FEATURE_NAMES[feature]} limit (${period}). ${resetText}`), { status: 403, reason: 'limit', feature: u.feature });
   }
   const coaching = new Set();
   const planOf = async (uid) => (await activePlan(pool, uid)).plan;
   const dbq = { query: pool.query.bind(pool) };
   async function coachBalance(uid) {
     const t = await tokenState(dbq, uid, await planOf(uid));
-    return { remaining: t.remaining, allowance: t.allowance, window: t.window, retryMinutes: t.retryMinutes ?? null, hour: t.hour ?? null, month: t.month ?? null };
+    return { remaining: t.remaining, allowance: t.allowance, window: t.window, resetsAt: t.resetsAt ?? null, retryMinutes: t.retryMinutes ?? null, hour: t.hour ?? null, month: t.month ?? null };
   }
   /** One gate for every AI call: stops when the wallet is empty and says why (day, hour cooldown or month). */
   async function aiGate(uid) {
@@ -361,7 +363,26 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
       if (!coachConfig) throw fail(503,'AI chat is not connected.');
       await spend(uid,'coach');
       const plan = await planOf(uid), allowance = walletAllowance(plan);
-      requireValue(string(data.question,600,true),'Enter a question of up to 600 characters.');
+      const rawAttachments = Array.isArray(data.attachments) ? data.attachments.slice(0, 3) : [];
+      const attachments = rawAttachments.map((item) => {
+        if (!item || typeof item !== 'object') throw fail(400, 'Invalid attachment.');
+        const name = string(item.name, 120, true) || 'attachment';
+        const type = string(item.type, 100, false) || '';
+        if (typeof item.dataUrl === 'string') {
+          if (!/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(item.dataUrl) || item.dataUrl.length > 2_000_000) {
+            throw fail(400, 'Attached image must be a PNG, JPEG, or WebP under 1.5 MB.');
+          }
+          return { name, type, dataUrl: item.dataUrl };
+        }
+        if (typeof item.text === 'string') {
+          return { name, type, text: item.text.slice(0, 20_000) };
+        }
+        throw fail(400, 'Unsupported attachment format.');
+      });
+      const rawQuestion = typeof data.question === 'string' && data.question.trim()
+        ? data.question
+        : attachments.length ? 'Analyze the attached file(s).' : '';
+      requireValue(string(rawQuestion,600,true),'Enter a question of up to 600 characters.');
       if (coaching.has(uid)) throw fail(429,'Your last question is still being answered.');
       coaching.add(uid);
       try {
@@ -371,20 +392,22 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
         if (!existing && data.newChat !== true) throw fail(404,'Conversation unavailable.');
         const history = await query('SELECT question,answer,sources FROM coach_messages WHERE user_id=$1 AND chat_id=$2 ORDER BY id DESC LIMIT 4',[uid,data.chatId]);
         history.reverse();
-        await checkCoachScope(coachConfig,data.question,history,fetchCoach,usage);
-        const [latest,rules,limits,plans,mistakes,streak] = await Promise.all([
+        await checkCoachScope(coachConfig,rawQuestion,history,fetchCoach,usage);
+        const [latest,rules,limits,plans,mistakes,streak,marketNews] = await Promise.all([
           query(trades.replace('LIMIT 501','LIMIT 25'),[uid]),
           query('SELECT text,hard FROM rules WHERE user_id=$1 AND active ORDER BY position LIMIT 30',[uid]),
           query('SELECT markets,risk_per_trade_pct AS "riskPercent",daily_loss_limit_r AS "dailyLossLimitR",max_trades_per_day AS "dailyTradeLimit" FROM user_profile WHERE user_id=$1',[uid]),
           query('SELECT date::text,bias,locked_at IS NOT NULL AS committed FROM plans WHERE user_id=$1 ORDER BY date DESC LIMIT 5',[uid]),
           query('SELECT kind,count(*)::int AS occurrences FROM mistakes WHERE user_id=$1 GROUP BY kind ORDER BY occurrences DESC,kind LIMIT 8',[uid]),
           query('SELECT current,best,level FROM streak_state WHERE user_id=$1',[uid]),
+          Promise.race([getMarketNews().catch(()=>[]), new Promise((r)=>setTimeout(()=>r([]),2000))]),
         ]);
         const results = latest.map(({ openedAt, closedAt, symbol, market, side, setup, result, checks, kept, reviewed },index) =>
           ({ reference:index+1, openedAt, closedAt, symbol, market, side, setup, result, checks, kept, reviewed }));
-        const answer=await askCoach(coachConfig,data.question.trim(),results,history,fetchCoach,{rules,limits:limits[0],plans,mistakes,streak:streak[0]},usage);
+        const answer=await askCoach(coachConfig,rawQuestion.trim(),results,history,fetchCoach,{rules,limits:limits[0],plans,mistakes,streak:streak[0],marketNews},usage,attachments);
         const sources=results.map(({reference,openedAt},index)=>({reference,openedAt,tradeId:latest[index].id}));
-        const question = data.question.trim();
+        const attachmentNote = attachments.length ? `\n\n[Attached: ${attachments.map((a) => a.name).join(', ')}]` : '';
+        const question = rawQuestion.trim() + attachmentNote;
         const title = Array.from(question.replace(/\s+/g,' ')).slice(0,64).join('');
         const [record] = await query(`WITH chat AS (
           ${existing ? 'UPDATE coach_chats SET updated_at=now() WHERE user_id=$1 AND id=$2 AND $3::text IS NOT NULL'
@@ -416,7 +439,7 @@ export function createWorkspaceApi(pool, authenticate, {coachConfig = configured
         if (!Object.hasOwn(pageLoaders,page)) return send(response,404,{ error:'Workspace page unavailable.' });
         if (request.method === 'POST') {
           if (!Object.hasOwn(writes,page)) return send(response,405,{ error:'This page does not accept changes.' });
-          const { error,data } = await readJson(request,page === 'history' ? imageRequestLimit : 120_000);
+          const { error,data } = await readJson(request,(page === 'history' || page === 'coach') ? imageRequestLimit : 120_000);
           if (error || !data || typeof data !== 'object' || Array.isArray(data)) return send(response,error ?? 400,{ error:'Check the form details.' });
           return send(response,200,await writes[page](claims.uid,data));
         }

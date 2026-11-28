@@ -43,7 +43,25 @@
 .btn-primary { background: var(--acc); color: var(--on-acc); box-shadow: var(--btn-shadow-accent); }
 .btn-secondary { background: var(--bg); color: var(--ink); box-shadow: var(--btn-shadow); }
 .btn-ghost { background: transparent; color: var(--acc); box-shadow: none; padding-inline: 14px; }
-.btn-danger { background: var(--bg); color: var(--neg-text); box-shadow: var(--btn-shadow); }
+html:root body .btn.btn-danger {
+  background: color-mix(in srgb, #ef4444 10%, var(--bg));
+  color: #b91c1c;
+  border: 1px solid color-mix(in srgb, #ef4444 28%, transparent);
+  box-shadow: none;
+}
+html:root body .btn.btn-danger:not(:disabled, [aria-disabled="true"]):hover {
+  background: color-mix(in srgb, #ef4444 16%, var(--bg));
+  border-color: color-mix(in srgb, #ef4444 42%, transparent);
+}
+html:root.dark body .btn.btn-danger {
+  background: color-mix(in srgb, #ef4444 14%, var(--bg));
+  color: #fca5a5;
+  border-color: color-mix(in srgb, #ef4444 32%, transparent);
+}
+html:root.dark body .btn.btn-danger:not(:disabled, [aria-disabled="true"]):hover {
+  background: color-mix(in srgb, #ef4444 22%, var(--bg));
+  border-color: color-mix(in srgb, #ef4444 48%, transparent);
+}
 .btn-icon { padding: 10px; width: 44px; }
 .btn:focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; }
 .btn-primary:focus-visible { outline-color: var(--acc2); }
@@ -83,7 +101,48 @@
   border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
   animation: btn-spin .7s linear infinite;
 }
+@keyframes ux-bar-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(260%); }
+}
+@keyframes ux-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+.ux-indeterminate-bar {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--track);
+  overflow: hidden;
+}
 @keyframes btn-spin { to { transform: rotate(360deg); } }
+.ux-indeterminate-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 38%;
+  border-radius: 999px;
+  background: var(--acc);
+  animation: ux-bar-slide 1.35s ease-in-out infinite;
+}
+.ux-skeleton-line {
+  height: 11px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--track) 25%, color-mix(in srgb, var(--ink) 8%, var(--track)) 50%, var(--track) 75%);
+  background-size: 200% 100%;
+  animation: ux-shimmer 1.5s ease-in-out infinite;
+}
+.ux-skeleton-line.is-short { width: 64%; }
+@media (prefers-reduced-motion: reduce) {
+  .ux-indeterminate-bar::after { animation: none; width: 50%; left: 25%; }
+  .ux-skeleton-line { animation: none; }
+}
+progress, meter {
+  accent-color: var(--acc);
+  border-radius: 999px;
+}
 @media (prefers-reduced-motion: reduce) {
   .btn, .btn:hover { transition: none; transform: none; }
   .btn.is-loading::after, .btn[aria-busy="true"]::after { animation: none; }
@@ -124,6 +183,24 @@
 .field { display: grid; gap: 6px; min-width: 0; }
 
 /* Text-like controls: always a visible border. The control is the box, or its .n-in/.n-out wrapper is. */
+:where(input, textarea, select):not(:is([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="hidden"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"])) {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: inset 2px 2px 5px var(--sd), inset -2px -2px 5px var(--sl);
+}
+:where(textarea) { min-height: 96px; resize: vertical; }
+:where(input, textarea)::placeholder { color: color-mix(in srgb, var(--ink) 45%, transparent); }
+:where(dialog form) { display: grid; gap: 14px; margin-top: 14px; }
+:where(dialog label:has(> :is(input, textarea, select):not(:is([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="hidden"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"])))) {
+  display: grid; gap: 6px; font-size: 13px; font-weight: 600;
+}
 html:root body :is(input, textarea, select):not(:is([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="hidden"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"])) {
   box-sizing: border-box;
   border: 1.5px solid var(--field-border);
@@ -159,8 +236,51 @@ html:root body :is(.n-in, .n-out, .field__box):has(> :is(input, textarea, select
 }
 html:root body :is(.n-in, .n-out, .field__box) > :is(input, textarea, select):disabled { opacity: 1; border-style: none; }
 /* Other controls keep their native look but get a visible focus ring. */
-:is(input[type="checkbox"], input[type="radio"], input[type="range"], input[type="file"]):focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; }
-input[type="checkbox"], input[type="radio"] { accent-color: var(--acc); }
+:is(input[type="radio"], input[type="range"], input[type="file"]):focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; }
+input[type="radio"] { accent-color: var(--acc); }
+
+/* Checkboxes: shadcn/Radix-style rounded-md box with check & indeterminate icons across all pages. */
+input[type="checkbox"]:not(.sr-only):not(.ws-visually-hidden) {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border-radius: 6px;
+  border: 1.5px solid var(--field-border);
+  background-color: var(--bg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 14px 14px;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .1s ease;
+}
+input[type="checkbox"]:not(.sr-only):not(.ws-visually-hidden):not(:disabled):hover {
+  border-color: color-mix(in srgb, var(--ink) 55%, var(--bg));
+}
+input[type="checkbox"]:not(.sr-only):not(.ws-visually-hidden):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--acc);
+}
+input[type="checkbox"]:not(.sr-only):not(.ws-visually-hidden):checked {
+  background-color: var(--acc);
+  border-color: var(--acc);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+input[type="checkbox"]:not(.sr-only):not(.ws-visually-hidden):indeterminate {
+  background-color: var(--acc);
+  border-color: var(--acc);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3C/svg%3E");
+}
+input[type="checkbox"]:not(.sr-only):not(.ws-visually-hidden):disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
 
 /* Required and empty (after leaving it or pressing the primary button): red glow, message, icon. */
 html:root body :is(input, textarea, select)[aria-invalid="true"]:not(:is([type="checkbox"], [type="radio"])),
@@ -170,7 +290,11 @@ html:root body [data-invalid="true"] {
   animation: field-pulse .4s ease-out;
 }
 html:root body :is(.n-in, .n-out, .field__box)[data-invalid="true"] > :is(input, textarea, select) { box-shadow: none; animation: none; }
-input[type="checkbox"][aria-invalid="true"], input[type="radio"][aria-invalid="true"], input[type="file"][aria-invalid="true"] { outline: 2px solid var(--neg); outline-offset: 3px; }
+input[type="radio"][aria-invalid="true"], input[type="file"][aria-invalid="true"] { outline: 2px solid var(--neg); outline-offset: 3px; }
+input[type="checkbox"][aria-invalid="true"], [data-invalid="true"] input[type="checkbox"] {
+  border-color: color-mix(in srgb, var(--neg) 75%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--neg) 20%, transparent);
+}
 @keyframes field-pulse { from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--neg) 55%, transparent); } }
 @media (prefers-reduced-motion: reduce) {
   html:root body :is(input, textarea, select)[aria-invalid="true"], html:root body [data-invalid="true"] { animation: none; }
@@ -199,6 +323,20 @@ input[type="checkbox"][aria-invalid="true"], input[type="radio"][aria-invalid="t
 
 /* Two-step sign-in dialog */
 .mfa-dialog { max-width: min(420px, calc(100vw - 32px)); }
+.mfa-dialog h2 { margin: 0 0 8px; }
+.mfa-intro { margin: 0; font-size: 14px; line-height: 1.5; opacity: .85; }
+.mfa-dialog .ws-form { display: grid; gap: 14px; margin-top: 14px; }
+.mfa-field { font-size: 13px; font-weight: 600; }
+.mfa-dialog input[name="code"] {
+  width: 100%; min-height: 48px; padding: 10px 14px; border-radius: 14px;
+  background: var(--bg); color: var(--ink);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 20px; font-weight: 700;
+  letter-spacing: .24em; text-align: center;
+  box-shadow: inset 2px 2px 5px var(--sd), inset -2px -2px 5px var(--sl);
+}
+.mfa-dialog input[name="code"]::placeholder { letter-spacing: .2em; opacity: .35; font-weight: 500; }
+.mfa-status { margin: 0; font-size: 13px; color: var(--neg-text); }
+.mfa-status:empty { display: none; }
 .mfa-qr { display: block; margin: 8px auto; border-radius: 12px; background: #fff; padding: 6px; }
 .mfa-key { font-size: 13px; overflow-wrap: anywhere; }
 .mfa-key code { user-select: all; font-weight: 700; }

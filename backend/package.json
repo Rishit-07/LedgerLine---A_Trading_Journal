@@ -11,6 +11,7 @@
     "encrypt-existing": "node --env-file-if-exists=.env.local src/encrypt-existing.js"
   },
   "dependencies": {
+    "@upstash/redis": "^1.41.1",
     "firebase-admin": "14.5.1",
     "nodemailer": "10.6.1",
     "pdfkit": "^0.21.0",

@@ -1,4 +1,5 @@
 import {screenshotData} from '../components/trade-screenshots.js';
+import { createFileUpload } from '../components/file-upload.js';
 import { enrolTotp, removeTotp, twoStepStatus } from '../mfa.js';
 import {avatarUrl} from './profile-picture.js';
 import { portfolioPath, portfolioVisibilityMarkup, fillPortfolioVisibility, readPortfolioVisibility } from './portfolio-preferences.js';
@@ -107,7 +108,7 @@ export async function bindAccountSettings(page,request) {
   page.querySelector('[data-delete-account]').onclick=()=>{
     const dialog=document.createElement('dialog');
     dialog.className='n-out dash-dialog';dialog.setAttribute('aria-label','Delete account');
-    dialog.innerHTML='<h2>Delete your account?</h2><p>This permanently removes your journal, settings, portfolio and community activity. It cannot be undone. Download your data first if you want a copy.</p><form class="ws-form"><label>Type DELETE to confirm<input name="confirm" autocomplete="off" required pattern="DELETE" data-required-message="Type DELETE to confirm"></label><p role="status"></p><div class="form-actions"><button type="button" class="btn btn-secondary" data-cancel>Cancel</button><button type="submit" class="btn btn-danger">Delete my account</button></div></form>';
+    dialog.innerHTML='<h2>Delete your account?</h2><p>This permanently removes your journal, settings, portfolio and community activity. It cannot be undone. Download your data first if you want a copy.</p><form class="ws-form"><label>Type DELETE to confirm<input name="confirm" placeholder="DELETE" autocomplete="off" required pattern="DELETE" data-required-message="Type DELETE to confirm"></label><p role="status"></p><div class="form-actions"><button type="button" class="btn btn-secondary" data-cancel>Cancel</button><button type="submit" class="btn btn-danger">Delete my account</button></div></form>';
     const form=dialog.querySelector('form'),status=dialog.querySelector('[role=status]');
     dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
     dialog.addEventListener('close',()=>dialog.remove());
@@ -120,6 +121,11 @@ export async function bindAccountSettings(page,request) {
     page.append(dialog);dialog.showModal();
   };
   const avatarForm=page.querySelector('[data-avatar-form]');
+  const avatarInput=avatarForm.elements.picture;
+  const avatarLabel=avatarInput.closest('label');
+  const avatarUpload=createFileUpload({input:avatarInput,label:'Profile picture',accept:'image/jpeg,image/png,image/webp',maxSize:12*1024*1024,maxFiles:1});
+  avatarLabel.before(avatarUpload.root);
+  avatarLabel.remove();
   const avatarStatus=avatarForm.querySelector('[role=status]');
   async function saveAvatar(remove){
     const file=avatarForm.elements.picture.files[0];

@@ -1,6 +1,18 @@
 export const number = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 });
 const day = new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeZone: 'Asia/Kolkata' });
 export const formatDate = (value) => value ? day.format(new Date(value)) : '—';
+export function formatResetCountdown(iso) {
+  if (!iso) return '';
+  const diffMs = new Date(iso).getTime() - Date.now();
+  if (!Number.isFinite(diffMs) || diffMs <= 60_000) return 'Resets in <1m';
+  const totalMin = Math.ceil(diffMs / 60_000);
+  const days = Math.floor(totalMin / 1440);
+  const hours = Math.floor((totalMin % 1440) / 60);
+  const mins = totalMin % 60;
+  if (days > 0) return `Resets in ${days}d ${hours}h`;
+  if (hours > 0) return `Resets in ${hours}h ${mins}m`;
+  return `Resets in ${mins}m`;
+}
 export const signedR = (value) => value == null ? '—' : (value > 0 ? '+' : '') + number.format(value) + 'R';
 export const rate = (value) => value == null ? '—' : number.format(value) + '%';
 export const markets = { stocks:'Stocks', options:'Options', futures:'Futures', forex:'Forex', crypto:'Crypto' };

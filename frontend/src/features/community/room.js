@@ -76,7 +76,19 @@ export function bindRoom(page,{data,save},{label,plural,title,goals,hostLabel,vi
         if(member.adherence!=null)item.append(node('small',member.adherence+'% rules followed'));
         return item;
       }));
-      for(const pending of data.requests.filter(r=>r.groupId===roomId))feed.append(node('p',pending.name+' · Request pending'),action('Approve',{action:'approve',id:roomId,member:pending.member},'Request approved.'),action('Decline',{action:'decline',id:roomId,member:pending.member},'Request declined.'));
+      for(const pending of data.requests.filter(r=>r.groupId===roomId)){
+        const row=node('article','','community-request-card n-in');
+        const info=node('div','','community-request-info');
+        info.append(communityAvatar(pending.name),node('strong',pending.name),node('span','Request pending','community-status-pill'));
+        const btns=node('div','','ws-actions');
+        const approveBtn=action('Approve',{action:'approve',id:roomId,member:pending.member},'Request approved.');
+        approveBtn.className='btn btn-primary';
+        const declineBtn=action('Decline',{action:'decline',id:roomId,member:pending.member},'Request declined.');
+        declineBtn.className='btn btn-danger';
+        btns.append(approveBtn,declineBtn);
+        row.append(info,btns);
+        feed.append(row);
+      }
       paginate(feed,'Members',6,roomId+view);return;
     }
     const isGoal=view===goals;
@@ -89,7 +101,12 @@ export function bindRoom(page,{data,save},{label,plural,title,goals,hostLabel,vi
       const author=node('div','','community-byline');author.append(communityAvatar(t.author,t.avatar),node('small',t.author+' · '+formatDate(t.createdAt)));card.append(author,node('p',t.body));
       if(isGoal && !group.readOnly) {
         const progress=node('progress');progress.max=group.members||1;progress.value=t.completions;progress.setAttribute('aria-label','Member check-ins');
-        card.append(progress,node('small',t.completions+' of '+group.members+' checked in'),action(t.checked?'Undo check-in':'Mark complete',{action:t.checked?'uncheck':'check',id:roomId,topicId:t.id},'Check-in updated.'));
+        const checkLabel=node('label','','community-check-row');
+        const checkInput=node('input');checkInput.type='checkbox';checkInput.checked=Boolean(t.checked);
+        const checkBtn=action(t.checked?'Undo check-in':'Mark complete',{action:t.checked?'uncheck':'check',id:roomId,topicId:t.id},'Check-in updated.');
+        checkInput.onchange=()=>checkBtn.click();
+        checkLabel.append(checkInput,node('span',t.checked?'Checked in':'Mark complete'));
+        card.append(progress,node('small',t.completions+' of '+group.members+' checked in'),checkLabel);
       } else if(t.kind==='discussion') {
         const thread=node('details');thread.append(node('summary','Replies ('+t.replies.length+')'));
         const replies=node('div');thread.append(replies);

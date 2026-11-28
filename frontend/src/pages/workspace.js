@@ -1,5 +1,6 @@
 import {billing} from '../features/billing/page.js';
 import { mountWorkspace, paintTradingShell, bindToolbarStreak } from './workspace-shell.js';
+import { formatResetCountdown } from './workspace-ui.js';
 import { history, mistake } from './workspace-analysis.js';
 import { reports } from '../features/reports/index.js';
 import { sizing, forecast } from './workspace-tools.js';
@@ -50,7 +51,9 @@ export async function renderWorkspace(landing, { path, request, uid, name, photo
     hideSkeleton();
     status.textContent='';
     if(data.usage){const chip=document.createElement('p'),link=document.createElement('a');chip.className='usage-chip';
-      chip.textContent=`${data.usage.feature} this month: ${data.usage.used} of ${data.usage.limit} used. `;
+      const resetText = formatResetCountdown(data.usage.resetsAt);
+      const periodText = resetText ? ` (${resetText})` : data.usage.window === '3 days' ? ' (resets every 3 days)' : ' this month';
+      chip.textContent=`${data.usage.feature}${periodText}: ${data.usage.used} of ${data.usage.limit} used. `;
       if(data.usage.plan==='free'){link.href='/billing?from=reports';link.textContent='Get more with Pro';chip.append(link);}
       status.after(chip);}
   } catch (error) {

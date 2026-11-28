@@ -8,13 +8,27 @@ const ist = new Intl.DateTimeFormat('en-IN', { timeZone:zone, dateStyle:'medium'
 const istTime = new Intl.DateTimeFormat('en-IN', { timeZone:zone, timeStyle:'short' });
 const istDate = new Intl.DateTimeFormat('en-CA', { timeZone:zone, dateStyle:'short' });
 const dayOf = (event) => event.date ?? istDate.format(new Date(event.at));
+const isDollarNews = (event) => event?.currency === 'USD'
+  || event?.country === 'United States'
+  || /\b(usd|u\.s\.|dollar|fed|fomc|powell|cpi|nfp|nonfarm|payroll|pce|treasury|gdp)\b/i.test(event?.title || '');
 
 function eventCard(event) {
-  const card = node('article','','n-in ws-list-card calendar-event');
+  const usd = isDollarNews(event);
+  const card = node('article','','n-in ws-list-card calendar-event' + (usd ? ' is-usd-event' : ''));
+  const head = node('div', '', 'calendar-event-head');
+  if (usd) {
+    const badge = node('span', '$ USD', 'calendar-usd-badge');
+    badge.title = 'USD high-impact news';
+    head.append(badge);
+  }
+  head.append(node('small',(event.at ? ist.format(new Date(event.at)) : formatDate(event.date))+' · '+event.source));
   const title = node(event.url ? 'a' : 'strong', event.title);
   if (event.url) { title.href=event.url; title.target='_blank'; title.rel='noopener noreferrer'; }
-  card.append(node('small',(event.at ? ist.format(new Date(event.at)) : formatDate(event.date))+' · '+event.source),title);
-  if (event.impact) card.append(node('small',['','Low impact','Medium impact','High impact'][event.impact],event.impact===3?'is-loss':''));
+  card.append(head, title);
+  if (event.impact || usd) {
+    const impactText = event.impact ? ['','Low impact','Medium impact','High impact'][event.impact] : 'High impact · USD';
+    card.append(node('small', impactText, (event.impact===3 || usd) ? 'is-loss' : ''));
+  }
   if (event.forecast != null || event.actual != null) {
     card.append(node('small','Expected '+(event.forecast??'—')+' · Actual '+(event.actual??'—')));
   }
@@ -48,7 +62,7 @@ function calendarMarkup() {
   options.prepend(filter);
   const marketEvents = header.querySelector('[data-calendar-events]');
   const legend = node('p','','ws-calendar-legend');
-  legend.innerHTML = '<span class="is-win">● Win day</span><span class="is-loss">● Loss day</span><span class="calendar-legend-mark">● Rule break</span><span class="calendar-legend-event">● Market event</span><span class="calendar-legend-rest">● Rest day</span>';
+  legend.innerHTML = '<span class="is-win">● Win day</span><span class="is-loss">● Loss day</span><span class="calendar-legend-mark">● Rule break</span><span class="calendar-legend-event">● Market event</span><span class="calendar-legend-usd">$ USD news</span><span class="calendar-legend-rest">● Rest day</span>';
   calendar.querySelector('table').after(legend);
   calendar.append(marketEvents);
   return { metrics:metrics.outerHTML, calendar:calendar.outerHTML, dialog:template.content.querySelector('[data-calendar-dialog]').outerHTML };
@@ -127,7 +141,7 @@ export const calendar = {
           panel.append(node('p',exchange+' · '+istTime.format(new Date(opensAt))+' – '+istTime.format(new Date(closesAt))+' IST','n-in ws-list-card'));
         }
       }
-      const events=feed?.events.filter((event)=>['economic','earnings','dividend','holiday','expiry'].includes(event.kind)&&dayOf(event)===activeDay)??[];
+      const events=feed?.events.filter((event)=>dayOf(event)===activeDay && (['economic','earnings','dividend','holiday','expiry'].includes(event.kind) || isDollarNews(event)))??[];
       panel.append(node('h3','Events this day'));
       if(events.length) {
         const list=node('div','','ws-stack');panel.append(list);list.append(...events.map(eventCard));paginate(list,'Daily events');
@@ -167,11 +181,21 @@ export const calendar = {
       paintDay();
     }
     function paintEventMarkers() {
-      const dates=new Set(feed?.events.filter((event)=>['economic','earnings','dividend','holiday','expiry'].includes(event.kind)).map(dayOf));
+      const dates=new Set(feed?.events.filter((event)=>['economic','earnings','dividend','holiday','expiry'].includes(event.kind) || isDollarNews(event)).map(dayOf));
+      const usdDates=new Set(feed?.events.filter(isDollarNews).map(dayOf));
       for(const button of page.querySelectorAll('[data-day]')) {
         const hasEvent=dates.has(button.dataset.day);
+        const hasUsd=usdDates.has(button.dataset.day);
         button.classList.toggle('calendar-has-event',hasEvent);
-        button.setAttribute('aria-label',button.title+(hasEvent?' · Market events':''));
+        button.classList.toggle('calendar-has-usd',hasUsd);
+        button.querySelector('.calendar-usd-marker')?.remove();
+        if (hasUsd) {
+          const icon = node('span', '$', 'calendar-usd-marker');
+          icon.title = 'USD high-impact news';
+          icon.setAttribute('aria-hidden', 'true');
+          button.append(icon);
+        }
+        button.setAttribute('aria-label',button.title+(hasUsd?' · USD news':hasEvent?' · Market events':''));
       }
     }
     const paintCalendar=bindTradingCalendar(page,{

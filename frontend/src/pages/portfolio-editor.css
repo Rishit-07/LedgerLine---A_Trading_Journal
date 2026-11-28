@@ -31,10 +31,6 @@
 .pf-market-list span { padding:8px 12px; border-radius:13px; color:var(--acc); font-size:12px; font-weight:700; }
 .pf-section-form label { display:flex; justify-content:space-between; align-items:center; gap:14px; min-height:62px; padding:10px 0; border-bottom:1px solid var(--track); font-size:14px; cursor:pointer; }
 .pf-section-form label small { display:block; margin-top:4px; font-size:12px; color:var(--mut); }
-.pf-section-form input[role=switch] { appearance:none; width:42px; height:24px; flex:none; margin:0; border-radius:999px; background:var(--track); cursor:pointer; }
-.pf-section-form input[role=switch]::before { content:''; display:block; width:16px; height:16px; margin:4px; border-radius:50%; background:var(--sl); box-shadow:0 1px 3px #0004; }
-.pf-section-form input[role=switch]:checked { background:var(--acc); }
-.pf-section-form input[role=switch]:checked::before { transform:translateX(18px); background:#fff; }
 .pf-section-form button { margin-top:16px; }
 .pf-design-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:4px; }
 .pf-design-grid .pf-design-choice { display:grid; align-content:start; position:relative; gap:4px; padding:14px; border-radius:22px; cursor:pointer; color:var(--ink); }

@@ -52,11 +52,12 @@ export function initLandingPricing() {
   });
   paint(false);
   if (reduce || !('IntersectionObserver' in window)) return;
-  for (const amt of root.querySelectorAll('[data-count]')) amt.textContent = '0';
+  const plans = root.querySelector('.lp-plans');
+  if (!plans) return;
   new IntersectionObserver((entries, io) => {
     if (!entries.some((e) => e.isIntersecting)) return;
     io.disconnect();
     paint(true);
     shown = true;
-  }, { threshold: 0.35 }).observe(root.querySelector('.lp-plans'));
+  }, { threshold: 0.05 }).observe(plans);
 }

@@ -1,4 +1,5 @@
 import './panel.css';
+import { createFileUpload } from '../../components/file-upload.js';
 
 const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
 const btn=(text,cls,onclick)=>{const b=el('button',text,'btn '+cls);b.type='button';b.onclick=onclick;return b;};
@@ -24,7 +25,8 @@ export function bindMetaTrader(root,request){
       meter.textContent=`${state.used} of ${state.limit} free imports used this month`;
       const bar=el('span',undefined,'mt-bar'),fill=el('i');fill.style.width=Math.min(100,state.used/state.limit*100)+'%';bar.append(fill);card.append(meter,bar);
     }else card.append(el('p','No monthly limit on your plan.','mt-meter'));
-    const file=el('input');file.type='file';file.accept='.html,.htm,.csv,.txt';file.className='n-in';file.setAttribute('aria-label','MetaTrader report file');
+    const file=el('input');file.type='file';file.accept='.html,.htm,.csv,.txt';file.setAttribute('aria-label','MetaTrader report file');
+    const uploader=createFileUpload({input:file,label:'MetaTrader report file',accept:'.html,.htm,.csv,.txt',maxSize:1_500_000,maxFiles:1});
     const out=el('p',undefined,'mt-result');out.setAttribute('role','status');
     const go=btn('Import report','btn-primary',async()=>{
       if(!file.files[0]){note(out,'Choose a report file first.');return;}
@@ -39,7 +41,7 @@ export function bindMetaTrader(root,request){
         if(r.limited)done.after(upgrade('Your free limit is reached. Pro removes it.'));
       }catch(e){note(out,e.message);go.classList.remove('is-loading');go.disabled=false;}
     });
-    card.append(file,go,out);return card;
+    card.append(uploader.root,go,out);return card;
   }
   const upgrade=(text)=>{const box=el('div',undefined,'mt-lock');const a=el('a','See plans','btn btn-primary');a.href='/billing?from=reports';box.append(el('p',text),a);return box;};
 

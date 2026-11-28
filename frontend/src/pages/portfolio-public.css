@@ -89,3 +89,82 @@
 
 .portfolio-setup-help { margin:8px 0; font-size:12px; line-height:1.5; }
 .portfolio-setup-help summary { cursor:pointer; font-weight:600; }
+
+/* ---- Add a setup button ---- */
+.mgn-add-setup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 11px 16px;
+  border: 1.5px dashed color-mix(in srgb, var(--mgn-pen) 55%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--mgn-pen) 6%, transparent);
+  color: var(--mgn-pen);
+  font: 600 13px/1 var(--mgn-body);
+  letter-spacing: .01em;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, transform .12s ease;
+  box-shadow: none;
+}
+.mgn-add-setup:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--mgn-pen) 12%, transparent);
+  border-color: color-mix(in srgb, var(--mgn-pen) 75%, transparent);
+  transform: translateY(-1px);
+}
+.mgn-add-setup:active:not(:disabled) { transform: none; }
+.mgn-add-setup:disabled { opacity: .45; cursor: not-allowed; }
+.mgn-add-setup-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--mgn-pen) 15%, transparent);
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 400;
+}
+
+/* ---- Customize panel action row ---- */
+.mgn-customize-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 4px;
+}
+/* Primary "Apply and replay" — full width, prominent */
+.mgn-customize-actions .btn-primary {
+  flex: 1 0 100%;
+  order: -1;
+  justify-content: center;
+  background: var(--mgn-pen);
+  color: var(--mgn-paper);
+  border: none;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--mgn-pen) 35%, transparent);
+}
+.mgn-customize-actions .btn-primary:hover { filter: brightness(1.08); }
+/* "Reset edits" + ghost nav links — compact pill tiles */
+.mgn-customize-actions .btn-secondary,
+.mgn-customize-actions .btn-ghost {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  padding: 7px 11px;
+  color: var(--mgn-ink);
+  background: color-mix(in srgb, var(--mgn-ink) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mgn-ink) 18%, transparent);
+  border-radius: 10px;
+  white-space: nowrap;
+  box-shadow: none;
+}
+.mgn-customize-actions .btn-secondary:hover,
+.mgn-customize-actions .btn-ghost:hover {
+  background: color-mix(in srgb, var(--mgn-ink) 13%, transparent);
+  text-decoration: none;
+}

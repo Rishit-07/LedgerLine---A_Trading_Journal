@@ -2,6 +2,7 @@ import {fields,steps,mentorFieldApplies,sectionError,termsVersion} from '../../.
 import {node,button} from '../../pages/workspace-ui.js';
 import {confirmationCard} from '../../components/confirmation-motion.js';
 import {setRequired,requireAny} from '../../controls.js';
+import {createFileUpload} from '../../components/file-upload.js';
 import '../../components/billing-ready.css';
 import '../../pages/onboarding.css';
 import './application.css';
@@ -124,9 +125,10 @@ export const application={title:'Verify you teach',description:'Apply for human 
     const capture=button('Take photo',()=>{try{store(video);stop();video.hidden=capture.hidden=true;}catch(e){status.textContent=e.message;}});capture.hidden=true;
     const start=button('Open camera',async()=>{stop();const ticket=epoch;try{const camera=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});if(epoch!==ticket||!video.isConnected){camera.getTracks().forEach(t=>t.stop());return;}stream=camera;video.srcObject=camera;video.hidden=false;await video.play();capture.hidden=false;}catch{stop();status.textContent='Camera unavailable. Allow camera access, or upload a photo.';}});
     const file=node('input');file.type='file';file.accept='image/jpeg,image/png,image/webp';file.onchange=async()=>{const blob=file.files[0];if(!blob)return;if(blob.size>5*1024*1024||!['image/jpeg','image/png','image/webp'].includes(blob.type)){status.textContent='Choose a JPEG, PNG or WebP under 5 MB.';return;}const url=URL.createObjectURL(blob);try{const im=new Image();im.src=url;await im.decode();store(im);}catch{status.textContent='Unable to read photo.';}finally{URL.revokeObjectURL(url);}};
-    const l=node('label','Profile photo (required)');l.append(file);const photos=node('div','','mentor-photo-section');
+    const photos=node('div','','mentor-photo-section');
     const photoActions=node('div','','ws-actions');
-    form.append(photos);photos.append(l,preview,video,photoActions);photoActions.append(start,capture,button('Remove photo',()=>{stop();video.hidden=capture.hidden=true;photo=null;preview.hidden=true;preview.removeAttribute('src');}));
+    const uploader=createFileUpload({input:file,label:'Profile photo (required)',accept:'image/jpeg,image/png,image/webp',maxSize:5*1024*1024,maxFiles:1});
+    form.append(photos);photos.append(uploader.root,preview,video,photoActions);photoActions.append(start,capture,button('Remove photo',()=>{stop();video.hidden=capture.hidden=true;photo=null;preview.hidden=true;preview.removeAttribute('src');}));
    }
    if(step===4)form.append(link('Terms and conditions','/terms'),node('p','Mentor code · Teach for education only. Do not promise returns, provide trading calls, or sell signals. Version '+termsVersion));
    const actions=node('div','','form-actions mentor-step-actions');form.append(status,actions);
@@ -138,7 +140,7 @@ export const application={title:'Verify you teach',description:'Apply for human 
    };
    if(direction) {title.focus({preventScroll:true});tracker.scrollIntoView({block:'nearest',behavior:'instant'});}
   }
-  if(data.status!=='draft'||data.id)root.append(button('Withdraw and delete application',async()=>{if(!confirm('Delete your verification data and revoke mentor access?'))return;try{await request(path,'POST',{action:'withdraw'});location.assign('/spaces');}catch(e){status.textContent=e.message;}}));
+  if(data.status!=='draft'||data.id){const w=button('Withdraw and delete application',async()=>{if(!confirm('Delete your verification data and revoke mentor access?'))return;try{await request(path,'POST',{action:'withdraw'});location.assign('/spaces');}catch(e){status.textContent=e.message;}});w.className='btn btn-danger';root.append(w);}
   if(!status.isConnected)root.append(status);
  }
  draw();

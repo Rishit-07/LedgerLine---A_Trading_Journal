@@ -298,6 +298,21 @@ export function createCalendarHandlers(pool, authenticate) {
         Object.entries(feeds).map(([key, { status, updatedAt }]) => [key, { status, updatedAt }]),
       ) });
     },
+    getMarketNews: async () => {
+      const day = today();
+      const [primary, catalystFeed, fallback, rbi, fed] = await Promise.all([
+        economic(day).catch(() => ({ data: [] })),
+        catalysts(day).catch(() => ({ data: [] })),
+        bea().catch(() => ({ data: [] })),
+        rbiNews().catch(() => ({ data: [] })),
+        fedNews().catch(() => ({ data: [] })),
+      ]);
+      const econ = primary.data?.length ? primary.data : (fallback.data ?? []);
+      return [...econ, ...(fed.data ?? []), ...(rbi.data ?? []), ...(catalystFeed.data ?? [])]
+        .filter((e) => (e.date ?? ist.format(new Date(e.at))) >= shift(day, -3))
+        .slice(0, 15)
+        .map(({ kind, title, country, impact, at, date, source, forecast, actual }) => ({ kind, title, country, impact, at, date, source, forecast, actual }));
+    },
     day: async (request, response) => {
       const claims = await authenticate(request, response);
       if (!claims) return;

@@ -6,7 +6,7 @@ import {startMentorMail} from './mentor-mail.js';
 import {mentorVerification} from './mentor-verification.js';
 import {reportApi} from './reports.js';
 import { createServer } from 'node:http';
-import { initializeApp } from 'firebase-admin/app';
+import { cert, initializeApp } from 'firebase-admin/app';
 import { checkSession, createTwoStepApi, createTwoStepStore } from './two-step.js';
 import { configureErrorReport, reportError } from './error-report.js';
 import { createAppCheckGate } from './app-check.js';
@@ -46,7 +46,16 @@ if (!projectId || !connectionString) {
   throw new Error('Set FIREBASE_PROJECT_ID and DATABASE_URL in backend/.env.local.');
 }
 
-const firebaseApp = initializeApp({ projectId });
+const hasAdminCreds = Boolean((process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) || process.env.GOOGLE_APPLICATION_CREDENTIALS);
+const firebaseApp = initializeApp({
+  projectId,
+  ...(process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY
+    ? { credential: cert({ projectId, clientEmail: process.env.FIREBASE_CLIENT_EMAIL, privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') }) }
+    : {}),
+});
+if (!hasAdminCreds && process.env.NODE_ENV !== 'production') {
+  console.warn('Firebase Admin credentials not set; skipping token revocation checks in local development.');
+}
 const auth = getAuth(firebaseApp);
 const appCheckGate = createAppCheckGate(firebaseApp);
 const pool = new pg.Pool({
@@ -86,7 +95,8 @@ async function authenticateRequest(request, response, { skipSecondStep = false }
   try {
     // Changes and data downloads also check that the sign-in was not revoked or its account deleted.
     // Plain reads skip that extra Firebase round trip to stay fast.
-    const sensitive = !['GET', 'HEAD'].includes(request.method) || (request.url ?? '').startsWith('/api/account/export');
+    const sensitive = (hasAdminCreds || process.env.NODE_ENV === 'production')
+      && (!['GET', 'HEAD'].includes(request.method) || (request.url ?? '').startsWith('/api/account/export'));
     claims = await auth.verifyIdToken(token, sensitive);
   } catch {
     send(response, 401, { error: 'Sign in again to continue.' });
@@ -174,7 +184,7 @@ const calendar = createCalendarHandlers(pool, authenticateRequest);
 const streaks = createStreakStore(pool);
 const streak = createStreakApi(pool, authenticateRequest, streaks, { remindersAvailable: Boolean(mailConfig) });
 const saveTrade = createTradeHandler(streaks, authenticateRequest);
-const workspace = createWorkspaceApi(pool, authenticateRequest);
+const workspace = createWorkspaceApi(pool, authenticateRequest, { getMarketNews: calendar.getMarketNews });
 const reports=reportApi(pool,authenticateRequest);
 const billing=billingApiHandlers.handler;
 const turnstile = createTurnstile();

@@ -1,5 +1,5 @@
 import {showConfirmation} from '../../components/confirmation-motion.js';
-import {node,button,formatDate} from '../../pages/workspace-ui.js';
+import {node,button,formatDate,formatResetCountdown} from '../../pages/workspace-ui.js';
 import {playBillingIntro,processingCard} from '../../components/billing-ready.js';
 import {planReadyScreen} from './plan-ready.js';
 import './page.css';
@@ -15,7 +15,12 @@ const cents=(v,cur)=>(cur==='USD'?'$':'₹')+(v/100).toFixed(2);
 const section=(key,title)=>'<section class="ws-card n-out bill-section"><h2>'+title+'</h2><div data-bill="'+key+'"></div></section>';
 export const billing={
  title:'Billing',description:'Your plan, how you pay, and your invoices.',endpoint:'/api/billing/overview',
- content:'<div class="bill-board n-out"><div data-bill="notice" role="status"></div><header class="bill-head"><h2>Plans and billing</h2><div class="bill-period n-in" data-bill="period"></div></header><p class="bill-sample">Prices in US dollars. You pay in crypto.</p><div class="bill-plans" data-bill="plans"></div>'+section('compare','What each plan includes')+'<div class="bill-columns"><aside>'+section('usage','Usage this month')+section('profile','Billing details')+'</aside></div>'+section('invoices','Invoices')+'<p class="n-in bill-free"><strong>Never behind a paywall</strong> · Loss limits, cooldowns, pre-trade checklist, export and delete account.</p><footer class="bill-footer"><div data-bill="actions"></div><small>Prepaid. Nothing renews by itself. We remind you 7 days and 1 day before it ends.</small></footer><dialog class="bill-payment n-out" aria-labelledby="bill-payment-title"><header><h2 id="bill-payment-title">Pay with crypto</h2><button class="btn btn-secondary" type="button" data-close-payment>Close</button></header><p data-bill="payment-plan"></p><div data-bill="crypto"></div><div data-bill="payment-status"><span data-bill="payment-message" role="status"></span></div><div data-bill="confirm-payment"></div></dialog></div>',
+ content:'<div class="bill-board n-out"><div data-bill="notice" role="status"></div>'
+  + '<div class="bill-topbar"><div class="bill-summary" data-bill="summary"></div><nav class="bill-tabs n-in" aria-label="Billing sections" role="tablist"><button type="button" class="btn btn-ghost" role="tab" data-bill-tab="plans" aria-selected="true">Plans</button><button type="button" class="btn btn-ghost" role="tab" data-bill-tab="usage" aria-selected="false">Usage</button><button type="button" class="btn btn-ghost" role="tab" data-bill-tab="invoices" aria-selected="false">Invoices &amp; details</button></nav></div>'
+  + '<div data-bill-panel="plans"><header class="bill-head"><div><h2>Choose your plan</h2><p class="bill-sample">Prices in US dollars. Prepaid in crypto, nothing renews by itself.</p></div><div class="bill-period n-in" data-bill="period"></div></header><div class="bill-plans" data-bill="plans"></div><footer class="bill-footer"><div data-bill="actions"></div><small>Prepaid. Nothing renews by itself. We remind you 7 days and 1 day before it ends.</small></footer><details class="bill-compare-wrap n-in"><summary>Compare all features and limits</summary><div class="bill-section" data-bill="compare"></div></details></div>'
+  + '<div data-bill-panel="usage" hidden>'+section('usage','Usage this month')+'</div>'
+  + '<div data-bill-panel="invoices" hidden><div class="bill-columns"><aside>'+section('profile','Billing details')+section('invoices','Invoices')+'</aside></div><p class="n-in bill-free"><strong>Never behind a paywall</strong> · Loss limits, cooldowns, pre-trade checklist, export and delete account.</p></div>'
+  + '<dialog class="bill-payment n-out" aria-labelledby="bill-payment-title"><header><h2 id="bill-payment-title">Pay with crypto</h2><button class="btn btn-secondary" type="button" data-close-payment>Close</button></header><p data-bill="payment-plan"></p><div data-bill="crypto"></div><div data-bill="payment-status"><span data-bill="payment-message" role="status"></span></div><div data-bill="confirm-payment"></div></dialog></div>',
  async bind(page,{data,request,uid}){
   const el=k=>page.querySelector('[data-bill="'+k+'"]');
   const params=new URLSearchParams(location.search);
@@ -25,6 +30,21 @@ export const billing={
   if(!sessionStorage.getItem(orderKey)){const board=el('period').closest('.bill-board');board.hidden=true;await playBillingIntro();board.hidden=false;}
   const toolbar=page.querySelector('.dash-actions');if(toolbar){const notifications=node('a','Notifications','btn btn-secondary');notifications.href='/settings#notifications';toolbar.insertBefore(notifications,toolbar.lastElementChild);}
   const payment=page.querySelector('.bill-payment');
+  const validTabs=['plans','usage','invoices'];
+  const selectTab=(name)=>{
+    const tab=validTabs.includes(name)?name:'plans';
+    for(const b of page.querySelectorAll('[data-bill-tab]')){const on=b.dataset.billTab===tab;b.setAttribute('aria-selected',String(on));b.setAttribute('aria-pressed',String(on));}
+    for(const p of page.querySelectorAll('[data-bill-panel]'))p.hidden=p.dataset.billPanel!==tab;
+  };
+  for(const b of page.querySelectorAll('[data-bill-tab]'))b.addEventListener('click',()=>{
+    const tab=b.dataset.billTab;
+    selectTab(tab);
+    if(location.hash!=='#'+tab)history.replaceState(null,'',location.pathname+location.search+'#'+tab);
+  });
+  selectTab(location.hash.slice(1));
+  const activeOrderEnd=data.orders.find(o=>Date.parse(o.paid_until)>Date.now());
+  el('summary').innerHTML='';
+  el('summary').append(node('span','Current plan','bill-summary-label'),node('strong',labels[data.current]??'Free','bill-summary-plan'),...(activeOrderEnd?[node('small','Active until '+formatDate(activeOrderEnd.paid_until))]:[]));
   const paymentStatus=el('payment-status');
   const note=text=>{(payment.open?el('payment-message'):el('notice')).textContent=text;};
   function openPayment(){el('notice').textContent='';payment.showModal();}
@@ -41,8 +61,8 @@ export const billing={
     const card=node('article','','ws-card n-out bill-plan');card.dataset.selected=String(key===plan);
     const head=node('header');head.append(node('h2',label));if(key!=='free')head.append(node('small',key==='pro'?'Most chosen':'Verified mentors only'));
     const intro=key!=='free'&&term==='monthly'&&data.introLeft?.[key]>0;
-    card.append(head,node('strong',money(intro?data.plans[key].intro:data.plans[key][term]),'bill-price'),node('small',(intro?'Intro price for '+data.introLeft[key]+' month'+(data.introLeft[key]===1?'':'s')+', then '+money(data.plans[key].monthly)+' · ':'')+'per '+(term==='monthly'?'month':'year')));
-    const blurb={free:'Everything needed to journal and size trades safely.',pro:'Mistake lab, AI reports and deeper journal insights.',mentor:'Pro plus spaces for your students.'};head.after(node('p',blurb[key]));
+    card.append(head,node('strong',money(data.plans[key][term]),'bill-price'),node('small',(intro?'Intro price: '+money(data.plans[key].intro)+' for your first '+data.introLeft[key]+' month'+(data.introLeft[key]===1?'':'s')+' · ':'')+'per '+(term==='monthly'?'month':'year')));
+    const blurb={free:'Everything needed to journal and size trades safely.',pro:'Far higher limits on Trade replay, Mistake lab and Ask your journal, plus AI reports.',mentor:'Pro, plus private teaching spaces for your students.'};head.after(node('p',blurb[key]));
     const choose=button(key===data.current?'Current plan':key==='mentor'&&!data.verified?'Verify first':key===plan?'Selected':'Choose '+label,()=>{
      if(key==='mentor'&&!data.verified){location.assign('/mentor-verification');return;}plan=key;paint();
     });choose.disabled=key===data.current||busy;choose.setAttribute('aria-pressed',String(plan===key));card.append(choose);return card;
@@ -97,7 +117,7 @@ export const billing={
   for(const row of rows){const tr=table.insertRow();row.forEach((value,i)=>tr.insertCell().textContent=i?(typeof value==='string'?value:value?'✓':'—'):value);}
   el('compare').append(table);
   Object.values(labels).forEach((label,i)=>{const details=node('details','','bill-mobile');details.append(node('summary',label));for(const row of rows)details.append(node('p',(typeof row[i+1]==='string'?row[i+1]+' · ':row[i+1]?'✓ ':'— ')+row[0]));el('compare').append(details);});
-  for(const tool of data.tools){const row=node('div','','bill-usage-row'),meter=node('meter');meter.min=0;meter.max=tool.limit??Math.max(1,tool.used);meter.value=tool.used;row.append(node('span',tool.name),node('strong',tool.limit===null?tool.used+' used, no limit':tool.used+' of '+tool.limit),meter);el('usage').append(row);}
+  for(const tool of data.tools){const row=node('div','','bill-usage-row'),meter=node('meter');meter.min=0;meter.max=tool.limit??Math.max(1,tool.used);meter.value=tool.used;const reset=formatResetCountdown(tool.resetsAt);row.append(node('span',tool.name+(reset?' · '+reset:'')),node('strong',tool.limit===null?tool.used+' used, no limit':tool.used+' of '+tool.limit),meter);el('usage').append(row);}
   el('usage').append(node('p','Counted per calendar month (UTC). Limits reset on the 1st.','bill-usage-note'));
   const form=node('form','','ws-form');for(const [name,label] of [['billing_name','Name on invoice'],['gstin','GSTIN (optional)'],['address','Billing address']]){const field=node('label',label),input=node('input');input.name=name;input.value=data.profile[name]??'';input.required=name==='billing_name';field.append(input);form.append(field);}
   const save=node('button','Save details','btn btn-secondary');form.append(node('p','Invoices are sent to '+data.profile.email),save);el('profile').append(form);

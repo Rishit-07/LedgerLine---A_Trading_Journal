@@ -19,8 +19,8 @@
 .notif-chip[aria-pressed="true"] { box-shadow: inset 5px 5px 10px var(--sd), inset -5px -5px 10px var(--sl); color: var(--acc); }
 .notif-offline { margin: 0 0 12px; padding: 8px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; color: var(--neg); }
 
-.notif-row { display: flex; align-items: flex-start; gap: 14px; padding: 16px 6px; border-bottom: 2px solid var(--track); transition: transform .25s, background .25s; }
-.notif-row:hover { transform: translateX(6px); }
+.notif-row { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; margin-bottom: 10px; border: 1px solid var(--track); border-radius: 16px; background: var(--surface, var(--bg)); transition: border-color .2s, background .2s; }
+.notif-row:hover { border-color: color-mix(in srgb, var(--ink) 24%, var(--track)); }
 .notif-dot-cell { width: 10px; padding-top: 6px; flex: none; }
 .notif-unread-dot { display: block; width: 9px; height: 9px; border-radius: 50%; background: var(--acc); }
 .notif-icon { background: var(--bg); box-shadow: inset 4px 4px 8px var(--sd), inset -4px -4px 8px var(--sl); width: 40px; height: 40px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex: none; }
@@ -65,16 +65,39 @@
 .notif-matrix .notif-label { padding: 14px 0; border-top: 2px solid var(--track); }
 .notif-matrix .notif-label strong { font-size: 14px; display: block; }
 .notif-matrix .notif-label span { font-size: 12px; font-weight: 600; color: var(--mut); line-height: 1.5; }
-.notif-switch { position: relative; width: 56px; height: 32px; min-height: 0; padding: 0; border: 0; border-radius: 999px; background: var(--bg); box-shadow: inset 4px 4px 8px var(--sd), inset -4px -4px 8px var(--sl); cursor: pointer; }
-.notif-switch::before { content: ''; position: absolute; inset: -8px -2px; }
-.notif-knob { position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border-radius: 50%; background: var(--mut); box-shadow: 2px 2px 5px var(--sd); }
-.notif-switch[aria-checked="true"] .notif-knob { background: var(--acc); box-shadow: 0 0 10px var(--glow, transparent); }
-.notif-switch:disabled { opacity: .45; cursor: not-allowed; }
+.notif-switch {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 6px;
+  border: 1.5px solid var(--field-border, var(--track));
+  background-color: var(--bg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 14px 14px;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.notif-switch::before { content: ''; position: absolute; inset: -10px; }
+.notif-switch:not(:disabled):hover { border-color: color-mix(in srgb, var(--ink) 55%, var(--bg)); }
+.notif-switch:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--acc); }
+.notif-knob { display: none; }
+.notif-switch[aria-checked="true"] {
+  background-color: var(--acc);
+  border-color: var(--acc);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+.notif-switch:disabled { opacity: .5; cursor: not-allowed; }
 .notif-group { margin-top: 26px; }
 .notif-group h3 { margin: 0 0 4px; font-size: 15px; }
 .notif-group .notif-chips { margin: 10px 0 0; }
 .notif-always .notif-kind { align-items: center; }
-.notif-on { margin-left: auto; font-size: 11px; font-weight: 800; letter-spacing: .1em; color: var(--acc); }
+.notif-on { margin-left: auto; padding: 3px 9px; border-radius: 999px; background: color-mix(in srgb, var(--acc) 12%, transparent); font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--acc); }
 .notif-push-note { font-size: 12px; font-weight: 600; color: var(--mut); line-height: 1.6; margin: 12px 0 0; }
-@media (max-width: 640px) { .notif-matrix { grid-template-columns: minmax(0, 1fr) repeat(3, 56px); gap: 0 2px; } .notif-switch { width: 48px; } }
+@media (max-width: 640px) { .notif-matrix { grid-template-columns: minmax(0, 1fr) repeat(3, 56px); gap: 0 2px; } }
 @media (prefers-reduced-motion: reduce) { .notif-knob { transition: none; } }

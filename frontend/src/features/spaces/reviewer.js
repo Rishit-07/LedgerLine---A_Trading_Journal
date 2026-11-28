@@ -5,7 +5,16 @@ export const reviewerPage={title:'Mentor reviews',description:'Review teaching e
  const root=page.querySelector('[data-reviewer]'),msg=node('p');msg.setAttribute('role','status');
  function queue(){
   root.replaceChildren(node('h2','Review queue'));
-  for(const r of data.items)root.append(button((r.display_name||'Mentor')+' · '+r.status+(r.next_review_at&&Date.parse(r.next_review_at)<=Date.now()?' · Review due':''),()=>open(r.id).catch(e=>msg.textContent=e.message)));
+  for(const r of data.items){
+   const card=node('article','','community-request-card n-in');
+   const info=node('div','','community-request-info');
+   const due=r.next_review_at&&Date.parse(r.next_review_at)<=Date.now();
+   info.append(node('strong',r.display_name||'Mentor'),node('span',r.status+(due?' · Review due':''),'community-status-pill'));
+   const reviewBtn=button('Review',()=>open(r.id).catch(e=>msg.textContent=e.message));
+   reviewBtn.className='btn btn-primary';
+   card.append(info,reviewBtn);
+   root.append(card);
+  }
   if(!data.items.length)root.append(node('p','No applications to review.'));root.append(msg);
  }
  async function open(id){
@@ -18,11 +27,16 @@ export const reviewerPage={title:'Mentor reviews',description:'Review teaching e
   for(const ticket of reports)root.append(node('p','Student report · '+ticket.reason));
   const reason=node('textarea','','n-in');reason.maxLength=600;reason.placeholder='Reason or follow-up question';reason.setAttribute('aria-label',reason.placeholder);root.append(reason);
   const actions=node('div','','ws-actions');root.append(actions,msg);
-  for(const [action,label] of (r.status==='approved'?[['approved','Renew verification'],['revoked','Revoke badge']]:r.status==='pending'?[['approved','Approve'],['needs_info','Ask for more information'],['rejected','Reject']]:[]))actions.append(button(label,async()=>{
-   if(action!=='approved'&&!reason.value.trim()){msg.textContent='Enter your reason or question.';return;}
-   if(!confirm(label+' this mentor application?'))return;
-   try{await request(path,'POST',{id,action,reason:reason.value});data=await request(path,'GET');queue();msg.textContent='Decision saved.';}catch(e){msg.textContent=e.message;}
-  }));
+  for(const [action,label] of (r.status==='approved'?[['approved','Renew verification'],['revoked','Revoke badge']]:r.status==='pending'?[['approved','Approve'],['needs_info','Ask for more information'],['rejected','Reject']]:[])){
+   const b=button(label,async()=>{
+    if(action!=='approved'&&!reason.value.trim()){msg.textContent='Enter your reason or question.';return;}
+    if(!confirm(label+' this mentor application?'))return;
+    try{await request(path,'POST',{id,action,reason:reason.value});data=await request(path,'GET');queue();msg.textContent='Decision saved.';}catch(e){msg.textContent=e.message;}
+   });
+   if(action==='revoked'||action==='rejected')b.className='btn btn-danger';
+   else if(action==='approved')b.className='btn btn-primary';
+   actions.append(b);
+  }
  }
  queue();
 }};

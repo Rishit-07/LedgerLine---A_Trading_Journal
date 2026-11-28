@@ -61,7 +61,7 @@ export const portfolio = {
           <h2 id="pf-sections-heading">What it shows</h2>
           <p class="pf-muted">Switch sections on or off. The preview updates.</p>
           <form data-pf-sections class="pf-section-form">
-            ${Object.entries(portfolioSections).map(([key,label])=>`<label><span>${label}<small>${({streak:'Current streak, best and level',adherence:'Percentage of trade checks you kept',reviews:'From your journal',photo:'Your current Ledgerline profile picture',setupStats:'Trade counts and rule adherence for published setups'})[key]}</small></span><input type="checkbox" role="switch" name="${key}"></label>`).join('')}
+            ${Object.entries(portfolioSections).map(([key,label])=>`<label><span>${label}<small>${({streak:'Current streak, best and level',adherence:'Percentage of trade checks you kept',reviews:'From your journal',photo:'Your current Ledgerline profile picture',setupStats:'Trade counts and rule adherence for published setups'})[key]}</small></span><input type="checkbox" name="${key}"></label>`).join('')}
             <button class="btn btn-primary" type="submit">Save sections</button>
             <p role="status" data-sections-status></p>
           </form>

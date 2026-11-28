@@ -39,3 +39,16 @@
 .usage-chip{margin:8px 0;font-size:13px;opacity:.85}.usage-chip a{font-weight:700;color:var(--acc)}
 .ai-panel{display:grid;gap:10px;justify-items:start;margin-top:16px}.ai-panel h2,.ai-panel p{margin:0}.ai-output{white-space:pre-wrap;line-height:1.5}.ai-output:empty{display:none}.ai-meter{font-size:13px;opacity:.85}.ai-more{font-weight:700;color:var(--acc)}
 .bill-usage-row{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin:8px 0}.bill-usage-row meter{grid-column:1/-1;width:100%}.bill-usage-note{font-size:13px;opacity:.8}
+.bill-topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;padding-bottom:16px;border-bottom:1px solid var(--track)}
+.bill-summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px}
+.bill-summary-label{font-size:13px;color:var(--mut)}
+.bill-summary-plan{font-size:1.1rem;font-weight:700;color:var(--acc)}
+.bill-summary small{font-size:12px;color:var(--mut)}
+.bill-tabs{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;border-radius:14px}
+.bill-tabs button{box-shadow:none;min-height:38px;padding:8px 14px;border-radius:10px}
+.bill-tabs button[aria-selected=true]{background:var(--bg);color:var(--acc);box-shadow:var(--out)}
+[data-bill-panel]{display:grid;gap:20px}
+[data-bill-panel][hidden]{display:none}
+.bill-compare-wrap{padding:14px 18px;border-radius:18px}
+.bill-compare-wrap summary{cursor:pointer;font-weight:700;font-size:.94rem;list-style-position:inside}
+.bill-compare-wrap[open] summary{margin-bottom:12px}

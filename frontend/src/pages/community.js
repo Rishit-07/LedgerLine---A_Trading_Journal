@@ -56,7 +56,9 @@ export const people={
         } else {
           card.append(node('p',row.status==='active'?row.current+' day journal streak':row.outgoing?'Invitation sent':'Wants to connect'));
           if(row.status==='pending'&&!row.outgoing)actions.append(button('Accept',e=>mutate(e.currentTarget,'accept',{id:row.id})));
-          actions.append(button(row.status==='active'?'End connection':row.outgoing?'Cancel invitation':'Decline',e=>mutate(e.currentTarget,'end',{id:row.id})));
+          const endBtn=button(row.status==='active'?'End connection':row.outgoing?'Cancel invitation':'Decline',e=>mutate(e.currentTarget,'end',{id:row.id}));
+          endBtn.className='btn btn-danger';
+          actions.append(endBtn);
         }
         card.append(actions);return card;
       }));
