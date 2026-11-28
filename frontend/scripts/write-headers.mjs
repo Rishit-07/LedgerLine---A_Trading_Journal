@@ -54,7 +54,8 @@ await writeFile(new URL('_headers', dist), rules);
 // 404.html (a copy of the app shell that draws the "not in the book" page) with a genuine 404 status. Netlify and Cloudflare Pages both work this way.
 import { appPages, adminPages, publicPages, prefixPages } from '../src/routes.js';
 const known = [...new Set([...Object.keys(appPages), ...Object.keys(adminPages), ...publicPages.filter((p) => p !== '/'), ...prefixPages])];
-await writeFile(new URL('_redirects', dist), known.map((p) => `${p} /index.html 200`).join('\n') + '\n');
+const redirectPages = known.filter((p) => !p.endsWith('/*'));
+await writeFile(new URL('_redirects', dist), redirectPages.map((p) => `${p} /index.html 200`).join('\n') + '\n');
 await writeFile(new URL('404.html', dist), html);
 console.log(`Wrote dist/_redirects (${known.length} pages) and dist/404.html.`);
 
