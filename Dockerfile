@@ -1,13 +1,13 @@
-# Ledgerline API. Build from the repository root:  docker build -t ledgerline-api .
+# Ledgerline API. Build from the repository root: docker build -t ledgerline-api .
 # Secrets are never baked in: pass them as environment variables when the container runs (see docs/deploy.md).
-FROM node:22-slim AS deps
+FROM node:24-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY backend/package.json backend/
 COPY frontend/package.json frontend/
 RUN npm ci --omit=dev -w @ledgerline/backend
 
-FROM node:22-slim
+FROM node:24-slim
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=8787
 WORKDIR /app
 COPY --from=deps /app/node_modules node_modules
