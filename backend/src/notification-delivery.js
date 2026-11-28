@@ -7,7 +7,8 @@ import { deliverNow } from './notification-schedule.js';
 const channels = { sendEmail: null, sendPush: null };
 export function configureDelivery(next) { Object.assign(channels, next); }
 
-const origin = () => process.env.APP_ORIGIN ?? 'https://ledgerline.app';
+import { branded } from './email-layout.js';
+const origin = () => process.env.APP_ORIGIN ?? (process.env.APP_URL ? new URL(process.env.APP_URL).origin : 'https://ledgerline.app');
 const link = (path) => new URL(path, origin()).href;
 
 async function context(pool, userId, kind) {
@@ -70,10 +71,16 @@ export function createSenders({ pool, mail, messaging }) {
   const sendEmail = async (to, rows) => {
     if (!mail) return;
     const lines = rows.map((r) => `• ${r.title}${r.body ? '\n  ' + r.body : ''}\n  ${link(r.target_url)}`).join('\n\n');
+    const branding = branded({
+      title: rows.length === 1 ? rows[0].title : `${rows.length} updates from Ledgerline`,
+      lines: rows.flatMap((r) => [r.body ? `${r.title}\n${r.body}` : r.title]),
+      action: { label: rows.length === 1 ? 'Open it' : 'Open Ledgerline', href: link(rows.length === 1 ? rows[0].target_url : '/notifications') },
+      origin: origin(), reason: 'You are getting this because you turned on email updates. Choose what reaches you in Settings.',
+    });
     const message = {
       from: mail.from, to: { address: to },
       subject: rows.length === 1 ? rows[0].title : `${rows.length} updates from Ledgerline`,
-      text: `${lines}\n\nChoose what reaches you: ${link('/notifications')}`,
+      text: `${lines}\n\nChoose what reaches you: ${link('/notifications')}`, html: branding.html,
     };
     if (mail.provider === 'gmail') { await mail.transporter.sendMail(message); return; }
     const response = await fetch('https://api.resend.com/emails', {

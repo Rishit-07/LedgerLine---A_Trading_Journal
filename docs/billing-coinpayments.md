@@ -32,10 +32,19 @@ The intro price applies only to one-month purchases, twice per account per plan.
 3. Point payouts at your Trust Wallet (see `docs/payout-setup.md`).
 4. **Run a sandbox test before launch.** The invoice request body follows CoinPayments' public docs as far as they could be read, but it has not been run against a real account. Make a test payment for each plan and confirm access, the invoice and the receipt email.
 5. Confirm the prices, and have an accountant confirm how GST and invoices apply to USD crypto sales. Set `BILLING_*` variables only after that.
-6. Run migrations 031, 032, 040, 050, 051 and 052 (in that order; rollbacks are in `database/rollback`).
+6. Run migrations 031, 032, 040, 050, 051, 052 and 053 (in that order; rollbacks are in `database/rollback`).
 7. Keep the API process running: expired and stuck checkouts are cleaned up by `sweep()` every 5 minutes inside the server. It is skipped when `STREAK_NEON_SCHEDULE=true`, so if you set that, run the maintenance from your own scheduler instead.
 8. Set `REVIEWER_EMAIL` in production so the built-in fallback is not used.
 9. After the first real payment, check the needs-review list and the webhook log before announcing the plans.
 
 ## Not built
 Refunds, chargebacks and partial-payment top-ups (these go to needs review and are settled by hand), coupons (none by design), a mentor payout system (mentors are not paid through Ledgerline).
+
+## Refunds and the billing admin panel
+Crypto cannot be reversed from the app, so a refund is a record plus a manual payment from your own wallet.
+- **Where:** open `/billing-admin` while signed in as the reviewer account (`REVIEWER_EMAIL`, with two-step sign-in if `REQUIRE_REVIEWER_MFA=true`). It shows paid orders, orders that need a look, and refunds you owe. Search by email, order id or account id.
+- **Record a refund:** open an order, enter the amount (never more than was paid, in total), a reason, and the customer's public wallet address if you have it. Tick "End the access this payment gave" only for a full refund; it removes that period immediately, with no grace.
+- **Send it yourself:** send the coins from your Trust Wallet to the customer's address, then paste the transaction hash and press "Mark as sent". The customer gets an in-app notice at each step.
+- **Safety:** every action is one database transaction on the locked order, repeats of the same form are ignored, and each action is written to `payment_events` and `admin_audit_log`. A sent refund cannot be cancelled. The page never asks for or stores a recovery phrase or private key.
+- **Same page:** orders flagged "needs review" (underpaid, overpaid, unknown) can be credited or dismissed there, which uses the existing review endpoint.
+- **Not built:** credit-note PDFs for refunds, and a customer-facing "request a refund" button (customers contact support). Refund rows are stored in `billing_refunds` (migration 053).

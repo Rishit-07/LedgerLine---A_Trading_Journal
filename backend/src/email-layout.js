@@ -43,3 +43,13 @@ ${body}
 <a href="${escapeHtml(privacy)}" style="color:${MUTED}">Privacy Policy</a> · <a href="${escapeHtml(terms)}" style="color:${MUTED}">Terms</a></td></tr>
 </table></td></tr></table></body></html>`;
 }
+
+/**
+ * A complete message (text and html) in the shared look. `lines` are plain strings and are escaped here.
+ * @param {{title:string, preheader?:string, lines:string[], action?:{label:string, href:string}, origin:string, reason?:string}} parts
+ */
+export function branded({ title, preheader, lines, action, origin, reason = 'You are getting this because you have a Ledgerline account.' }) {
+  const body = lines.map((line) => paragraph(escapeHtml(line).replace(/\n/g, '<br>'))).join('') + (action ? button(action.label, action.href) : '');
+  const text = [title, '', ...lines, ...(action ? ['', `${action.label}: ${action.href}`] : []), '', reason].join('\n');
+  return { text, html: layout({ preheader: preheader ?? lines[0] ?? title, title, body, origin, reason }) };
+}

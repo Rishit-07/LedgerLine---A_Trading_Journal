@@ -7,6 +7,7 @@ export const appPages = {
   '/tickets':'My tickets',
   '/notifications':'Notifications',
   '/ticket-admin':'Ticket queue',
+  '/billing-admin':'Billing admin',
   '/newsletter-admin':'Newsletter',
   '/mentorship':'Mentorship',
   '/mentor/join':'Join a mentor',

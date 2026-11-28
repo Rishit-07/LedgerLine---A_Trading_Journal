@@ -77,6 +77,7 @@ export function limitClassFor(pathname, method) {
     || pathname === '/api/profile-picture') return 'costly';
   if ((pathname === '/api/mentorship' || pathname === '/api/mentor-tools') && method === 'POST') return 'costly';
   if (pathname === '/api/not-found') return 'strict';
+  if (pathname === '/api/billing-admin' && method === 'POST') return 'costly';
   if ((pathname === '/api/metatrader' || pathname === '/api/metatrader/ingest') && method === 'POST') return 'costly';
   if (pathname === '/api/newsletter/events') return 'general';
   if (pathname.startsWith('/api/newsletter/') || pathname === '/api/newsletter-admin') return 'costly';

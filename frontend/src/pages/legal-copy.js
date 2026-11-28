@@ -76,7 +76,7 @@ export const legalDocuments = {
       ],
       [
         'Refunds',
-        'Crypto payments cannot be reversed by us automatically, so purchases are not refundable by default. If you paid the wrong amount or were charged twice, contact support and we will review it; a payment we cannot match to an order is held for review and not credited until we do. [Confirm refund terms with a lawyer.]',
+        'Crypto payments cannot be reversed by us automatically, so purchases are not refundable by default. If you paid the wrong amount or were charged twice, contact support and we will review it; a payment we cannot match to an order is held for review and not credited until we do. If we agree to a refund, we send it in cryptocurrency to a wallet address you give us (never to a card or bank), record it against your order, and end the access that payment gave if the whole payment is refunded. [Confirm refund terms with a lawyer.]',
       ],
       ['MetaTrader connection', 'The report import is available on every plan, with a monthly cap on Free. Live sync needs Pro and a read-only bridge you install yourself. You are responsible for the account you connect and for keeping your bridge token private; you can revoke it at any time. Trades without a stop-loss are skipped because the scoring needs it. We do not place, change or close trades.'],
       [
