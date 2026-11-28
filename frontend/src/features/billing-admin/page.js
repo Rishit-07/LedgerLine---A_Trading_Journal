@@ -35,12 +35,15 @@ export const billingAdminPage = {
     const status = node('p');
     status.setAttribute('role', 'status');
     let query = '';
-    let filter = 'all';
+    const asked = new URLSearchParams(location.search).get('filter');
+    let filter = ['paid', 'review', 'refunded'].includes(asked) ? asked : 'all';
     const fail = (error) => { status.textContent = error.message || 'Something went wrong.'; };
 
     async function list() {
       data = await request(path + '?' + new URLSearchParams({ q: query, filter }), 'GET');
-      root.replaceChildren(node('h2', 'Billing admin'));
+      const home = node('a', 'Admin home', 'btn btn-secondary');
+      home.href = '/admin';
+      root.replaceChildren(home, node('h2', 'Billing admin'));
       const t = data.totals;
       const stats = node('div', '', 'ws-stats');
       for (const [label, value, detail] of [

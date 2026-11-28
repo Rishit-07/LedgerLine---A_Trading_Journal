@@ -48,3 +48,6 @@ Crypto cannot be reversed from the app, so a refund is a record plus a manual pa
 - **Safety:** every action is one database transaction on the locked order, repeats of the same form are ignored, and each action is written to `payment_events` and `admin_audit_log`. A sent refund cannot be cancelled. The page never asks for or stores a recovery phrase or private key.
 - **Same page:** orders flagged "needs review" (underpaid, overpaid, unknown) can be credited or dismissed there, which uses the existing review endpoint.
 - **Not built:** credit-note PDFs for refunds, and a customer-facing "request a refund" button (customers contact support). Refund rows are stored in `billing_refunds` (migration 053).
+
+## Admin home
+`/admin` (reviewer account only) lists what needs you now, most urgent first: refunds owed, payments needing a decision, urgent and open tickets, unsent invoice emails, mentor applications waiting, scheduled newsletter issues and plans ending within 7 days. It also shows a few platform counts and links to every admin tool (billing, tickets, mentor review, newsletter). It counts rows only and shows no customer text.

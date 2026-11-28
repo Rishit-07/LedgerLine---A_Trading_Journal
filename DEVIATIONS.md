@@ -63,3 +63,6 @@ Things built differently from the design boards, or not built. Each needs your d
 - Refunds are recorded in the app and paid manually from your own wallet; the app cannot send crypto. There is no customer-facing refund button and no credit-note PDF yet.
 - `/billing-admin` is reachable by URL for the reviewer account only; there is no link to it from the app menus.
 - Billing, mentor, notification, streak and newsletter-confirmation emails now use the shared branded layout. The notification email link fell back to `https://ledgerline.app` when `APP_ORIGIN` was unset; it now uses `APP_URL` first.
+
+## Admin home
+- `/admin` is a hub over the existing admin tools, with a "needs you now" list. It is reachable by URL for the reviewer account; there is no menu link. The recommendations are fixed rules over counts (for example, refunds owed come before open tickets), not AI suggestions.
