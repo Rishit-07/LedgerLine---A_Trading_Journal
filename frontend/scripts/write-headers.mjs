@@ -3,9 +3,11 @@
    By default the policy is sent as Report-Only, so nothing breaks while you check the browser console.
    Set CSP_MODE=enforce when building to turn it on. On other hosts, copy these headers into the host's settings. */
 import { createHash } from 'node:crypto';
-import { readFile, writeFile } from 'node:fs/promises';
+import { access, readFile, writeFile } from 'node:fs/promises';
 
-const dist = new URL('../dist/', import.meta.url);
+const clientDist = new URL('../dist/client/', import.meta.url);
+const rootDist = new URL('../dist/', import.meta.url);
+const dist = await access(new URL('index.html', clientDist)).then(() => clientDist, () => rootDist);
 const html = await readFile(new URL('index.html', dist), 'utf8');
 const hashes = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)]
   .map((m) => `'sha256-${createHash('sha256').update(m[1]).digest('base64')}'`);
