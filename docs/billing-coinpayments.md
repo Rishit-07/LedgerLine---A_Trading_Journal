@@ -32,7 +32,7 @@ The intro price applies only to one-month purchases, twice per account per plan.
 3. Point payouts at your Trust Wallet (see `docs/payout-setup.md`).
 4. **Run a sandbox test before launch.** The invoice request body follows CoinPayments' public docs as far as they could be read, but it has not been run against a real account. Make a test payment for each plan and confirm access, the invoice and the receipt email.
 5. Confirm the prices, and have an accountant confirm how GST and invoices apply to USD crypto sales. Set `BILLING_*` variables only after that.
-6. Run migrations 031, 032, 040, 050, 051, 052 and 053 (in that order; rollbacks are in `database/rollback`).
+6. Run migrations 031, 032, 040, 050, 051, 052, 053 and 054 (in that order; rollbacks are in `database/rollback`).
 7. Keep the API process running: expired and stuck checkouts are cleaned up by `sweep()` every 5 minutes inside the server. It is skipped when `STREAK_NEON_SCHEDULE=true`, so if you set that, run the maintenance from your own scheduler instead.
 8. Set `REVIEWER_EMAIL` in production so the built-in fallback is not used.
 9. After the first real payment, check the needs-review list and the webhook log before announcing the plans.
@@ -49,5 +49,14 @@ Crypto cannot be reversed from the app, so a refund is a record plus a manual pa
 - **Same page:** orders flagged "needs review" (underpaid, overpaid, unknown) can be credited or dismissed there, which uses the existing review endpoint.
 - **Not built:** credit-note PDFs for refunds, and a customer-facing "request a refund" button (customers contact support). Refund rows are stored in `billing_refunds` (migration 053).
 
-## Admin home
-`/admin` (reviewer account only) lists what needs you now, most urgent first: refunds owed, payments needing a decision, urgent and open tickets, unsent invoice emails, mentor applications waiting, scheduled newsletter issues and plans ending within 7 days. It also shows a few platform counts and links to every admin tool (billing, tickets, mentor review, newsletter). It counts rows only and shows no customer text.
+## Admin console
+The admin console is separate from the trading app, at `/admin` and below it: Home (what needs you now), Users, Mentor verification, Support tickets, Billing, Newsletter, Audit log. Only the account whose email is `REVIEWER_EMAIL` can open it. Anyone else, signed in or not, sees the ordinary 404 page. That account is sent to `/admin` when it signs in, and the trading app shows no admin links to anyone. Use a dedicated email for it, not your personal trading account. If `REQUIRE_REVIEWER_MFA=true` and you have not completed two-step sign-in, the console also shows the 404 page.
+
+- **Users**: every registered account with name, email, plan, joined date, last sign-in. Filter Free, Pro, Mentor, search by name, email or account id. Open one to see usage, orders and notes, give a plan for 1 to 366 days, end a paid plan immediately (no grace, no refund; use Billing to refund), suspend or re-enable sign-in (done in Firebase, open sessions stop writing at once, an already-open page can still read for up to an hour), and keep private notes. Every change needs a written reason and is written to the audit log.
+- **Mentor verification**: each applicant's live camera photo, profile photo, up to 3 documents, links, SEBI details and history, with approve, ask for more information, reject, renew and revoke. Opening a record writes `mentor_view_proof` to the audit log. Applicants must take the live photo with the camera (no gallery picker) and upload at least one document before they can submit. Images are stored encrypted when `FIELD_ENCRYPTION_KEY` is set. The review is by a person; there is no automatic face matching.
+- **Audit log**: append-only list of admin actions, filter by users, mentors, tickets, billing, newsletter.
+
+Run migration **054** (`admin_user_notes`, mentor live photo and documents) before using Users notes or mentor uploads.
+
+## Support tickets (users)
+My tickets has a New ticket form (topic, priority, subject, message) that creates the ticket for the signed-in account without the visitor bot check. The Help center form still works for visitors.

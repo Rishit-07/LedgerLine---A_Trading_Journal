@@ -3,7 +3,7 @@ import {startBillingMail} from './billing-mail.js';
 import {createBillingApi} from './report-billing.js';
 import {billingProfile} from './billing-profile.js';
 import {startMentorMail} from './mentor-mail.js';
-import {mentorVerification} from './mentor-verification.js';
+import {mentorVerification,eligibleReviewer} from './mentor-verification.js';
 import {reportApi} from './reports.js';
 import { createServer } from 'node:http';
 import { initializeApp } from 'firebase-admin/app';
@@ -38,6 +38,7 @@ import { runStreakMaintenance } from './streak-maintenance.js';
 import { prepareWelcome, readMailConfig, startWelcomeDelivery } from './welcome-email.js';
 import { createTurnstile } from './turnstile.js';
 import { createBillingAdminApi } from './billing-admin.js';
+import { createAdminUsersApi } from './admin-users.js';
 import { createAdminHubApi } from './admin-hub.js';
 
 const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -123,7 +124,7 @@ async function loadAccount(request, response) {
   try {
     const existing = await pool.query(find, [uid]);
     if (existing.rowCount) {
-      send(response, 200, existing.rows[0]);
+      send(response, 200, { ...existing.rows[0], admin: eligibleReviewer(claims) });
       return;
     }
     const welcome = prepareWelcome(mailConfig, claims);
@@ -140,7 +141,7 @@ async function loadAccount(request, response) {
     const result = created.rowCount
       ? { createdAt: created.rows[0].created_at, displayName: null, onboardingCompleted: false }
       : (await pool.query(find, [uid])).rows[0];
-    send(response, 200, result);
+    send(response, 200, { ...result, admin: eligibleReviewer(claims) });
     if (created.rowCount && welcome) deliverWelcome();
   } catch (error) {
     console.error('Could not prepare the Ledgerline account in Postgres (' + (error.code ?? 'unknown error') + ').');
@@ -180,6 +181,7 @@ const billing=billingApiHandlers.handler;
 const turnstile = createTurnstile();
 const billingAdmin = createBillingAdminApi(pool, { authenticate: authenticateRequest });
 const adminHub = createAdminHubApi(pool, { authenticate: authenticateRequest });
+const adminUsers = createAdminUsersApi(pool, { authenticate: authenticateRequest, auth });
 const routes = new Map([
   ...['overview','invoice','status'].map(key=>['/api/billing/'+key,{methods:['GET'],handler:billing}]),
   ['/api/billing/profile',{methods:['GET','PUT'],handler:billingProfile(pool,authenticateRequest)}],
@@ -187,6 +189,8 @@ const routes = new Map([
   ['/api/billing/needs-review',{methods:['GET','POST'],handler:billing}],
   ['/api/billing-admin',{methods:['GET','POST'],handler:billingAdmin.handler}],
   ['/api/admin',{methods:['GET'],handler:adminHub.handler}],
+  ['/api/admin-users',{methods:['GET','POST'],handler:adminUsers.handler}],
+  ['/api/admin-audit',{methods:['GET'],handler:adminUsers.audit}],
   ['/api/billing/coinpayments/webhook',{methods:['POST'],handler:billing}],
   ['/api/reports',{methods:['GET'],handler:reports}],
   ['/api/ai/report',{methods:['POST','DELETE'],handler:reports}],

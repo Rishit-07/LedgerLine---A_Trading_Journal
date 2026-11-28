@@ -61,8 +61,14 @@ Things built differently from the design boards, or not built. Each needs your d
 
 ## Refunds, billing admin and email layout
 - Refunds are recorded in the app and paid manually from your own wallet; the app cannot send crypto. There is no customer-facing refund button and no credit-note PDF yet.
-- `/billing-admin` is reachable by URL for the reviewer account only; there is no link to it from the app menus.
+- Billing admin now lives in the admin console at `/admin/billing` (the old `/billing-admin` address is gone).
 - Billing, mentor, notification, streak and newsletter-confirmation emails now use the shared branded layout. The notification email link fell back to `https://ledgerline.app` when `APP_ORIGIN` was unset; it now uses `APP_URL` first.
 
 ## Admin home
 - `/admin` is a hub over the existing admin tools, with a "needs you now" list. It is reachable by URL for the reviewer account; there is no menu link. The recommendations are fixed rules over counts (for example, refunds owed come before open tickets), not AI suggestions.
+
+## Separate admin console, user directory and mentor proof
+- Admin pages moved from the user app to their own console under `/admin/...` with their own sidebar (design-pack styling, not a design-pack screen). Old addresses `/ticket-admin`, `/billing-admin`, `/mentor-review`, `/newsletter-admin` no longer exist. The admin account is redirected to `/admin` on sign-in and the user app shows no admin links. The "separate account" is the existing `REVIEWER_EMAIL` account; use a dedicated email for it. The console shows the 404 page to anyone else.
+- Users page: grant, end plan, suspend and notes. Suspension is Firebase-side; already-open pages can read for up to an hour. Ending a plan does not refund.
+- Mentor verification now needs a camera-only live photo and 1 to 3 document images. This is a human comparison, not liveness or face recognition, and the copy says so. Browsers can in principle let a camera be virtual; the check is only as strong as the reviewer's judgement. Privacy Policy updated; `TERMS_VERSION` still not bumped. Existing mentor drafts must add these to submit.
+- My tickets now has an in-page New ticket form (the old link only opened the Help center).

@@ -6,6 +6,7 @@ import '../../components/billing-ready.css';
 import '../../pages/onboarding.css';
 import './application.css';
 const path='/api/mentor-verification';
+function field2(text,control){const l=node('label');l.append(node('span',text+' '),control);return l;}
 function link(label,href){const a=node('a',label,'btn btn-secondary');a.href=href;return a;}
 export const application={title:'Verify you teach',description:'Apply for human review before unlocking your mentor plan.',endpoint:path,content:'<section class="mentor-application"></section>',bind(page,{data,request}){
  const root=page.querySelector('.mentor-application');let step=data.step??0,stream,photo=data.photo,editing=false,epoch=0;
@@ -14,7 +15,6 @@ export const application={title:'Verify you teach',description:'Apply for human 
  function draw(direction=0){
   stop();root.replaceChildren();const status=node('p');status.setAttribute('role','status');
   root.classList.toggle('mentor-status-card',!editing && ['pending','needs_info','rejected','approved','revoked'].includes(data.status));
-  if(data.admin)root.append(link('Reviewer queue','/mentor-review'));
   if(!editing&&['pending','needs_info','rejected','approved','revoked'].includes(data.status)){
    if(data.status==='approved')root.append(confirmationCard('mentor','Your application has been approved.'));
    else root.append(node('h2',({pending:'Submitted for review',needs_info:'More information requested',rejected:'Application declined',revoked:'Verification revoked'})[data.status]));
@@ -128,11 +128,47 @@ export const application={title:'Verify you teach',description:'Apply for human 
     const photoActions=node('div','','ws-actions');
     form.append(photos);photos.append(l,preview,video,photoActions);photoActions.append(start,capture,button('Remove photo',()=>{stop();video.hidden=capture.hidden=true;photo=null;preview.hidden=true;preview.removeAttribute('src');}));
    }
+   if(step===2){
+    // Proof for the human reviewer: a photo taken with the camera right now, and up to 3 document images. Each saves as soon as it is added.
+    const box=node('div','','mentor-photo-section'),shown=node('p');
+    const live=node('video','','mentor-photo');live.muted=true;live.playsInline=true;live.hidden=true;
+    const paintLive=()=>{shown.textContent=data.live_photo?'Live photo saved. You can retake it.':'No live photo yet.';};paintLive();
+    const shoot=button('Take live photo',async()=>{
+     try{
+      if(!live.videoWidth)throw Error('Wait for the camera image.');
+      const canvas=document.createElement('canvas'),scale=Math.min(1,720/Math.max(live.videoWidth,live.videoHeight));
+      canvas.width=Math.round(live.videoWidth*scale);canvas.height=Math.round(live.videoHeight*scale);canvas.getContext('2d').drawImage(live,0,0,canvas.width,canvas.height);
+      await request(path,'POST',{action:'live_photo',photo:canvas.toDataURL('image/jpeg',.84).split(',')[1]});
+      data.live_photo=true;stop();live.hidden=shoot.hidden=true;paintLive();status.textContent='';
+     }catch(e){status.textContent=e.message;}
+    });shoot.hidden=true;
+    const openCam=button('Open camera',async()=>{stop();const ticket=epoch;try{const camera=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});if(epoch!==ticket||!live.isConnected){camera.getTracks().forEach(t=>t.stop());return;}stream=camera;live.srcObject=camera;live.hidden=false;await live.play();shoot.hidden=false;}catch{status.textContent='The camera could not open. Allow camera access in your browser and try again.';}});
+    box.append(node('h3','Live photo'),node('p','Take this with your camera now. A person at Ledgerline compares it with your documents. It is a human check, not an automatic face scan, and uploads from your gallery are not accepted for this step.'),shown,live,openCam,shoot);
+    const list=node('div','','mentor-documents'),kind=node('select','','n-in'),label=node('input','','n-in'),pick=node('input');
+    for(const [v,l] of [['certificate','Certificate'],['id','ID document'],['other','Other document']])kind.append(new Option(l,v));
+    label.maxLength=80;label.placeholder='Short label, for example “Course certificate”';label.setAttribute('aria-label','Document label');
+    pick.type='file';pick.accept='image/jpeg,image/png,image/webp';pick.setAttribute('aria-label','Document image');
+    const paintDocs=()=>{list.replaceChildren();for(const d of data.documents??[]){const row=node('p',({certificate:'Certificate',id:'ID document',other:'Other document'})[d.kind]+(d.label?' · '+d.label:'')+' ');row.append(button('Remove',async()=>{try{const r=await request(path,'POST',{action:'remove_document',id:d.id});data.documents=r.documents;paintDocs();}catch(e){status.textContent=e.message;}}));list.append(row);}pick.disabled=(data.documents??[]).length>=3;};
+    pick.onchange=async()=>{const file=pick.files[0];if(!file)return;
+     if(file.size>8*1024*1024||!['image/jpeg','image/png','image/webp'].includes(file.type)){status.textContent='Choose a JPEG, PNG or WebP image under 8 MB.';pick.value='';return;}
+     const url=URL.createObjectURL(file);
+     try{
+      const img=new Image();img.src=url;await img.decode();
+      const canvas=document.createElement('canvas'),scale=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight));
+      canvas.width=Math.round(img.naturalWidth*scale);canvas.height=Math.round(img.naturalHeight*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      const r=await request(path,'POST',{action:'add_document',kind:kind.value,label:label.value,image:canvas.toDataURL('image/jpeg',.82).split(',')[1]});
+      data.documents=r.documents;label.value='';paintDocs();status.textContent='';
+     }catch(e){status.textContent=e.message||'That image could not be read.';}finally{URL.revokeObjectURL(url);pick.value='';}};
+    const docs=node('div','','mentor-photo-section');
+    docs.append(node('h3','Documents'),node('p','Add 1 to 3 images of documents that show you teach or who you are, such as a course certificate or an ID. Only Ledgerline reviewers can see them; they are never shown to students. Hide anything you do not want us to see.'),list,field2('Type',kind),field2('Label (optional)',label),field2('Image',pick));
+    paintDocs();
+    form.append(box,docs);
+   }
    if(step===4)form.append(link('Terms and conditions','/terms'),node('p','Mentor code · Teach for education only. Do not promise returns, provide trading calls, or sell signals. Version '+termsVersion));
    const actions=node('div','','form-actions mentor-step-actions');form.append(status,actions);
    if(step)actions.append(button('Back',()=>{Object.assign(data,Object.fromEntries(Object.entries(getters).map(([k,get])=>[k,get()])));step--;draw(-1);}));
    const next=node('button',step===4?'Submit for review':'Save and continue','btn btn-primary');actions.append(next);
-   form.onsubmit=async e=>{e.preventDefault();const values=Object.fromEntries(Object.entries(getters).map(([k,get])=>[k,get()]));if(step===3){if(values.sebi_registered)values.education_only_ack=false;else values.sebi_reg_number=values.sebi_verify_url='';}const problem=sectionError(values,step)||(!step&&!photo?'Take or upload a profile photo.':'');if(problem){status.textContent=problem;return;}const last=step===4;next.disabled=true;for(const control of actions.children)control.disabled=true;
+   form.onsubmit=async e=>{e.preventDefault();const values=Object.fromEntries(Object.entries(getters).map(([k,get])=>[k,get()]));if(step===3){if(values.sebi_registered)values.education_only_ack=false;else values.sebi_reg_number=values.sebi_verify_url='';}const problem=sectionError(values,step)||(!step&&!photo?'Take or upload a profile photo.':'')||(step===2&&!data.live_photo?'Take the live verification photo with your camera.':'')||(step===2&&!(data.documents??[]).length?'Upload at least one document, such as a certificate or an ID.':'');if(problem){status.textContent=problem;return;}const last=step===4;next.disabled=true;for(const control of actions.children)control.disabled=true;
     try{await request(path,'POST',{action:last?'submit':'save',step,values,...(!step?{photo:photo??null}:{})});Object.assign(data,values);if(last){data.status='pending';data.reviewer_note='';editing=false;}else step++;draw(1);}
     catch(e){status.textContent=e.message;for(const control of actions.children)control.disabled=false;}
    };
