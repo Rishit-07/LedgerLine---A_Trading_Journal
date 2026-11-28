@@ -1,5 +1,5 @@
-const pages = new Set(['/', '/auth', '/about', '/privacy', '/terms', '/cookies', '/legal', '/support', '/onboarding', '/streak/invite', '/dashboard',
-  '/journal','/history','/profile','/settings','/badges','/calendar','/plan','/billing','/mentor-verification','/mentor-review','/tickets','/ticket-admin','/billing-admin','/admin','/newsletter-admin','/mentorship','/mentor/join','/notifications','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach']);
+const pages = new Set(['/', '/auth', '/about', '/privacy', '/terms', '/cookies', '/legal', '/support', '/onboarding', '/streak/invite', '/dashboard', '/admin', '/admin/users', '/admin/mentors', '/admin/tickets', '/admin/billing', '/admin/newsletter', '/admin/audit',
+  '/journal','/history','/profile','/settings','/badges','/calendar','/plan','/billing','/mentor-verification','/tickets','/mentorship','/mentor/join','/notifications','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach']);
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
 export function animatePageEntry(page) {

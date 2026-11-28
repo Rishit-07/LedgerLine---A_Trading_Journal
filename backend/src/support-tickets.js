@@ -1,7 +1,7 @@
 /* Support tickets: the help form creates one, the user follows it under "My tickets",
    and the reviewer/admin account answers and resolves them. The team inbox still gets an email. */
 import { isEmail, readJson, send } from './http.js';
-import { reviewer, eligibleReviewer } from './mentor-verification.js';
+import { reviewer } from './mentor-verification.js';
 
 export const inbox = 'ledgerline.team@gmail.com';
 export const topics = ['Bug', 'Billing', 'Feature idea', 'Data request'];
@@ -67,6 +67,10 @@ export function createTicketApi(pool, mailConfig, { authenticate, identify, auth
   const create = wrap(async (request, response) => {
     const data = await readBody(request);
     const claims = await identify(request);
+    await openTicket(request, response, data, claims);
+  });
+
+  async function openTicket(request, response, data, claims) {
     const email = claims ? String(claims.email).toLowerCase() : text(data.email).toLowerCase();
     const subject = text(data.subject);
     const message = text(data.message);
@@ -126,7 +130,7 @@ export function createTicketApi(pool, mailConfig, { authenticate, identify, auth
       });
     }
     send(response, 200, { sent: true, ref, id: String(ticket.id) });
-  });
+  }
 
   /* GET/POST /api/tickets — the signed-in user's own tickets. */
   const mine = wrap(async (request, response) => {
@@ -139,7 +143,7 @@ export function createTicketApi(pool, mailConfig, { authenticate, identify, auth
         const { rows } = await pool.query(
           `SELECT id::text,subject,topic,priority,status,created_at,updated_at FROM support_tickets
            WHERE user_id=$1 ORDER BY updated_at DESC LIMIT 50`, [claims.uid]);
-        return send(response, 200, { inbox, admin: eligibleReviewer(claims), items: rows.map((row) => ({ ...row, ref: reference(row.id) })) });
+        return send(response, 200, { inbox, items: rows.map((row) => ({ ...row, ref: reference(row.id) })) });
       }
       if (!idFrom(id)) return send(response, 404, { error: 'Ticket not found.' });
       const { rows: [row] } = await pool.query(
@@ -148,7 +152,8 @@ export function createTicketApi(pool, mailConfig, { authenticate, identify, auth
       const messages = (await pool.query('SELECT author,body,created_at FROM support_ticket_messages WHERE ticket_id=$1 ORDER BY id', [id])).rows;
       return send(response, 200, { inbox, ticket: { ...row, ref: reference(row.id) }, messages });
     }
-    const data = await readBody(request, 4096);
+    const data = await readBody(request, 16384);
+    if (data.action === 'create') return openTicket(request, response, data, claims);
     const id = idFrom(data.id);
     const body = text(data.body);
     if (!id || !body || body.length > 1200) return send(response, 400, { error: 'Write a message under 1,200 characters.' });

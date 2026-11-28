@@ -3,13 +3,8 @@ export const appPages = {
   '/dashboard': 'Dashboard',
   '/billing':'Plans and billing',
   '/mentor-verification':'Verify you teach',
-  '/mentor-review':'Mentor reviews',
   '/tickets':'My tickets',
   '/notifications':'Notifications',
-  '/ticket-admin':'Ticket queue',
-  '/admin':'Admin',
-  '/billing-admin':'Billing admin',
-  '/newsletter-admin':'Newsletter',
   '/mentorship':'Mentorship',
   '/mentor/join':'Join a mentor',
   '/journal': 'Trade journal',
@@ -28,6 +23,17 @@ export const appPages = {
   '/spaces': 'Mentor spaces',
   '/settings': 'Settings',
   '/profile': 'Profile',
+};
+
+/* The admin console. Served like any page, but only the reviewer account can open it; everyone else gets the 404 page. */
+export const adminPages = {
+  '/admin': 'Admin',
+  '/admin/users': 'Users',
+  '/admin/mentors': 'Mentor verification',
+  '/admin/tickets': 'Support tickets',
+  '/admin/billing': 'Billing',
+  '/admin/newsletter': 'Newsletter',
+  '/admin/audit': 'Audit log',
 };
 
 export const publicPages = ['/', '/about', '/support', '/terms', '/privacy', '/cookies', '/legal', '/auth', '/onboarding', '/streak/share', '/streak/invite'];

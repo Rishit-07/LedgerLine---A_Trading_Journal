@@ -3,7 +3,7 @@
 Three parts: the static frontend, the Node API, and Postgres. Secrets live only in each host's environment settings, never in the repo or the image.
 
 ## 1. Database: Neon
-Create a production database (separate from development). Run migrations 031, 032, 040, 050, 051, 052 and 053, or `npm run db:migrate` with `DATABASE_URL` pointing at it.
+Create a production database (separate from development). Run migrations 031, 032, 040, 050, 051, 052, 053 and 054, or `npm run db:migrate` with `DATABASE_URL` pointing at it.
 
 ## 2. API: a container or a Node host
 The root `Dockerfile` builds only the API (`docker build -t ledgerline-api .`). It runs as a non-root user, listens on `0.0.0.0:8787`, and has a health check on `/api/health`. It has not been built in this repo's CI yet, so run one build and one start before relying on it. Hosts that build Node directly (Render, Railway) can skip Docker: build command `npm ci --omit=dev -w @ledgerline/backend`, start command `node backend/src/server.js`.

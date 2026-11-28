@@ -69,7 +69,6 @@ export async function buildNewsletter(root, { request }) {
       row.append(join);
     }
     card.append(row, status);
-    if (me.admin) { const a = el('a', 'btn btn-secondary', 'Write an issue'); a.href = '/newsletter-admin'; card.append(a); }
   }
   paint();
 

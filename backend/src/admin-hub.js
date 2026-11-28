@@ -4,10 +4,12 @@ import { eligibleReviewer } from './mentor-verification.js';
 import { send } from './http.js';
 
 export const TOOLS = [
-  { key: 'billing', title: 'Billing', detail: 'Payments, orders to review, refunds', href: '/billing-admin' },
-  { key: 'tickets', title: 'Support tickets', detail: 'Answer and resolve customer messages', href: '/ticket-admin' },
-  { key: 'mentors', title: 'Mentor review', detail: 'Verify mentor applications', href: '/mentor-review' },
-  { key: 'newsletter', title: 'Newsletter', detail: 'Write, schedule and send issues', href: '/newsletter-admin' },
+  { key: 'users', title: 'Users', detail: 'Every account, filter by plan, plan controls, notes', href: '/admin/users' },
+  { key: 'billing', title: 'Billing', detail: 'Payments, orders to review, refunds', href: '/admin/billing' },
+  { key: 'tickets', title: 'Support tickets', detail: 'Answer and resolve customer messages', href: '/admin/tickets' },
+  { key: 'mentors', title: 'Mentor review', detail: 'Verify mentor applications', href: '/admin/mentors' },
+  { key: 'newsletter', title: 'Newsletter', detail: 'Write, schedule and send issues', href: '/admin/newsletter' },
+  { key: 'audit', title: 'Audit log', detail: 'Everything done in the admin role', href: '/admin/audit' },
 ];
 
 export function createAdminHubApi(pool, { authenticate }) {
@@ -40,11 +42,11 @@ export function createAdminHubApi(pool, { authenticate }) {
     const attention = [
       c.refunds_owed && { key: 'refunds', level: 'urgent', title: `${c.refunds_owed} refund${c.refunds_owed > 1 ? 's' : ''} owed`, detail: `${usd(c.refunds_owed_cents)} to send from your wallet, then mark as sent.`, href: '/billing-admin?filter=refunded' },
       c.payments_review && { key: 'payments', level: 'urgent', title: `${c.payments_review} payment${c.payments_review > 1 ? 's' : ''} need a decision`, detail: 'Underpaid, overpaid or unmatched. Customers are waiting.', href: '/billing-admin?filter=review' },
-      c.tickets_urgent && { key: 'tickets-urgent', level: 'urgent', title: `${c.tickets_urgent} urgent ticket${c.tickets_urgent > 1 ? 's' : ''}`, detail: 'Answer these first.', href: '/ticket-admin' },
-      c.invoices_unsent && { key: 'invoices', level: 'normal', title: `${c.invoices_unsent} invoice email${c.invoices_unsent > 1 ? 's' : ''} not sent`, detail: 'Delivery keeps retrying. If this stays, check the email sender settings.', href: '/billing-admin' },
-      c.tickets_open && { key: 'tickets', level: 'normal', title: `${c.tickets_open} open ticket${c.tickets_open > 1 ? 's' : ''}`, detail: 'Waiting for a first reply.', href: '/ticket-admin' },
-      c.mentors_pending && { key: 'mentors', level: 'normal', title: `${c.mentors_pending} mentor application${c.mentors_pending > 1 ? 's' : ''} to review`, detail: 'Applicants are waiting for a decision.', href: '/mentor-review' },
-      c.issues_scheduled && { key: 'newsletter', level: 'info', title: `${c.issues_scheduled} newsletter issue${c.issues_scheduled > 1 ? 's' : ''} scheduled`, detail: 'Check them before they go out.', href: '/newsletter-admin' },
+      c.tickets_urgent && { key: 'tickets-urgent', level: 'urgent', title: `${c.tickets_urgent} urgent ticket${c.tickets_urgent > 1 ? 's' : ''}`, detail: 'Answer these first.', href: '/admin/tickets' },
+      c.invoices_unsent && { key: 'invoices', level: 'normal', title: `${c.invoices_unsent} invoice email${c.invoices_unsent > 1 ? 's' : ''} not sent`, detail: 'Delivery keeps retrying. If this stays, check the email sender settings.', href: '/admin/billing' },
+      c.tickets_open && { key: 'tickets', level: 'normal', title: `${c.tickets_open} open ticket${c.tickets_open > 1 ? 's' : ''}`, detail: 'Waiting for a first reply.', href: '/admin/tickets' },
+      c.mentors_pending && { key: 'mentors', level: 'normal', title: `${c.mentors_pending} mentor application${c.mentors_pending > 1 ? 's' : ''} to review`, detail: 'Applicants are waiting for a decision.', href: '/admin/mentors' },
+      c.issues_scheduled && { key: 'newsletter', level: 'info', title: `${c.issues_scheduled} newsletter issue${c.issues_scheduled > 1 ? 's' : ''} scheduled`, detail: 'Check them before they go out.', href: '/admin/newsletter' },
       c.ending_soon && { key: 'ending', level: 'info', title: `${c.ending_soon} plan${c.ending_soon > 1 ? 's' : ''} end in 7 days`, detail: 'Reminder emails go out on their own. Nothing to do unless you want to reach out.', href: '/billing-admin?filter=paid' },
     ].filter(Boolean);
     return { attention, stats: stats.rows[0], tools: TOOLS };

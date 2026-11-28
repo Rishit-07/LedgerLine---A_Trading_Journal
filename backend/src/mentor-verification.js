@@ -3,9 +3,12 @@ import {createHmac} from 'node:crypto';
 import {fields,sectionError,termsVersion} from '../../src/config/mentor-form.js';
 import {readJson,send} from './http.js';
 import {prepareScreenshot,imageRequestLimit} from './trade-screenshots.js';
+import {encryptField,decryptField} from './field-crypto.js';
 
 const keys=fields.flat().map(([name])=>name);
 const editable=['draft','needs_info','rejected','revoked'];
+const DOC_KINDS=['certificate','id','other'],MAX_DOCS=3;
+const STATUSES=['pending','needs_info','approved','rejected','revoked'];
 // The one address allowed to review mentor applications. Set REVIEWER_EMAIL to change it without editing code.
 const adminEmail=(process.env.REVIEWER_EMAIL||'sairishitsunku@gmail.com').toLowerCase();
 // With REQUIRE_REVIEWER_MFA=true the reviewer must have turned on two-step sign-in and entered the code for this sign-in.
@@ -23,8 +26,8 @@ export async function reviewer(u,auth){
 const reject=(msg,status=400)=>{throw Object.assign(new Error(msg),{status});};
 function view(row){
  if(!row)return {status:'draft',step:0};
- const {accepted_ip_hash,reviewer_id,user_id,photo,...safe}=row;
- return {...safe,photo:photo?.toString('base64')??null};
+ const {accepted_ip_hash,reviewer_id,user_id,photo,live_photo,...safe}=row;
+ return {...safe,photo:photo?.toString('base64')??null,live_photo:Boolean(live_photo)};
 }
 export function mentorVerification(pool,authenticate,auth,admin=false){
  return async(req,res)=>{
@@ -37,14 +40,25 @@ export function mentorVerification(pool,authenticate,auth,admin=false){
     if(!admin){
      const {rows:[r]}=await pool.query('SELECT * FROM mentor_verifications WHERE user_id=$1',[user.uid]);
      const phone = r?.phone || user.phone_number || (await pool.query('SELECT contact_phone FROM user_profile WHERE user_id=$1',[user.uid])).rows[0]?.contact_phone;
-     return send(res,200,{...view(r),phone:phone || null,email:user.email,admin:eligibleReviewer(user)});
+     const documents=r?(await pool.query('SELECT id,kind,label FROM mentor_documents WHERE verification_id=$1 ORDER BY created_at',[r.id])).rows:[];
+     return send(res,200,{...view(r),documents,phone:phone || null,email:user.email});
     }
     const id=url.searchParams.get('id');
-    if(!id)return send(res,200,{items:(await pool.query("SELECT id,display_name,status,next_review_at FROM mentor_verifications WHERE status IN ('pending','approved') ORDER BY (status='pending') DESC,next_review_at NULLS LAST,submitted_at")).rows});
+    if(!id){
+     const wanted=url.searchParams.get('status');const only=STATUSES.includes(wanted)?wanted:null;
+     const items=(await pool.query("SELECT id,display_name,full_name,email,status,submitted_at,next_review_at,(live_photo IS NOT NULL) AS has_live_photo,(SELECT count(*)::int FROM mentor_documents d WHERE d.verification_id=mentor_verifications.id) AS documents FROM mentor_verifications WHERE status=ANY($1) ORDER BY (status='pending') DESC,next_review_at NULLS LAST,submitted_at LIMIT 200",[only?[only]:STATUSES])).rows;
+     const counts=Object.fromEntries((await pool.query("SELECT status,count(*)::int n FROM mentor_verifications WHERE status=ANY($1) GROUP BY status",[STATUSES])).rows.map(c=>[c.status,c.n]));
+     return send(res,200,{items,counts});
+    }
     const {rows:[r]}=await pool.query('SELECT * FROM mentor_verifications WHERE id::text=$1',[id]);if(!r)reject('Application unavailable.',404);
     const events=(await pool.query('SELECT action,reason,created_at FROM mentor_review_events WHERE verification_id=$1 ORDER BY id DESC',[id])).rows;
     const reports=(await pool.query("SELECT reason,created_at FROM mentor_reports WHERE mentor_id=$1 AND status='open'",[r.user_id])).rows;
-    return send(res,200,{record:view(r),events,reports});
+    const record=view(r);
+    record.live_photo=r.live_photo?decryptField(r.live_photo):null;
+    record.documents=(await pool.query('SELECT id,kind,label,image,created_at FROM mentor_documents WHERE verification_id=$1 ORDER BY created_at',[r.id])).rows.map(d=>({...d,image:decryptField(d.image)}));
+    // Opening a record shows identity documents, so every opening is written to the append-only log.
+    await pool.query("INSERT INTO admin_audit_log(actor_id,action,target,detail) VALUES($1,'mentor_view_proof',$2,$3)",[user.uid,String(r.id),JSON.stringify({live_photo:Boolean(r.live_photo),documents:record.documents.length})]);
+    return send(res,200,{record,events,reports});
    }
    const {data,error}=await readJson(req,admin?4096:imageRequestLimit+24000);if(error||!data)reject('Invalid form.',error??400);
    db=await pool.connect();await db.query('BEGIN');
@@ -61,6 +75,22 @@ export function mentorVerification(pool,authenticate,auth,admin=false){
     await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,19))',[user.uid]);
     await db.query("INSERT INTO mentor_verifications(user_id,status,email) VALUES($1,'draft',$2) ON CONFLICT DO NOTHING",[user.uid,user.email]);
     r=(await db.query('SELECT * FROM mentor_verifications WHERE user_id=$1 FOR UPDATE',[user.uid])).rows[0];
+    if(['live_photo','add_document','remove_document'].includes(data.action)){
+     if(!editable.includes(r.status))reject('This application is already under review or approved.',409);
+     if(data.action==='live_photo'){
+      let image;try{image=await prepareScreenshot(data.photo);}catch{reject('Take the photo again.');}
+      await db.query('UPDATE mentor_verifications SET live_photo=$2,live_photo_at=now() WHERE user_id=$1',[user.uid,encryptField(image.toString('base64'))]);
+     }else if(data.action==='add_document'){
+      if(!DOC_KINDS.includes(data.kind))reject('Choose what kind of document this is.');
+      const label=String(data.label??'').replace(/[\u0000-\u001f]+/g,' ').trim().slice(0,80);
+      let image;try{image=await prepareScreenshot(data.image);}catch{reject('Choose a clear photo or scan of the document, as an image under 1 MB.');}
+      const {rows:[n]}=await db.query('SELECT count(*)::int c FROM mentor_documents WHERE verification_id=$1',[r.id]);
+      if(n.c>=MAX_DOCS)reject('You can upload up to '+MAX_DOCS+' documents. Remove one first.');
+      await db.query('INSERT INTO mentor_documents(verification_id,kind,label,image) VALUES($1,$2,$3,$4)',[r.id,data.kind,label,encryptField(image.toString('base64'))]);
+     }else await db.query('DELETE FROM mentor_documents WHERE id::text=$1 AND verification_id=$2',[String(data.id),r.id]);
+     const documents=(await db.query('SELECT id,kind,label FROM mentor_documents WHERE verification_id=$1 ORDER BY created_at',[r.id])).rows;
+     await db.query('COMMIT');return send(res,200,{saved:true,documents});
+    }
     if(data.action==='withdraw'){
      await db.query('DELETE FROM mentor_mail WHERE recipient=$1',[user.email]);
      await db.query('DELETE FROM mentor_reports WHERE mentor_id=$1',[user.uid]);
@@ -81,6 +111,9 @@ export function mentorVerification(pool,authenticate,auth,admin=false){
       await db.query('UPDATE mentor_verifications SET photo=$2 WHERE user_id=$1',[user.uid,photo]);
      }
      if(data.action==='submit'){
+      const live=(await db.query('SELECT live_photo IS NOT NULL AS ok FROM mentor_verifications WHERE user_id=$1',[user.uid])).rows[0];
+      if(!live.ok)reject('Take the live verification photo with your camera.');
+      if(!(await db.query('SELECT 1 FROM mentor_documents WHERE verification_id=$1 LIMIT 1',[r.id])).rowCount)reject('Upload at least one document, such as a certificate or an ID.');
       const count=await db.query("SELECT count(*)::int n FROM mentor_review_events WHERE actor_id=$1 AND action='submit' AND created_at>now()-interval '30 days'",[user.uid]);
       if(count.rows[0].n>=3)reject('You can submit up to three applications per 30 days.',429);
       const secret=process.env.MENTOR_IP_HASH_KEY;if(!secret)reject('Verification submission is temporarily unavailable.',503);

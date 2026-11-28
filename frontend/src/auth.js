@@ -305,7 +305,7 @@ function requestAccount(user) {
 async function enterVerified(page, user, next) {
   const account = await requestAccount(user).catch(() => null);
   const invite = next.startsWith('/dashboard?') ? streakInviteCode(next.slice('/dashboard'.length)) : '';
-  const destination = account?.onboardingCompleted === false ? (next==='/billing'?'/onboarding?next=billing':streakInvitePath('/onboarding', invite)) : next;
+  const destination = account?.admin === true ? '/admin' : account?.onboardingCompleted === false ? (next==='/billing'?'/onboarding?next=billing':streakInvitePath('/onboarding', invite)) : next;
   showWelcome(page, { displayName: account?.displayName || user.displayName }, destination);
 }
 
@@ -338,6 +338,11 @@ export async function renderAccountPage(path, landing, appPages) {
   }
 
   const account = await requestAccount(user);
+  // The admin account lives in the admin console, not in the trading app.
+  if (account.admin === true) {
+    location.replace('/admin');
+    return;
+  }
   if (path === '/onboarding') {
     if (account.onboardingCompleted) {
       location.replace(dashboardDestination);
@@ -373,7 +378,7 @@ export async function renderAccountPage(path, landing, appPages) {
     }
     path='/'+section;
   }
-  if (['/billing','/history','/plan','/mentor-verification','/mentor-review','/tickets','/ticket-admin','/billing-admin','/admin','/newsletter-admin','/mentorship','/mentor/join','/notifications','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach','/calendar'].includes(path)) {
+  if (['/billing','/history','/plan','/mentor-verification','/tickets','/mentorship','/mentor/join','/notifications','/mistake','/sizing','/forecast','/reports','/portfolio','/clubs','/people','/spaces','/coach','/calendar'].includes(path)) {
     const { renderWorkspace } = await import('./pages/workspace.js');
     await renderWorkspace(landing, { path, request, uid:user.uid, name:account.displayName || user.displayName,
       photoUrl:avatarUrl(account.avatar)||user.photoURL, signOut:() => signOut(auth) });
