@@ -40,7 +40,7 @@ function setTheme(dark) {
 
 setTheme(root.classList.contains('dark'));
 
-import { appPages } from './routes.js';
+import { appPages, adminPages } from './routes.js';
 initConsent();
 const path = location.pathname.replace(/\/$/, '') || '/';
 bindPageNavigation();
@@ -100,6 +100,8 @@ if(legacyBillingRoute(path,location.search)){location.replace('/billing');}else 
   initSectionRail();
   initLandingPricing();
   initToolWheel();
+} else if (Object.hasOwn(adminPages, path)) {
+  import('./features/admin/console.js').then(({ renderAdminConsole }) => renderAdminConsole(path, landing)).catch(renderLoadError);
 } else if (path === '/about') {
   landing.hidden = true;
   import('./pages/about.js').then(({ renderAbout }) => bindPublicAccount(renderAbout(landing))).catch(renderLoadError);
@@ -126,7 +128,7 @@ if(legacyBillingRoute(path,location.search)){location.replace('/billing');}else 
 } else if (path === '/auth' || path === '/onboarding' || Object.hasOwn(appPages, path) || roomPath(path)) {
   landing.hidden = true;
   import('./auth.js')
-    .then(({ renderAccountPage }) => renderAccountPage(path, landing, appPages))
+    .then(({ renderAccountPage }) => renderAccountPage(path, landing, { ...appPages, ...adminPages }))
     .catch(() => renderPending(path === '/auth' ? 'Sign-in unavailable' : 'Account could not load',
       'Try again in a moment.', true));
 } else {

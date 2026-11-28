@@ -6,7 +6,7 @@ import { clientAddress } from './guard.js';
 import { branded } from './email-layout.js';
 import { renderMarkdown, markdownToText } from './markdown.js';
 import { makeToken, readToken, available as tokensAvailable } from './newsletter-tokens.js';
-import { eligibleReviewer, reviewer } from './mentor-verification.js';
+import { reviewer } from './mentor-verification.js';
 
 export const TOPICS = ['Market wrap', 'Process lessons', 'Journal and sizing tips', 'Product updates'];
 export const FREQUENCIES = { weekly: 'Weekly, Sunday', weekdays: 'Weekdays, evening', monthly: 'Monthly' };
@@ -172,7 +172,7 @@ export function createNewsletterApi(pool, { authenticate, mail, auth, env = proc
     const email = String(claims.email ?? '').toLowerCase();
     if (!isEmail(email) || claims.email_verified !== true) return send(response, 409, { error: 'Verify your email address first.' });
     const find = async () => (await pool.query('SELECT * FROM newsletter_subscribers WHERE email=$1', [email])).rows[0];
-    const state = (sub) => ({ email, status: sub?.status ?? 'none', topics: sub?.topics ?? TOPICS, frequency: sub?.frequency ?? 'weekly', admin: eligibleReviewer(claims), ready: ready() });
+    const state = (sub) => ({ email, status: sub?.status ?? 'none', topics: sub?.topics ?? TOPICS, frequency: sub?.frequency ?? 'weekly', ready: ready() });
     if (request.method === 'GET') return send(response, 200, state(await find()));
     const data = await body(request, response);
     if (!data) return;

@@ -17,6 +17,10 @@ export const legalDocuments = {
         'When you use Ask your journal, AI trade review, AI habit insight or AI reports, the relevant parts of your journal are sent to a third-party AI provider (such as Groq or OpenAI, depending on how the service is set up) to write the answer. Each plan has an AI allowance, and we record how much of it you used. You can turn off AI reviews that use your records in Settings, Data and privacy.',
       ],
       [
+        'Mentor verification',
+        'If you apply to become a verified mentor, we collect a photo taken with your camera during the application and up to three images of documents you choose to upload, such as a certificate or an ID. Only Ledgerline reviewers can see them, and each time a reviewer opens your application it is written to a log. They are never shown to students or other members. They are stored encrypted when encryption is set up on our servers. Withdrawing your application from the verification page deletes them. A person compares the photo with your documents; we do not run automatic face recognition. Do not upload anything you do not want us to see, and cover details that are not needed.',
+      ],
+      [
         'Who else handles your data',
         'Firebase Authentication (Google) for sign-in. Neon for our Postgres database. An email delivery provider to send our emails. CoinPayments to take crypto payments. An AI provider for the features above. Our hosting provider to serve the site, and Cloudflare for delivery and, where switched on, a bot check (Turnstile) on the support and newsletter forms. An error-reporting provider, only if we switch it on. These providers act on our behalf and may process data outside India. A blockchain transaction is public and permanent, and we cannot remove it.',
       ],

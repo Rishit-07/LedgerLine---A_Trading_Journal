@@ -1,4 +1,3 @@
-import {eligibleReviewer} from './mentor-verification.js';
 import {groupStore} from './community.js';
 import {readJson,send} from './http.js';
 
@@ -20,7 +19,6 @@ export function groupHandler(pool,authenticate,kind) {
       const id=new URL(request.url,'http://localhost').searchParams.get('id');
       const data=input?await store.change(claims.uid,input):await store.groups(claims.uid,id);
       await db.query('COMMIT');
-      if(data.mentor)data.mentor.admin=eligibleReviewer(claims);
       send(response,200,data);
     } catch(error){
       if(db)await db.query('ROLLBACK').catch(()=>{});
